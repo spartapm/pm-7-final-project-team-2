@@ -146,7 +146,7 @@ export function emptyCustomCategory(name: string): Category {
     id: uid("cat"),
     name,
     kind: "custom",
-    hint: "직접 추가한 항목",
+    hint: undefined,
     collapsed: false,
     items: [],
   };

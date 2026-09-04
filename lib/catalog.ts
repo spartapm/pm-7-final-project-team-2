@@ -54,12 +54,12 @@ export const CATEGORY_META: Record<
   { name: string; kind: CategoryKind; hint?: string; matchPriority: number; displayOrder: number }
 > = {
   essential: {
-    name: "필수",
+    name: "필수 준비물",
     kind: "essential",
     matchPriority: 1,
     displayOrder: 1,
   },
-  base: { name: "기본", kind: "base", matchPriority: 12, displayOrder: 2 },
+  base: { name: "기본 짐싸기", kind: "base", matchPriority: 12, displayOrder: 2 },
   photo: {
     name: "사진 여행",
     kind: "activity",

@@ -23,7 +23,7 @@ export function Onboarding({ step }: { step: 1 | 2 | 3 }) {
         <ProgressBar step={1} total={3} />
         <div className="shell-scroll pad-a">
           <span className="badge lg">여행 준비 시작</span>
-          <h1 className="t-display" style={{ margin: "16px 0 16px" }}>
+          <h1 className="t-display" style={{ margin: "16px 0 12px" }}>
             지금부터 여행 준비물
             <br />
             리스트를 뽑아볼게요

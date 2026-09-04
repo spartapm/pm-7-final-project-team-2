@@ -13,7 +13,7 @@ export function TripHome() {
   const router = useRouter();
   const { trips, deleteTrip, accountId, hydrated, personalItems } = useStore();
   const sorted = useMemo(() => sortTrips(trips), [trips]);
-  const [menuId, setMenuId] = useState<string | null>(null);
+  const [menu, setMenu] = useState<{ tripId: string; anchor: HTMLElement } | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -60,7 +60,7 @@ export function TripHome() {
                 {sorted.map((trip) => {
                   const chip = statusChip(trip);
                   return (
-                    <div key={trip.id} style={{ position: "relative" }}>
+                    <div className="trip-wrap" key={trip.id}>
                       <button className="trip" onClick={() => router.push(`/trips/${trip.id}`)}>
                         <div className="head">
                           <span className="place">{countryName(trip.countryId)}</span>
@@ -80,23 +80,12 @@ export function TripHome() {
                         aria-label="더보기"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setMenuId(menuId === trip.id ? null : trip.id);
+                          const el = e.currentTarget;
+                          setMenu(menu?.tripId === trip.id ? null : { tripId: trip.id, anchor: el });
                         }}
                       >
-                        <IconMeatball active={menuId === trip.id} />
+                        <IconMeatball active={menu?.tripId === trip.id} />
                       </button>
-                      {menuId === trip.id ? (
-                        <Menu
-                          style={{ top: 48, right: 16 }}
-                          onClose={() => setMenuId(null)}
-                          items={[
-                            {
-                              label: "삭제하기",
-                              onClick: () => setConfirmId(trip.id),
-                            },
-                          ]}
-                        />
-                      ) : null}
                     </div>
                   );
                 })}
@@ -110,7 +99,7 @@ export function TripHome() {
                 </div>
               </div>
               <div className="fab">
-                <IconPlus color="#fff" size={20} />
+                <IconPlus color="#fff" size={20} stroke={2.2} />
               </div>
             </button>
             <div style={{ display: "flex", justifyContent: "center", padding: "24px 0 40px" }}>
@@ -121,6 +110,19 @@ export function TripHome() {
           </>
         )}
       </div>
+      {menu ? (
+        <Menu
+          anchor={menu.anchor}
+          width={160}
+          onClose={() => setMenu(null)}
+          items={[
+            {
+              label: "삭제하기",
+              onClick: () => setConfirmId(menu.tripId),
+            },
+          ]}
+        />
+      ) : null}
       {confirmId ? (
         <ConfirmDialog
           message="등록한 일정을 모두 삭제하시겠습니까?"

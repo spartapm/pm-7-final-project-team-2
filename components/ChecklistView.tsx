@@ -31,7 +31,8 @@ export function ChecklistView({ tripId }: { tripId: string }) {
   const [selecting, setSelecting] = useState(false);
   const [filter, setFilter] = useState<FilterMode>("all");
   const [kebabOpen, setKebabOpen] = useState(false);
-  const [catMenu, setCatMenu] = useState<string | null>(null);
+  const [catMenu, setCatMenu] = useState<{ id: string; anchor: HTMLElement } | null>(null);
+  const kebabRef = useRef<HTMLButtonElement>(null);
   const [confirmCat, setConfirmCat] = useState<string | null>(null);
   const [rename, setRename] = useState<{ catId: string; itemId: string; name: string } | null>(null);
   const [adding, setAdding] = useState<string | null>(null);
@@ -173,8 +174,9 @@ export function ChecklistView({ tripId }: { tripId: string }) {
       <TopBar
         float
         back={() => router.push("/trips")}
-        kebab={!editing ? () => setKebabOpen((v) => !v) : undefined}
+        kebab={!editing ? () => { setCatMenu(null); setKebabOpen((v) => !v); } : undefined}
         kebabActive={kebabOpen}
+        kebabRef={kebabRef}
         right={
           editing ? (
             <button className="t-button" style={{ color: "var(--primary)", background: "none", border: "none" }} onClick={finishEdit}>
@@ -183,10 +185,8 @@ export function ChecklistView({ tripId }: { tripId: string }) {
           ) : undefined
         }
       />
-      {kebabOpen ? (
-        <div style={{ position: "relative" }}>
-          <Menu style={{ top: 0, right: 16 }} items={kebabItems()} onClose={() => setKebabOpen(false)} />
-        </div>
+      {kebabOpen && kebabRef.current ? (
+        <Menu anchor={kebabRef.current} items={kebabItems()} onClose={() => setKebabOpen(false)} />
       ) : null}
 
       <div className="shell-scroll">
@@ -204,7 +204,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
           </div>
         </div>
         <div className="reco-row">
-          {[0, 1, 2].map((i) => (
+          {[0, 1].map((i) => (
             <div className="reco" key={i}>
               <div>
                 <div className="txt">여행자님이 좋아하실 상품을 준비하고 있어요.</div>
@@ -217,7 +217,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
         <div className="reco-more">추천 아이템 모두 보기</div>
 
         {trip.categories.map((cat) => {
-          const items = cat.items.filter(visible);
+          const items = [...cat.items.filter(visible)].sort((a, b) => Number(a.checked) - Number(b.checked));
           const empty = items.length === 0;
           return (
             <section key={cat.id}>
@@ -233,7 +233,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                 >
                   <span className="title">
                     {cat.name}
-                    {cat.collapsed ? ` ${cat.items.length}` : ""}
+                    {cat.collapsed ? ` · ${cat.items.length}` : ""}
                   </span>
                   <span className="grow" />
                   {cat.hint && !cat.collapsed ? <span className="hint">{cat.hint}</span> : null}
@@ -243,27 +243,17 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                       aria-label="카테고리 메뉴"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setCatMenu(catMenu === cat.id ? null : cat.id);
+                        const el = e.currentTarget;
+                        setKebabOpen(false);
+                        setCatMenu(catMenu?.id === cat.id ? null : { id: cat.id, anchor: el });
                       }}
                     >
-                      <IconMeatball active={catMenu === cat.id} />
+                      <IconMeatball active={catMenu?.id === cat.id} />
                     </button>
                   ) : (
                     <IconChevron up={!cat.collapsed} />
                   )}
                 </div>
-                {catMenu === cat.id ? (
-                  <Menu
-                    style={{ top: 52, right: 16 }}
-                    onClose={() => setCatMenu(null)}
-                    items={[
-                      {
-                        label: "카테고리 삭제하기",
-                        onClick: () => setConfirmCat(cat.id),
-                      },
-                    ]}
-                  />
-                ) : null}
               </div>
               {cat.collapsed ? null : (
                 <>
@@ -357,14 +347,22 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                         </button>
                       )}
                     </div>
-                    <button
-                      className="icon-btn"
-                      aria-label="추가"
-                      disabled={selecting || !addText.trim() || over}
-                      onClick={() => tryAdd(cat.id, cat)}
-                    >
-                      <IconPlus color={over ? "var(--text-3)" : "var(--primary)"} />
-                    </button>
+                    {adding === cat.id ? (
+                      <button
+                        className="icon-btn"
+                        aria-label="추가"
+                        disabled={selecting || (!addText.trim() && !over)}
+                        onClick={() => {
+                          if (over) {
+                            setToast({ msg: "최대 30자까지 입력할 수 있어요" });
+                            return;
+                          }
+                          tryAdd(cat.id, cat);
+                        }}
+                      >
+                        <IconPlus color={over ? "var(--text-3)" : "var(--primary)"} />
+                      </button>
+                    ) : null}
                   </div>
                 </>
               )}
@@ -392,6 +390,20 @@ export function ChecklistView({ tripId }: { tripId: string }) {
             삭제
           </button>
         </div>
+      ) : null}
+
+      {catMenu ? (
+        <Menu
+          anchor={catMenu.anchor}
+          width={160}
+          onClose={() => setCatMenu(null)}
+          items={[
+            {
+              label: "카테고리 삭제하기",
+              onClick: () => setConfirmCat(catMenu.id),
+            },
+          ]}
+        />
       ) : null}
 
       {confirmCat ? (
@@ -434,8 +446,8 @@ export function ChecklistView({ tripId }: { tripId: string }) {
 export function unusedPresetNames(trip: Trip) {
   const used = new Set(trip.categories.map((c) => c.name));
   return [
-    "필수",
-    "기본",
+    "필수 준비물",
+    "기본 짐싸기",
     "사진 여행",
     "캠핑",
     "하이킹·등산",
@@ -456,11 +468,9 @@ export function unusedPresetNames(trip: Trip) {
 export function addCategoryToTrip(trip: Trip, name: string): Trip {
   if (trip.categories.some((c) => c.name === name)) return trip;
   const cat = emptyCustomCategory(name);
-  if (name === "나만의 준비물") cat.hint = "모든 여행 일정에 담겨요";
-  else if (["트리플에서 챙기기", "통신/교통 준비", "아이 준비물"].includes(name) === false && !["필수", "기본"].includes(name)) {
-    // activity-like presets have no hint; custom typed ones get 직접 추가한 항목 (already set)
-    const generated = ["사진 여행", "캠핑", "하이킹·등산", "골프", "수영·물놀이", "온천·스파", "겨울 스포츠", "놀이공원", "페스티벌", "종교시설·사원", "필수", "기본"];
-    if (generated.includes(name)) cat.hint = undefined;
+  if (name === "나만의 준비물") {
+    cat.kind = "personal";
+    cat.hint = "모든 여행 일정에 담겨요";
   }
   return { ...trip, categories: [...trip.categories, cat] };
 }

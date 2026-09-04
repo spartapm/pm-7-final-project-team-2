@@ -50,7 +50,9 @@ export function AddCategory({ tripId }: { tripId: string }) {
         {unused.map((label) => (
           <button key={label} className="listrow" onClick={() => add(label)}>
             <span className="lab">{label}</span>
-            <IconPlus />
+            <span className="hit">
+              <IconPlus />
+            </span>
           </button>
         ))}
       </div>

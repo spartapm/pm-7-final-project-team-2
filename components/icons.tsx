@@ -54,10 +54,18 @@ export function IconHeart({ on }: { on: boolean }) {
   );
 }
 
-export function IconPlus({ color = "var(--primary)", size = 24 }: { color?: string; size?: number }) {
+export function IconPlus({
+  color = "var(--primary)",
+  size = 24,
+  stroke = 2,
+}: {
+  color?: string;
+  size?: number;
+  stroke?: number;
+}) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
-      <path d="M12 5v14M5 12h14" stroke={color} strokeWidth="2" strokeLinecap="round" />
+      <path d="M12 5v14M5 12h14" stroke={color} strokeWidth={stroke} strokeLinecap="round" />
     </Svg>
   );
 }

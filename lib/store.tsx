@@ -22,6 +22,10 @@ import { climateBands, fetchClimate } from "./weather";
 import { pullAccount, pushAccount, type CloudAccount, type CloudStatus } from "./cloud";
 
 const KEY = "chaeggyeo:v1";
+const CAT_RENAME: Record<string, string> = {
+  필수: "필수 준비물",
+  기본: "기본 짐싸기",
+};
 
 function uid(prefix: string) {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
@@ -46,7 +50,17 @@ function load(): AppState {
     const parsed = JSON.parse(raw) as AppState;
     return {
       accountId: parsed.accountId || accountId,
-      trips: parsed.trips ?? [],
+      trips: (parsed.trips ?? []).map((trip) => ({
+        ...trip,
+        categories: trip.categories.map((c) => {
+          const name = CAT_RENAME[c.name] ?? c.name;
+          return {
+            ...c,
+            name,
+            hint: name === "나만의 준비물" ? "모든 여행 일정에 담겨요" : undefined,
+          };
+        }),
+      })),
       personalItems: parsed.personalItems ?? [],
       draft: parsed.draft ?? emptyDraft(),
     };

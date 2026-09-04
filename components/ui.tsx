@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type Ref } from "react";
+import { createPortal } from "react-dom";
 import { IconBack, IconCalChevron, IconClose, IconKebab } from "./icons";
 
 export function TopBar({
@@ -11,6 +12,7 @@ export function TopBar({
   right,
   kebab,
   kebabActive,
+  kebabRef,
   float,
 }: {
   back?: () => void;
@@ -20,6 +22,7 @@ export function TopBar({
   right?: ReactNode;
   kebab?: () => void;
   kebabActive?: boolean;
+  kebabRef?: Ref<HTMLButtonElement>;
   float?: boolean;
 }) {
   return (
@@ -37,7 +40,7 @@ export function TopBar({
       {progress ? <span className="t-button" style={{ color: "var(--text-3)" }}>{progress}</span> : null}
       {right}
       {kebab ? (
-        <button className="icon-btn" aria-label="메뉴" onClick={kebab}>
+        <button ref={kebabRef} className="icon-btn" aria-label="메뉴" onClick={kebab}>
           <IconKebab active={kebabActive} />
         </button>
       ) : null}
@@ -184,24 +187,60 @@ export function InputDialog({
 export function Menu({
   items,
   onClose,
-  style,
+  anchor,
+  width = 179,
 }: {
   items: { label: string; onClick: () => void }[];
   onClose: () => void;
-  style?: React.CSSProperties;
+  anchor: HTMLElement;
+  width?: number;
 }) {
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  useLayoutEffect(() => {
+    const menuH = boxRef.current?.offsetHeight ?? items.length * 44 + 8;
+    const gap = 8;
+    const r = anchor.getBoundingClientRect();
+    let top = r.bottom + gap;
+    let left = r.right - width;
+    left = Math.min(Math.max(8, left), window.innerWidth - width - 8);
+    if (top + menuH > window.innerHeight - 8 && r.top - gap - menuH >= 8) {
+      top = r.top - gap - menuH;
+    }
+    setPos({ top, left });
+  }, [anchor, items.length, width]);
+
   useEffect(() => {
-    const onScroll = () => onClose();
-    window.addEventListener("scroll", onScroll, true);
-    return () => window.removeEventListener("scroll", onScroll, true);
+    const close = () => onClose();
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
   }, [onClose]);
-  return (
+
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <>
-      <div style={{ position: "fixed", inset: 0, zIndex: 29 }} onClick={onClose} />
-      <div className="menu" style={style}>
+      <div className="menu-back" onClick={onClose} />
+      <div
+        ref={boxRef}
+        className="menu"
+        role="menu"
+        style={{
+          width,
+          top: pos?.top ?? 0,
+          left: pos?.left ?? 0,
+          visibility: pos ? "visible" : "hidden",
+        }}
+      >
         {items.map((it) => (
           <button
             key={it.label}
+            role="menuitem"
             onClick={() => {
               it.onClick();
               onClose();
@@ -211,7 +250,8 @@ export function Menu({
           </button>
         ))}
       </div>
-    </>
+    </>,
+    document.body
   );
 }
 
