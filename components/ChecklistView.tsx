@@ -191,7 +191,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
 
       <div className="shell-scroll">
         <div className="pad-c">
-          <p className="t-caption" style={{ color: "var(--text-3)", margin: "8px 0 4px" }}>
+          <p className="t-caption" style={{ color: "var(--text-3)", margin: "0 0 4px" }}>
             {checklistSubtitle(countryName(trip.countryId), trip.startDate, trip.endDate)}
           </p>
           <h1 className="t-title1" style={{ margin: 0 }}>
@@ -199,7 +199,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
             <br />
             체크리스트
           </h1>
-          <div className="t-subtitle" style={{ marginTop: 24 }}>
+          <div className="t-subtitle" style={{ marginTop: 28 }}>
             여행자님을 위한 추천
           </div>
         </div>
@@ -401,7 +401,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
       {catMenu ? (
         <Menu
           anchor={catMenu.anchor}
-          width={160}
+          width={179}
           onClose={() => setCatMenu(null)}
           items={[
             {

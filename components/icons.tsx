@@ -25,9 +25,9 @@ export function IconClose() {
 export function IconKebab({ active }: { active?: boolean }) {
   return (
     <Svg width="2" height="18" viewBox="0 0 2 18">
-      <circle cx="1" cy="2" r="1" fill={active ? "var(--primary)" : "var(--text-1)"} />
+      <circle cx="1" cy="1" r="1" fill={active ? "var(--primary)" : "var(--text-1)"} />
       <circle cx="1" cy="9" r="1" fill={active ? "var(--primary)" : "var(--text-1)"} />
-      <circle cx="1" cy="16" r="1" fill={active ? "var(--primary)" : "var(--text-1)"} />
+      <circle cx="1" cy="17" r="1" fill={active ? "var(--primary)" : "var(--text-1)"} />
     </Svg>
   );
 }

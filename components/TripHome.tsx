@@ -113,7 +113,7 @@ export function TripHome() {
       {menu ? (
         <Menu
           anchor={menu.anchor}
-          width={160}
+          width={179}
           onClose={() => setMenu(null)}
           items={[
             {

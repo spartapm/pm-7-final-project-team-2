@@ -49,7 +49,7 @@ export function AddCategory({ tripId }: { tripId: string }) {
             직접 입력
           </button>
         </div>
-        <div style={{ height: 12 }} />
+        <div style={{ height: 16 }} />
         {unused.map((label) => (
           <button key={label} className="listrow" onClick={() => add(label)}>
             <span className="lab">{label}</span>
