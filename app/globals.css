@@ -24,7 +24,7 @@
 }
 
 * { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; min-height: 100%; }
+html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 body {
   background: var(--letterbox);
   color: var(--text-1);
@@ -51,15 +51,17 @@ a { color: inherit; text-decoration: none; }
 .shell {
   width: 100%;
   max-width: 393px;
-  min-height: 100dvh;
+  height: 100dvh;
   margin: 0 auto;
   background: var(--bg);
   position: relative;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 .shell-scroll {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -80,9 +82,16 @@ a { color: inherit; text-decoration: none; }
   z-index: 20;
 }
 .topbar.float { position: sticky; top: 0; }
-.topbar.modal { padding: 0 24px; border-bottom: 1px solid var(--bg-sub); }
+.topbar.modal { position: relative; padding: 0 24px; border-bottom: 1px solid var(--bg-sub); }
 .topbar .grow { flex: 1; }
 .topbar .ttl { font-weight: 600; font-size: 16px; line-height: 24px; }
+.topbar.modal .ttl {
+  position: absolute;
+  left: 56px;
+  right: 56px;
+  text-align: center;
+  pointer-events: none;
+}
 .icon-btn {
   width: 44px;
   height: 44px;
@@ -306,7 +315,7 @@ a { color: inherit; text-decoration: none; }
   padding: 24px;
 }
 .confirm {
-  width: 320px; height: 192px; background: var(--bg);
+  width: 320px; min-height: 192px; background: var(--bg);
   border-radius: var(--r-sm); overflow: hidden;
   box-shadow: 0 0 4px rgba(0,0,0,0.25);
   display: flex; flex-direction: column;
@@ -314,6 +323,7 @@ a { color: inherit; text-decoration: none; }
 .confirm .msg {
   flex: 1; display: flex; align-items: center; justify-content: center;
   padding: 24px; font-size: 16px; line-height: 24px; text-align: center;
+  white-space: pre-line;
 }
 .confirm .acts, .dialog .acts {
   display: flex; border-top: 1px solid var(--bg-sub); height: 48px;
@@ -333,13 +343,19 @@ a { color: inherit; text-decoration: none; }
 }
 .dialog .con { padding: 24px; height: 264px; display: flex; flex-direction: column; }
 .dialog .tt { font-weight: 600; font-size: 20px; line-height: 28px; margin-bottom: 8px; }
-.dialog .ds { font-size: 16px; line-height: 24px; color: var(--text-3); flex: 1; }
+.dialog .ds { position: relative; font-size: 16px; line-height: 24px; color: var(--text-3); flex: 1; }
 .dialog .ds .typed { color: var(--text-1); }
+.dialog .ds .ph {
+  position: absolute; top: 0; left: 0; right: 0;
+  pointer-events: none; white-space: pre-line;
+}
 .dialog input {
-  width: 100%; border: none; outline: none; font-size: 16px; line-height: 24px;
+  width: 100%; height: 100%; min-height: 72px; border: none; outline: none;
+  font-size: 16px; line-height: 24px;
   color: var(--text-1); background: transparent; padding: 0;
   caret-color: var(--primary);
 }
+.dialog input.empty { color: transparent; }
 
 .menu-back {
   position: fixed;
@@ -385,9 +401,13 @@ a { color: inherit; text-decoration: none; }
   border-top: 1px solid var(--bg-sub); background: var(--bg);
   width: 100%; text-align: left; cursor: pointer;
 }
-.cat-head .title { font-weight: 600; font-size: 16px; line-height: 24px; color: var(--primary-sub); }
+.cat-head .title {
+  flex: 1; min-width: 0;
+  font-weight: 600; font-size: 16px; line-height: 24px; color: var(--primary-sub);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .cat-head .grow { flex: 1; }
-.cat-head .hint { font-weight: 500; font-size: 12px; line-height: 16px; color: var(--text-3); }
+.cat-head .hint { font-weight: 500; font-size: 12px; line-height: 16px; color: var(--text-3); flex: none; }
 
 .row {
   position: relative; height: 48px;
@@ -401,8 +421,14 @@ a { color: inherit; text-decoration: none; }
   height: 1px; background: var(--bg-sub);
 }
 .row .body { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-.row .name { font-weight: 400; font-size: 16px; line-height: 24px; color: var(--text-1); }
-.row .desc { font-weight: 500; font-size: 12px; line-height: 16px; color: var(--text-3); margin-top: 2px; }
+.row .name {
+  font-weight: 400; font-size: 16px; line-height: 24px; color: var(--text-1);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.row .desc {
+  font-weight: 500; font-size: 12px; line-height: 16px; color: var(--text-3); margin-top: 2px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .row .name-add { color: var(--primary); }
 .row .name-ph { color: var(--text-3); }
 .row.muted { opacity: 0.25; pointer-events: none; }
@@ -410,6 +436,7 @@ a { color: inherit; text-decoration: none; }
   width: 100%; border: none; outline: none; font-size: 16px; line-height: 24px;
   background: transparent; color: var(--text-1); caret-color: var(--primary);
 }
+.row input::placeholder { color: var(--text-3); }
 .row .icon-btn { margin: 0; }
 div:has(.cat-head) + .row::before { display: none; }
 
@@ -462,11 +489,12 @@ div:has(.cat-head) + .row::before { display: none; }
 .reco .thumb { width: 50px; height: 50px; border-radius: var(--r-xs); background: var(--bg-sub); flex: none; }
 
 .actionbar {
-  height: 64px; background: var(--bg);
+  flex: none;
+  height: calc(64px + env(safe-area-inset-bottom));
+  background: var(--bg);
   border-top: 1px solid var(--text-3);
   display: flex; align-items: center;
-  padding: 0 20px 0 28px;
-  padding-bottom: env(safe-area-inset-bottom);
+  padding: 0 20px env(safe-area-inset-bottom) 28px;
 }
 .actionbar .cnt { font-weight: 600; font-size: 16px; line-height: 24px; }
 .actionbar .act {
@@ -484,7 +512,7 @@ div:has(.cat-head) + .row::before { display: none; }
   gap: 48px;
 }
 .addcat {
-  height: 32px; padding: 0 20px; border-radius: 16px;
+  width: 104px; height: 32px; padding: 0; border-radius: 16px;
   background: var(--primary); color: #fff;
   font-weight: 600; font-size: 13px; line-height: 20px; border: none;
 }
@@ -501,6 +529,7 @@ div:has(.cat-head) + .row::before { display: none; }
   background: var(--bg-sub); text-align: center;
   color: var(--text-3); font-weight: 500; font-size: 12px; line-height: 16px;
 }
+.empty.tight { margin: 8px 20px; padding: 16px; }
 
 .skel {
   background: var(--bg-sub); border-radius: 8px; height: 16px;

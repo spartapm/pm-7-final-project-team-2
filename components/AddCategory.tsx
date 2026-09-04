@@ -15,7 +15,10 @@ export function AddCategory({ tripId }: { tripId: string }) {
   const [name, setName] = useState("");
   const [toast, setToast] = useState<string | null>(null);
 
-  const unused = useMemo(() => (trip ? unusedPresetNames(trip) : []), [trip]);
+  const unused = useMemo(
+    () => (trip ? unusedPresetNames(trip) : []),
+    [trip]
+  );
   const dup = Boolean(trip && name.trim() && trip.categories.some((c) => c.name === name.trim()));
   const invalid = !name.trim() || name.length > 30 || dup;
 

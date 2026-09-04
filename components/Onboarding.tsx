@@ -13,6 +13,7 @@ export function Onboarding({ step }: { step: 1 | 2 | 3 }) {
   const router = useRouter();
   const { draft, setDraft, createTrip } = useStore();
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   const go = (n: 1 | 2 | 3) => router.push(n === 1 ? "/onboarding" : `/onboarding?step=${n}`);
 
@@ -163,6 +164,7 @@ export function Onboarding({ step }: { step: 1 | 2 | 3 }) {
           disabled={!ready || busy}
           onClick={async () => {
             setBusy(true);
+            setErr(null);
             try {
               track("onboarding_step_complete", { step_name: "a03" });
               const trip = await createTrip();
@@ -176,6 +178,8 @@ export function Onboarding({ step }: { step: 1 | 2 | 3 }) {
                 Notification.requestPermission().catch(() => undefined);
               }
               router.replace(`/trips/${trip.id}`);
+            } catch {
+              setErr("체크리스트를 만들지 못했어요. 다시 시도해 주세요.");
             } finally {
               setBusy(false);
             }
@@ -183,6 +187,11 @@ export function Onboarding({ step }: { step: 1 | 2 | 3 }) {
         >
           {busy ? "만드는 중..." : "체크리스트 생성하기"}
         </PrimaryButton>
+        {err ? (
+          <p className="t-caption" style={{ color: "var(--accent)", textAlign: "center", margin: "8px 0 0" }}>
+            {err}
+          </p>
+        ) : null}
       </div>
     </PhoneShell>
   );

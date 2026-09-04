@@ -35,6 +35,20 @@ function emptyDraft(): OnboardingDraft {
   return { companions: [], activities: [] };
 }
 
+function migrateTrips(trips: Trip[]): Trip[] {
+  return trips.map((trip) => ({
+    ...trip,
+    categories: trip.categories.map((c) => {
+      const name = CAT_RENAME[c.name.trim()] ?? c.name;
+      return {
+        ...c,
+        name,
+        hint: name === "나만의 준비물" ? "모든 여행 일정에 담겨요" : undefined,
+      };
+    }),
+  }));
+}
+
 function load(): AppState {
   const accountId = uid("acc");
   const fallback: AppState = {
@@ -50,17 +64,7 @@ function load(): AppState {
     const parsed = JSON.parse(raw) as AppState;
     return {
       accountId: parsed.accountId || accountId,
-      trips: (parsed.trips ?? []).map((trip) => ({
-        ...trip,
-        categories: trip.categories.map((c) => {
-          const name = CAT_RENAME[c.name] ?? c.name;
-          return {
-            ...c,
-            name,
-            hint: name === "나만의 준비물" ? "모든 여행 일정에 담겨요" : undefined,
-          };
-        }),
-      })),
+      trips: migrateTrips(parsed.trips ?? []),
       personalItems: parsed.personalItems ?? [],
       draft: parsed.draft ?? emptyDraft(),
     };
@@ -111,7 +115,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         skipPush.current = true;
         setState((s) => ({
           ...s,
-          trips: remote.trips,
+          trips: migrateTrips(remote.trips),
           personalItems: remote.personalItems.length ? remote.personalItems : s.personalItems,
         }));
         return;
@@ -128,6 +132,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!hydrated) return;
+    if (state.accountId === "pending") return;
     localStorage.setItem(KEY, JSON.stringify(state));
   }, [state, hydrated]);
 
@@ -205,7 +210,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const importTrips = useCallback((trips: Trip[], accountId?: string) => {
     setState((s) => {
       const byId = new Map(s.trips.map((t) => [t.id, t]));
-      for (const t of trips) byId.set(t.id, t);
+      for (const t of migrateTrips(trips)) byId.set(t.id, t);
       return {
         ...s,
         accountId: accountId || s.accountId,
@@ -219,7 +224,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setState((s) => ({
       ...s,
       accountId: account.id,
-      trips: account.trips,
+      trips: migrateTrips(account.trips),
       personalItems: account.personalItems,
     }));
   }, []);

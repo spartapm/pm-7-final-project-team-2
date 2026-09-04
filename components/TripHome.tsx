@@ -125,7 +125,7 @@ export function TripHome() {
       ) : null}
       {confirmId ? (
         <ConfirmDialog
-          message="등록한 일정을 모두 삭제하시겠습니까?"
+          message={"등록한 일정을\n모두 삭제하시겠습니까?"}
           onCancel={() => setConfirmId(null)}
           onConfirm={() => {
             deleteTrip(confirmId);

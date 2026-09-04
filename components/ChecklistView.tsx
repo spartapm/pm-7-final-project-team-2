@@ -230,12 +230,18 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                     if (editing) return;
                     save((t) => patchCategory(t, cat.id, (c) => ({ ...c, collapsed: !c.collapsed })));
                   }}
+                  onKeyDown={(e) => {
+                    if (editing) return;
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      save((t) => patchCategory(t, cat.id, (c) => ({ ...c, collapsed: !c.collapsed })));
+                    }
+                  }}
                 >
                   <span className="title">
                     {cat.name}
                     {cat.collapsed ? ` · ${cat.items.length}` : ""}
                   </span>
-                  <span className="grow" />
                   {cat.hint && !cat.collapsed ? <span className="hint">{cat.hint}</span> : null}
                   {editing ? (
                     <button
@@ -258,7 +264,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
               {cat.collapsed ? null : (
                 <>
                   {empty && filter !== "all" ? (
-                    <div className="empty" style={{ margin: 12 }}>해당하는 항목이 없어요</div>
+                    <div className="empty tight">해당하는 항목이 없어요</div>
                   ) : null}
                   {items.map((item) => (
                     <div className={`row${item.reason ? " sub" : ""}`} key={item.id}>
@@ -408,7 +414,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
 
       {confirmCat ? (
         <ConfirmDialog
-          message="카테고리에 속한 아이템이 함께 삭제됩니다. 카테고리를 삭제하시겠습니까?"
+          message={"카테고리에 속한 아이템이\n함께 삭제됩니다.\n카테고리를 삭제하시겠습니까?"}
           onCancel={() => setConfirmCat(null)}
           onConfirm={() => {
             save((t) => ({ ...t, categories: t.categories.filter((c) => c.id !== confirmCat) }));
@@ -444,7 +450,8 @@ export function ChecklistView({ tripId }: { tripId: string }) {
 }
 
 export function unusedPresetNames(trip: Trip) {
-  const used = new Set(trip.categories.map((c) => c.name));
+  const alias: Record<string, string> = { 필수: "필수 준비물", 기본: "기본 짐싸기" };
+  const used = new Set(trip.categories.map((c) => alias[c.name.trim()] ?? c.name.trim()));
   return [
     "필수 준비물",
     "기본 짐싸기",
@@ -466,7 +473,9 @@ export function unusedPresetNames(trip: Trip) {
 }
 
 export function addCategoryToTrip(trip: Trip, name: string): Trip {
-  if (trip.categories.some((c) => c.name === name)) return trip;
+  const alias: Record<string, string> = { 필수: "필수 준비물", 기본: "기본 짐싸기" };
+  const canon = alias[name] ?? name;
+  if (trip.categories.some((c) => (alias[c.name] ?? c.name) === canon)) return trip;
   const cat = emptyCustomCategory(name);
   if (name === "나만의 준비물") {
     cat.kind = "personal";

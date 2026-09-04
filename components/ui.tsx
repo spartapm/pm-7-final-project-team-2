@@ -36,7 +36,8 @@ export function TopBar({
           <IconClose />
         </button>
       ) : null}
-      {title ? <span className="ttl grow">{title}</span> : <span className="grow" />}
+      {title ? <span className="ttl">{title}</span> : null}
+      <span className="grow" />
       {progress ? <span className="t-button" style={{ color: "var(--text-3)" }}>{progress}</span> : null}
       {right}
       {kebab ? (
@@ -110,7 +111,13 @@ export function Toast({
       <div className="toast">
         <span className="msg">{message}</span>
         {action ? (
-          <button className="act" onClick={onAction}>
+          <button
+            className="act"
+            onClick={() => {
+              onAction?.();
+              onDone();
+            }}
+          >
             {action}
           </button>
         ) : null}
@@ -145,7 +152,7 @@ export function InputDialog({
   title = "직접 입력",
   value,
   onChange,
-  placeholder = "최대 30글자로 카테고리·아이템 직접 입력하기",
+  placeholder = "최대 30글자로\n카테고리·아이템 직접 입력하기",
   confirmDisabled,
   onCancel,
   onConfirm,
@@ -158,19 +165,24 @@ export function InputDialog({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
+  const inputRef = useRef<HTMLInputElement>(null);
   return (
     <div className="dim" onClick={onCancel}>
       <div className="dialog" onClick={(e) => e.stopPropagation()}>
         <div className="con">
           <div className="tt">{title}</div>
-          <div className="ds">
+          <div className="ds" onClick={() => inputRef.current?.focus()}>
+            {!value ? <div className="ph">{placeholder}</div> : null}
             <input
+              ref={inputRef}
               autoFocus
               value={value}
+              className={value ? "typed" : "empty"}
               onChange={(e) => onChange(e.target.value)}
-              onFocus={(e) => e.target.select()}
+              onFocus={(e) => {
+                if (value) e.target.select();
+              }}
             />
-            {!value ? <div style={{ marginTop: 8 }}>{placeholder}</div> : null}
           </div>
         </div>
         <div className="acts">

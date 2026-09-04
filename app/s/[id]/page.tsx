@@ -45,8 +45,7 @@ export default function SharePage() {
         return;
       }
 
-      adoptAccount({ id, trips: [], personalItems: [] });
-      router.replace("/trips");
+      setMsg("일정을 찾을 수 없어요.");
     })();
 
     return () => {

@@ -38,8 +38,13 @@ export function CloudBanner() {
   return (
     <div
       style={{
+        position: "fixed",
+        top: 0,
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: "100%",
         maxWidth: 393,
-        margin: "0 auto",
+        zIndex: 60,
         background: "#1F3D88",
         color: "#fff",
         padding: "12px 16px",
