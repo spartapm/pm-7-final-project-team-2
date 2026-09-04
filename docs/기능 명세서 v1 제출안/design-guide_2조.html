@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>여행 준비 체크리스트 · 디자인 가이드</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+:root{
+  --bg:#FFFFFF; --bg-sub:#F2F2F2; --primary:#368FFF; --primary-sub:#1F3D88;
+  --text:#3A3A3A; --accent:#E5484D; --letterbox:#DADBDF;
+  --text-1:rgba(58,58,58,1); --text-2:rgba(58,58,58,0.75);
+  --text-3:rgba(58,58,58,0.5); --line:rgba(58,58,58,0.25); --text-disabled:rgba(58,58,58,0.12);
+  --primary-12:rgba(54,143,255,0.12); --primary-25:rgba(54,143,255,0.25);
+  --r-xs:4px; --r-sm:8px; --r-md:12px; --r-lg:16px;
+  --shadow-card:0 0 4px rgba(0,0,0,0.12);
+  --shadow-menu:0 4px 8px rgba(0,0,0,0.25);
+  --font:"Pretendard","Pretendard Variable",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+}
+.t-title1{font-weight:500;font-size:28px;line-height:34px}
+.t-title2{font-weight:600;font-size:20px;line-height:28px}
+.t-subtitle{font-weight:600;font-size:16px;line-height:24px}
+.t-body{font-weight:400;font-size:16px;line-height:24px}
+.t-caption{font-weight:500;font-size:12px;line-height:16px}
+.t-button{font-weight:500;font-size:14px;line-height:21px}
+.t-button-strong{font-weight:600;font-size:14px;line-height:21px}
+.t-legal{font-weight:500;font-size:9px;line-height:12px}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--letterbox);color:var(--text);font-family:var(--font);font-size:16px;line-height:24px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px 120px}
+header.doc{padding:72px 0 40px;border-bottom:1px solid var(--line)}
+header.doc .eyebrow{font-size:12px;font-weight:500;line-height:16px;color:var(--text-3)}
+header.doc h1{font-size:40px;line-height:48px;font-weight:600;margin:12px 0}
+header.doc p{margin:0;color:var(--text-2);max-width:62ch}
+nav.toc{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:2px 24px;padding:28px 0 0}
+nav.toc a{color:var(--text-2);text-decoration:none;font-size:14px;line-height:28px;border-bottom:1px solid transparent}
+nav.toc a:hover{color:var(--primary);border-bottom-color:var(--primary)}
+nav.toc a span{display:inline-block;width:28px;color:var(--text-3)}
+section{padding:64px 0 0}
+h2{font-size:24px;line-height:32px;font-weight:600;margin:0 0 8px;display:flex;align-items:baseline;gap:12px}
+h2 .num{font-size:14px;font-weight:500;color:var(--primary);width:28px;flex:none}
+h2+.lead{margin:0 0 28px 40px;color:var(--text-2);max-width:72ch}
+h3{font-size:17px;line-height:26px;font-weight:600;margin:36px 0 10px}
+h3:first-child{margin-top:0}
+h4{font-size:14px;line-height:21px;font-weight:600;margin:20px 0 8px;color:var(--text-2)}
+p{max-width:76ch}
+.panel{background:var(--bg);border-radius:var(--r-md);padding:28px 32px;margin:0 0 20px}
+.panel.tight{padding:20px 24px}
+table{width:100%;border-collapse:collapse;font-size:14px;line-height:21px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--bg-sub);vertical-align:top}
+th{font-weight:600;color:var(--text-2);font-size:12px;line-height:16px;background:#FAFAFA}
+td code,p code,li code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;background:var(--bg-sub);padding:1px 5px;border-radius:4px}
+tr:last-child td{border-bottom:none}
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+.sw{border:1px solid var(--bg-sub);border-radius:var(--r-sm);overflow:hidden}
+.sw .chip{height:64px}
+.sw .meta{padding:10px 12px}
+.sw .name{font-size:13px;font-weight:600;line-height:18px}
+.sw .hex{font-size:12px;line-height:16px;color:var(--text-3);font-family:ui-monospace,monospace}
+.spec{display:grid;grid-template-columns:minmax(300px,393px) 1fr;gap:28px;align-items:start}
+@media (max-width:860px){.spec{grid-template-columns:1fr}}
+.stage{background:var(--bg-sub);border-radius:var(--r-sm);padding:20px;display:flex;flex-direction:column;gap:14px}
+.stage.center{align-items:center}
+.stage .label{font-size:11px;line-height:16px;color:var(--text-3);font-weight:500}
+.note{border-left:3px solid var(--primary);background:#F4F9FF;padding:14px 18px;border-radius:0 var(--r-sm) var(--r-sm) 0;margin:16px 0 0;font-size:14px;line-height:22px}
+.note b{font-weight:600}
+ul.clean{margin:8px 0 0;padding-left:20px}
+ul.clean li{margin:6px 0;font-size:14px;line-height:22px}
+.flowmap{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:12px}
+.flowmap div{background:var(--bg-sub);border-radius:var(--r-sm);padding:10px 12px;font-size:13px;line-height:19px}
+.flowmap div b{display:block;color:var(--primary);font-size:12px;font-weight:600}
+
+.canvas{width:100%;max-width:393px;background:var(--bg);font-family:var(--font);border-radius:var(--r-sm);overflow:hidden}
+.frame-demo{background:var(--letterbox);border-radius:var(--r-sm);padding:20px;display:flex;justify-content:center;gap:16px;flex-wrap:wrap}
+.frame-demo .mini{width:120px;height:190px;background:var(--bg);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-3);text-align:center;line-height:16px}
+.frame-demo .mini.narrow{width:92px}
+
+.topbar{height:56px;display:flex;align-items:center;padding:0 20px;gap:12px}
+.topbar .grow{flex:1}
+.topbar--modal{border-bottom:1px solid var(--bg-sub);padding:0 24px}
+.topbar .ttl{font-weight:600;font-size:16px;line-height:24px;color:var(--text-1)}
+.icon{width:24px;height:24px;display:block;flex:none}
+.icon path{stroke:var(--text-1);stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.progress{padding:0 32px}
+.progress .track{height:3px;border-radius:2px;background:var(--bg-sub);overflow:hidden}
+.progress .fill{height:100%;background:var(--primary);border-radius:2px}
+
+.btn{height:56px;border:none;border-radius:var(--r-md);width:100%;font-family:var(--font);font-weight:600;font-size:20px;line-height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.btn--primary{background:var(--primary);color:#fff}
+.btn--secondary{background:var(--bg);color:var(--text-3);border:2px solid var(--bg-sub)}
+.btn--disabled{background:var(--line);color:#fff;cursor:not-allowed}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip-sel{padding:8px 16px;border-radius:var(--r-sm);background:var(--bg);border:1px solid var(--line);color:var(--text-1);font-family:var(--font);font-weight:600;font-size:14px;line-height:21px;cursor:pointer}
+.chip-sel[aria-pressed="true"]{background:var(--primary);border-color:var(--primary);color:#fff}
+
+.tags{display:flex;gap:8px;flex-wrap:wrap}
+.tag{padding:6px 10px;border-radius:var(--r-sm);background:var(--bg-sub);color:var(--text-2);font-weight:500;font-size:12px;line-height:16px}
+.badge{min-width:48px;height:24px;border-radius:var(--r-lg);background:var(--primary-12);color:var(--primary);font-weight:600;font-size:12px;line-height:16px;display:inline-flex;align-items:center;justify-content:center;padding:0 8px}
+.badge--off{background:var(--text-disabled);color:var(--text-3)}
+
+.row{position:relative;height:48px;display:flex;align-items:center;padding:0 20px 0 28px;gap:24px;background:var(--bg)}
+.row--sub{height:64px}
+.row::before{content:"";position:absolute;top:0;left:28px;right:28px;height:1px;background:var(--bg-sub)}
+.row:first-child::before{display:none}
+.row .body{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
+.row .name{font-weight:400;font-size:16px;line-height:20px;color:var(--text-1)}
+.row .desc{font-weight:500;font-size:12px;line-height:16px;color:var(--text-3);margin-top:2px}
+.row .name--add{color:var(--primary)}
+.row .name--ph{color:var(--text-3)}
+.row--muted{opacity:.25}
+.cbx{width:20px;height:20px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center}
+.cbx--off{border:1.5px solid var(--line)}
+.cbx--on{background:var(--primary)}
+.cbx--del{background:var(--accent)}
+.cbx--add{border:1.5px dashed var(--primary)}
+.cbx svg{width:12px;height:12px;display:block}
+.cbx svg path{stroke:#fff;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.ic-heart{width:18px;height:16px;flex:none;display:block}
+.ic-heart path{fill:var(--accent);stroke:none}
+.ic-heart--off path{fill:var(--letterbox);stroke:none}
+.ic-meatball{width:16px;height:2px;flex:none;display:block}
+.ic-meatball circle{fill:var(--text-3)}
+.ic-meatball--on circle{fill:var(--primary)}
+.ic-edit-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex:none}
+.ic-pencil{width:15px;height:15px;flex:none;display:block}
+.ic-pencil path{stroke:var(--text-3);stroke-width:1.3;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.ic-x{width:13px;height:13px;flex:none;display:block}
+.ic-x path{stroke:var(--text-3);stroke-width:1.5;stroke-linecap:round}
+.ic-kebab{width:2px;height:18px;flex:none;display:block}
+.ic-kebab circle{fill:var(--text-1)}
+.ic-plus{width:24px;height:24px;flex:none;display:block}
+.ic-plus path{stroke:var(--primary);stroke-width:2;stroke-linecap:round}
+.ic-plus--off path{stroke:var(--text-3)}
+
+.cat-head{height:60px;display:flex;align-items:center;padding:0 20px;gap:12px;border-top:1px solid var(--bg-sub);background:var(--bg)}
+.cat-head .title{font-weight:600;font-size:16px;line-height:24px;color:var(--primary-sub)}
+.cat-head .grow{flex:1}
+.cat-head .hint{font-weight:500;font-size:12px;line-height:16px;color:var(--text-3)}
+.chev{width:16px;height:16px;flex:none;align-self:center;display:block}
+.chev path{stroke:var(--text-3);stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+
+.listrow{position:relative;height:56px;display:flex;align-items:center;padding:0 32px;background:var(--bg)}
+.listrow::before{content:"";position:absolute;top:0;left:28px;right:28px;height:1px;background:var(--bg-sub)}
+.listrow .lab{flex:1;font-weight:400;font-size:16px;line-height:24px;color:var(--text-1)}
+
+.reco{width:298px;height:107px;border-radius:var(--r-sm);background:var(--bg);box-shadow:var(--shadow-card);padding:20px;display:flex;gap:16px}
+.reco .txt{flex:1;font-weight:400;font-size:16px;line-height:20px;color:var(--text-1)}
+.reco .src{font-weight:500;font-size:12px;line-height:16px;color:var(--text-3);margin-top:10px}
+.reco .thumb{width:50px;height:50px;border-radius:var(--r-xs);background:var(--bg-sub);flex:none}
+.trip{width:345px;border:1px solid var(--line);border-radius:var(--r-lg);padding:16px 24px 20px;background:var(--bg);position:relative}
+.trip .head{display:flex;align-items:center;gap:8px}
+.trip .place{font-weight:600;font-size:16px;line-height:24px;color:var(--text-1)}
+.trip .when{font-weight:500;font-size:12px;line-height:16px;color:var(--text-3);margin:4px 0 8px}
+.trip .kb{position:absolute;top:22px;right:20px}
+.trip--new{background:var(--bg-sub);border:none;padding:16px 24px;display:flex;align-items:center}
+.trip--new .fab{width:40px;height:40px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;margin-left:auto;flex:none}
+.trip--new .fab svg{width:20px;height:20px;display:block}
+.trip--new .fab path{stroke:#fff;stroke-width:2.2;stroke-linecap:round;fill:none}
+
+.cal{width:329px;border:2px solid var(--bg-sub);border-radius:var(--r-lg);padding:24px 22px 20px;background:var(--bg)}
+.cal .capt{display:flex;align-items:center;justify-content:center;gap:24px;margin-bottom:12px}
+.cal .capt .m{font-weight:600;font-size:16px;line-height:24px;color:var(--text-1)}
+.cal .capt button{background:none;border:none;color:var(--text-1);font-size:18px;cursor:pointer;padding:4px 8px;line-height:1}
+.cal table{width:100%;border-collapse:separate;border-spacing:1px}
+.cal th{background:none;font-weight:500;font-size:12px;line-height:16px;color:var(--text-3);text-align:center;padding:6px 0;border:none}
+.cal td{padding:0;border:none;text-align:center}
+.cal .d{width:100%;height:40px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;line-height:21px;color:var(--text-1);border-radius:var(--r-sm);background:none;border:none;font-family:var(--font)}
+.cal .d.is-range{background:var(--bg-sub)}
+.cal .d.is-edge{background:var(--primary);color:#fff}
+.cal .sum{display:flex;justify-content:space-between;border-top:1px solid var(--bg-sub);margin-top:12px;padding-top:14px;font-weight:500;font-size:12px;line-height:16px;color:var(--text-1)}
+.cal .sum .r{color:var(--text-3)}
+
+.dialog{width:320px;background:var(--bg);border-radius:var(--r-sm);overflow:hidden;box-shadow:var(--shadow-card)}
+.dialog .con{padding:24px;height:264px;display:flex;flex-direction:column}
+.dialog .tt{font-weight:600;font-size:20px;line-height:28px;color:var(--text-1);margin-bottom:8px}
+.dialog .ds{font-weight:400;font-size:16px;line-height:24px;color:var(--text-3);flex:1}
+.dialog .ds .typed{color:var(--text-1)}
+.dialog .caret{display:inline-block;width:1px;height:18px;background:var(--primary);vertical-align:-3px}
+.dialog .acts{display:flex;border-top:1px solid var(--bg-sub)}
+.dialog .acts button{flex:1;height:48px;border:none;background:var(--bg);cursor:pointer;font-family:var(--font);font-weight:400;font-size:16px;line-height:24px;color:var(--text-3)}
+.dialog .acts button+button{border-left:1px solid var(--bg-sub);color:var(--primary)}
+.dialog .acts button.off{color:var(--line)}
+.confirm{width:320px;height:192px;background:var(--bg);border-radius:var(--r-sm);overflow:hidden;box-shadow:0 0 4px rgba(0,0,0,0.25);display:flex;flex-direction:column}
+.confirm .msg{flex:1;display:flex;align-items:center;justify-content:center;padding:0 24px;font-weight:400;font-size:16px;line-height:24px;color:var(--text-1);text-align:center}
+.confirm .acts{display:flex;border-top:1px solid var(--bg-sub);height:48px}
+.confirm .acts button{flex:1;border:none;background:var(--bg);cursor:pointer;font-family:var(--font);font-weight:400;font-size:16px;line-height:24px;color:var(--text-3)}
+.confirm .acts button+button{border-left:1px solid var(--bg-sub);color:var(--primary)}
+
+.menu{width:179px;background:var(--bg);border-radius:var(--r-xs);box-shadow:var(--shadow-menu);overflow:hidden;padding:4px 0}
+.menu button{display:block;width:100%;text-align:left;height:44px;padding:0 16px;border:none;background:var(--bg);font-family:var(--font);font-weight:400;font-size:16px;line-height:24px;color:var(--text-1);cursor:pointer}
+.menu button:hover{background:var(--primary-25)}
+
+.actionbar{width:100%;max-width:393px;height:64px;background:var(--bg);border-top:1px solid var(--text-3);display:flex;align-items:center;padding:0 20px 0 28px}
+.actionbar .cnt{font-weight:600;font-size:16px;line-height:24px;color:var(--text-1)}
+.actionbar .act{margin-left:auto;font-weight:500;font-size:14px;line-height:21px;color:var(--accent)}
+.actionbar .act--off{color:var(--text-3)}
+
+.toast{width:100%;max-width:345px;height:48px;background:rgba(58,58,58,0.8);border-radius:var(--r-sm);display:flex;align-items:center;padding:0 24px;gap:12px}
+.toast .msg{flex:1;color:#fff;font-weight:500;font-size:14px;line-height:21px}
+.toast .act{color:var(--primary);font-weight:500;font-size:14px;line-height:21px;white-space:nowrap;flex:none}
+
+.share-btn{height:32px;padding:0 20px;border-radius:999px;background:var(--primary);color:#fff;font-weight:500;font-size:14px;line-height:21px;display:inline-flex;align-items:center;justify-content:center;border:none}
+
+.footer-legal{width:100%;max-width:393px;background:var(--bg);border-top:1px solid var(--bg-sub);padding:24px 0 0;display:flex;flex-direction:column;align-items:center;gap:48px}
+.footer-legal .addcat{height:32px;padding:0 20px;border-radius:16px;background:var(--primary);color:#fff;font-weight:600;font-size:13px;line-height:20px;display:inline-flex;align-items:center;justify-content:center;border:none}
+.footer-legal .legalblock{width:100%}
+.footer-legal .legalwrap{width:100%;background:linear-gradient(to bottom, var(--bg), var(--bg-sub) 32px);padding:20px 20px 24px}
+.footer-legal .legal{color:var(--text-3);font-weight:500;font-size:9px;line-height:12px;margin:0}
+.footer-legal .legaldiv{height:1px;background:var(--line);margin:10px 0}
+.footer-legal .legal2{color:var(--text-3);font-weight:500;font-size:9px;line-height:12px;margin:0}
+
+.infobox{width:329px;border:2px solid var(--bg-sub);border-radius:var(--r-lg);padding:20px 24px;background:var(--bg)}
+.infobox .t{font-weight:600;font-size:16px;line-height:24px;color:var(--text-1);margin-bottom:12px}
+.infobox li{display:flex;align-items:center;gap:16px;margin:8px 0}
+.infobox .n{width:24px;height:24px;border-radius:var(--r-xs);background:var(--primary-12);color:var(--primary);font-weight:600;font-size:14px;line-height:21px;display:flex;align-items:center;justify-content:center;flex:none}
+.infobox ul{list-style:none;margin:0;padding:0;font-weight:400;font-size:16px;line-height:24px;color:var(--text-1)}
+.req{color:var(--accent)}
+footer.doc{margin-top:80px;padding-top:28px;border-top:1px solid var(--line);font-size:13px;color:var(--text-3)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="doc">
+  <div class="eyebrow">Design Guide</div>
+  <h1>여행 준비 체크리스트<br>디자인 가이드</h1>
+  <p>화면 구성, 타이포그래피, 컬러, 컴포넌트 스펙과 동작 규칙을 정리한 문서입니다.</p>
+  <div class="flowmap">
+    <div><b>A-01 · A-02 · A-03</b>인트로 → 목적지·날짜 → 동반자·활동</div>
+    <div><b>B-01</b>내 여행 준비(일정 목록)</div>
+    <div><b>C-01 · C-02</b>체크리스트 홈 / 카테고리 접힘</div>
+    <div><b>D-01</b>카테고리 추가</div>
+    <div><b>E-01 · E-02</b>아이템 액션 메뉴 / 이름 변경</div>
+    <div><b>F-01 · F-02</b>선택 삭제 / 카테고리 삭제 확인</div>
+    <div><b>G-01</b>아이템 직접 추가</div>
+  </div>
+  <nav class="toc">
+    <a href="#s1"><span>01</span>화면 규격 · 반응형</a>
+    <a href="#s2"><span>02</span>타이포그래피</a>
+    <a href="#s3"><span>03</span>컬러 · 텍스트 위계</a>
+    <a href="#s4"><span>04</span>레이아웃 · 스페이싱</a>
+    <a href="#s5"><span>05</span>컴포넌트</a>
+    <a href="#s6"><span>06</span>아이콘</a>
+    <a href="#s7"><span>07</span>상태 정의</a>
+    <a href="#s8"><span>08</span>인터랙션 규칙</a>
+    <a href="#s9"><span>09</span>마이크로카피</a>
+    <a href="#s10"><span>10</span>접근성</a>
+  </nav>
+</header>
+
+<!-- 01 -->
+<section id="s1">
+  <h2><span class="num">01</span>화면 규격 · 반응형</h2>
+  <p class="lead">기준 해상도는 393×852px. 뷰포트가 커져도 콘텐츠는 393px 폭을 유지하고 남는 공간은 레터박스로 채웁니다.</p>
+  <div class="panel">
+    <table>
+      <tr><th style="width:200px">항목</th><th>값</th></tr>
+      <tr><td>기준 캔버스</td><td>393 × 852px (비율 약 0.4613)</td></tr>
+      <tr><td>뷰포트 ≥ 393px</td><td>콘텐츠 폭 393px 고정 + 가운데 정렬, 나머지 <code>#DADBDF</code></td></tr>
+      <tr><td>뷰포트 &lt; 393px</td><td>가로 100% 반응형</td></tr>
+      <tr><td>최소 지원 폭</td><td>320px</td></tr>
+      <tr><td>세로</td><td>852px는 기준값이며 고정 높이가 아님. 콘텐츠가 넘치면 스크롤</td></tr>
+      <tr><td>하단 여백</td><td>하단 고정 요소는 홈 인디케이터 영역만큼 추가 여백 확보</td></tr>
+    </table>
+    <div class="frame-demo" style="margin-top:20px">
+      <div class="mini">≥393px<br>고정 폭 + 레터박스</div>
+      <div class="mini narrow">&lt;393px<br>100% 반응형</div>
+    </div>
+  </div>
+</section>
+
+<!-- 02 -->
+<section id="s2">
+  <h2><span class="num">02</span>타이포그래피</h2>
+  <p class="lead">Pretendard 단일 패밀리. 아래 7종 외 사이즈는 사용하지 않습니다.</p>
+  <div class="panel">
+    <table>
+      <tr><th>명칭</th><th>weight</th><th>size / line-height</th><th>용도</th><th>미리보기</th></tr>
+      <tr><td>Title1</td><td>500</td><td>28 / 34</td><td>화면 대표 제목 (C-01 “여행 준비 체크리스트”)</td><td class="t-title1">여행 준비</td></tr>
+      <tr><td>Title2</td><td>600</td><td>20 / 28</td><td>섹션 질문, 다이얼로그 제목, CTA 라벨</td><td class="t-title2">어디로 가세요?</td></tr>
+      <tr><td>SubTitle</td><td>600</td><td>16 / 24</td><td>카테고리명, 카드 제목, 모달 헤더, 선택 개수, 달력 월</td><td class="t-subtitle">나만의 준비물</td></tr>
+      <tr><td>Body</td><td>400</td><td>16 / 24</td><td>본문, 아이템명, 메뉴·리스트 항목</td><td class="t-body">언제, 어디로 가시는지</td></tr>
+      <tr><td>Caption</td><td>500</td><td>12 / 16</td><td>보조 설명, 태그, 배지, 날짜, 요일</td><td class="t-caption">2026.10.09 ~ 10.11 · 2박 3일</td></tr>
+      <tr><td>Button</td><td>500</td><td>14 / 21</td><td>텍스트 버튼(완료·삭제), 진행 표시, 링크성 텍스트</td><td class="t-button">추천 아이템 모두 보기</td></tr>
+      <tr><td>Button Strong</td><td>600</td><td>14 / 21</td><td>선택 칩, 달력 날짜, 번호 마커</td><td class="t-button-strong">하이킹·등산</td></tr>
+      <tr><td>Legal</td><td>500</td><td>9 / 12</td><td>C-01 최하단 면책 조항 전용. 다른 곳에는 쓰지 않음</td><td class="t-legal" style="max-width:220px;display:block;color:var(--text-3)">관련 법령 및 규정은 국가와 시기에 따라 사전 예고 없이 변경될 수 있습니다.</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 03 -->
+<section id="s3">
+  <h2><span class="num">03</span>컬러 · 텍스트 위계</h2>
+  <p class="lead">팔레트 6색 + 레터박스. 텍스트 위계는 색을 바꾸지 않고 <code>#3A3A3A</code>의 투명도만 조정합니다.</p>
+  <div class="panel">
+    <h3>기본 팔레트</h3>
+    <div class="swatches">
+      <div class="sw"><div class="chip" style="background:#FFFFFF;border-bottom:1px solid #F2F2F2"></div><div class="meta"><div class="name">Background</div><div class="hex">#FFFFFF</div></div></div>
+      <div class="sw"><div class="chip" style="background:#F2F2F2"></div><div class="meta"><div class="name">Background Sub</div><div class="hex">#F2F2F2</div></div></div>
+      <div class="sw"><div class="chip" style="background:#368FFF"></div><div class="meta"><div class="name">Primary</div><div class="hex">#368FFF</div></div></div>
+      <div class="sw"><div class="chip" style="background:#1F3D88"></div><div class="meta"><div class="name">Primary Sub</div><div class="hex">#1F3D88</div></div></div>
+      <div class="sw"><div class="chip" style="background:#3A3A3A"></div><div class="meta"><div class="name">Text Default</div><div class="hex">#3A3A3A</div></div></div>
+      <div class="sw"><div class="chip" style="background:#E5484D"></div><div class="meta"><div class="name">Accent</div><div class="hex">#E5484D</div></div></div>
+      <div class="sw"><div class="chip" style="background:#DADBDF"></div><div class="meta"><div class="name">Letterbox</div><div class="hex">#DADBDF</div></div></div>
+    </div>
+
+    <h3>텍스트 위계</h3>
+    <table>
+      <tr><th style="width:130px">토큰</th><th style="width:150px">값</th><th>용도</th><th style="width:170px">예시</th></tr>
+      <tr><td>Text 1</td><td>opacity 1.0</td><td>제목, 본문, 아이템명, 메뉴 항목</td><td style="font-weight:600">여권</td></tr>
+      <tr><td>Text 2</td><td>opacity 0.75</td><td>태그 텍스트 (회색 면 위)</td><td style="color:var(--text-2)">사진 여행</td></tr>
+      <tr><td>Text 3</td><td>opacity 0.5</td><td>보조 설명, placeholder, 요일, 비활성 라벨, “취소”</td><td style="color:var(--text-3)">여권사본, 여권사진 여분</td></tr>
+      <tr><td>Line</td><td>opacity 0.25</td><td>보더, 미체크 체크박스 테두리, 비활성 아이콘</td><td><span style="display:inline-block;width:60px;height:0;border-top:1px solid var(--line)"></span></td></tr>
+      <tr><td>Text Disabled</td><td>opacity 0.12</td><td>“완료” 배지 배경</td><td><span class="badge badge--off">완료</span></td></tr>
+    </table>
+
+    <h3>텍스트 컬러 적용표</h3>
+    <p style="font-size:14px;line-height:22px;color:var(--text-2);margin:0 0 12px">Figma에서 실제로 쓰인 값입니다. 이 표에 없는 조합은 만들지 않습니다.</p>
+    <table>
+      <tr><th style="width:230px">텍스트</th><th style="width:150px">컬러</th><th>비고</th></tr>
+      <tr><td>화면 제목, 아이템명, 카드 제목, 메뉴 항목, 다이얼로그 제목, 달력 날짜</td><td>Text 1 #3A3A3A</td><td>기본값</td></tr>
+      <tr><td>활동 태그</td><td>Text 2</td><td>회색 면 위 텍스트</td></tr>
+      <tr><td>보조 설명, 날짜, 요일, placeholder, 진행 표시, “추천 아이템 모두 보기”, “취소”, 비활성 “삭제”</td><td>Text 3</td><td>—</td></tr>
+      <tr><td>“아이템 추가”, “직접 입력”, “완료”, 다이얼로그 “확인”, D-day 배지, 번호 마커, 안내 배지</td><td>Primary</td><td>액션·링크성 텍스트</td></tr>
+      <tr><td>카테고리 제목</td><td>Primary Sub</td><td>체크리스트 그룹 헤더 전용</td></tr>
+      <tr><td>선택된 칩, 선택된 달력 날짜, CTA 라벨</td><td>#FFFFFF</td><td>Primary 면 위</td></tr>
+      <tr><td>비활성 “확인”</td><td>Line</td><td>—</td></tr>
+    </table>
+
+    <h3>Accent(#E5484D) 사용 범위</h3>
+    <p style="font-size:14px;line-height:22px;color:var(--text-2);margin:0 0 12px">Accent는 아래 4곳에만 씁니다.</p>
+    <table>
+      <tr><th style="width:230px">사용처</th><th>형태</th></tr>
+      <tr><td>필수 입력 표시</td><td>제목 뒤 <code>*</code> 텍스트 (A-02 “어디로 가세요? <span class="req">*</span>”)</td></tr>
+      <tr><td>찜 하트 (선택 시)</td><td>fill Accent — 미선택 시에는 Accent가 아니라 Letterbox(#DADBDF)로 채워집니다</td></tr>
+      <tr><td>삭제 선택 모드 체크박스</td><td>fill Accent + 흰 체크마크</td></tr>
+      <tr><td>선택 액션바 “삭제”</td><td>활성 상태 텍스트. 0개 선택일 때는 Text 3</td></tr>
+    </table>
+    <div class="note">
+      드롭다운 메뉴의 “삭제 / 카테고리 삭제하기”와 다이얼로그의 “확인”은 Accent가 아닙니다.
+      메뉴 항목은 Text 1, 다이얼로그 확인은 Primary, 취소는 Text 3입니다.
+    </div>
+  </div>
+</section>
+
+<!-- 04 -->
+<section id="s4">
+  <h2><span class="num">04</span>레이아웃 · 스페이싱</h2>
+  <p class="lead">스페이싱은 4px 배수만 사용합니다.</p>
+  <div class="panel">
+    <h3>가로 여백</h3>
+    <table>
+      <tr><th style="width:210px">영역</th><th style="width:130px">여백</th><th>비고</th></tr>
+      <tr><td>화면 기본 콘텐츠</td><td>24px</td><td>제목·본문·CTA. 버튼 폭 345px</td></tr>
+      <tr><td>입력 화면 본문(A-01~03)</td><td>32px</td><td>질문 제목·설명·칩 그룹·달력</td></tr>
+      <tr><td>섹션 헤더 / 상단 바</td><td>20px</td><td>카테고리 헤더, 상단 바 아이콘</td></tr>
+      <tr><td>리스트 아이템</td><td>좌 28px · 우 20px</td><td>좌측 28px 체크박스, 텍스트는 72px부터</td></tr>
+      <tr><td>단순 리스트 행(D-01)</td><td>좌우 32px</td><td>체크박스 없는 행. divider는 28px 기준</td></tr>
+      <tr><td>divider</td><td>left/right 28px</td><td>폭 337px, 1px Background Sub</td></tr>
+    </table>
+    <h3>세로 리듬</h3>
+    <table>
+      <tr><th style="width:210px">항목</th><th>값</th></tr>
+      <tr><td>상단 바</td><td>56px</td></tr>
+      <tr><td>진행 바</td><td>상단 바 아래 붙임, 좌우 32px, 높이 3px</td></tr>
+      <tr><td>질문 제목 → 설명</td><td>12px</td></tr>
+      <tr><td>설명 → 칩 그룹 / 달력</td><td>20px, 칩 사이 gap 8px</td></tr>
+      <tr><td>섹션 간격</td><td>48px</td></tr>
+      <tr><td>리스트 행</td><td>단일행 48px · 설명 포함 64px · 단순 리스트 56px</td></tr>
+      <tr><td>카테고리 헤더</td><td>60px</td></tr>
+      <tr><td>카드 간격</td><td>12px</td></tr>
+      <tr><td>하단 고정 CTA</td><td>화면 하단에서 20px, 버튼 56px</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 05 -->
+<section id="s5">
+  <h2><span class="num">05</span>컴포넌트</h2>
+  <p class="lead">모든 미리보기는 Figma 실제 색상값으로 렌더되어 있습니다.</p>
+
+  <div class="panel">
+    <h3>5.1 Top Bar</h3>
+    <div class="spec">
+      <div class="stage">
+        <div class="label">홈형 (뒤로가기 + 케밥)</div>
+        <div class="canvas"><div class="topbar">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span class="grow"></span>
+          <svg class="ic-kebab" viewBox="0 0 2 18"><circle cx="1" cy="1" r="1"/><circle cx="1" cy="9" r="1"/><circle cx="1" cy="17" r="1"/></svg>
+        </div></div>
+        <div class="label">입력형 (진행 표시 + 프로그레스)</div>
+        <div class="canvas">
+          <div class="topbar"><svg class="icon" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span class="grow"></span><span class="t-button" style="color:var(--text-3)">2 / 3</span></div>
+          <div class="progress"><div class="track"><div class="fill" style="width:67%"></div></div></div>
+          <div style="height:16px"></div>
+        </div>
+        <div class="label">편집 모드 (완료)</div>
+        <div class="canvas"><div class="topbar">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span class="grow"></span>
+          <span class="t-button" style="color:var(--primary)">완료</span>
+        </div></div>
+        <div class="label">모달형 (닫기 + 타이틀)</div>
+        <div class="canvas"><div class="topbar topbar--modal">
+          <svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M5 5l14 14M19 5L5 19"/></svg>
+          <span class="ttl">카테고리 추가</span>
+        </div></div>
+      </div>
+      <div>
+        <table>
+          <tr><th style="width:140px">항목</th><th>값</th></tr>
+          <tr><td>높이</td><td>56px, 좌우 20px (모달형만 24px)</td></tr>
+          <tr><td>아이콘</td><td>뒤로가기 24×24 · 닫기(✕) 16×16 · 케밥 2×18, Text 1</td></tr>
+          <tr><td>모달형 타이틀</td><td>SubTitle 16/600 Text 1, 하단 1px Background Sub</td></tr>
+          <tr><td>진행 표시</td><td>Button 14/500 Text 3, “1 / 3” 형식, 우측 정렬</td></tr>
+          <tr><td>진행 바</td><td>좌우 32px · 3px · radius 2px. track Background Sub, fill Primary</td></tr>
+          <tr><td>“완료”</td><td>Button 14/500 Primary, 편집·삭제 선택 모드에서만 노출</td></tr>
+          <tr><td>스크롤 동작</td><td>C-01 상단 바는 항상 상단 플로팅</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>5.2 Button</h3>
+    <div class="spec">
+      <div class="stage">
+        <div class="label">Primary · Disabled · Secondary</div>
+        <button class="btn btn--primary">체크리스트 생성하기</button>
+        <button class="btn btn--disabled" disabled>다음</button>
+        <button class="btn btn--secondary">아니요</button>
+        <div class="label" style="margin-top:6px">Text Button</div>
+        <div style="text-align:center;color:var(--text-3)" class="t-button">추천 아이템 모두 보기</div>
+      </div>
+      <div>
+        <table>
+          <tr><th style="width:120px">Variant</th><th>스펙</th></tr>
+          <tr><td>공통</td><td>높이 56px · radius 12px · 폭 345px(전폭). 라벨 Title2 20/600 중앙</td></tr>
+          <tr><td>Primary</td><td>bg Primary · 라벨 #FFFFFF</td></tr>
+          <tr><td>Disabled</td><td>bg Line · 라벨 #FFFFFF</td></tr>
+          <tr><td>Secondary</td><td>bg Background · border 2px Background Sub · 라벨 Text 3</td></tr>
+          <tr><td>Text Button</td><td>Button 14/500. “추천 아이템 모두 보기” Text 3, “완료·직접 입력” Primary, 액션바 “삭제” Accent</td></tr>
+        </table>
+        <h4>활성화 조건</h4>
+        <ul class="clean">
+          <li>A-01 시작하기 — 항상 활성</li>
+          <li>A-02 다음 — 목적지 <i>and</i> 날짜 입력 완료 시 활성</li>
+          <li>A-03 체크리스트 생성하기 — 동반자 <i>and</i> 활동 입력 완료 시 활성</li>
+          <li>다이얼로그 확인 — 빈 값 / 30자 초과 / 중복 카테고리명일 때 비활성</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>5.3 Selection Chip</h3>
+    <div class="spec">
+      <div class="stage">
+        <div class="label">단일 선택 (A-02 목적지) · 다중 선택 (A-03 동반자·활동)</div>
+        <div style="background:var(--bg);padding:16px;border-radius:8px">
+          <div class="chips">
+            <button class="chip-sel" aria-pressed="true">일본</button>
+            <button class="chip-sel" aria-pressed="false">베트남</button>
+            <button class="chip-sel" aria-pressed="false">중국</button>
+            <button class="chip-sel" aria-pressed="false">미국</button>
+            <button class="chip-sel" aria-pressed="false">싱가포르</button>
+          </div>
+        </div>
+      </div>
+      <div>
+        <table>
+          <tr><th style="width:130px">항목</th><th>값</th></tr>
+          <tr><td>패딩 / radius</td><td>8px 16px · 8px (높이 37px)</td></tr>
+          <tr><td>텍스트</td><td>Button Strong 14/600</td></tr>
+          <tr><td>gap</td><td>8px 가로·세로 동일</td></tr>
+          <tr><td>Default</td><td>bg Background · border 1px Line · 텍스트 Text 1</td></tr>
+          <tr><td>Selected</td><td>bg Primary · border 1px Primary · 텍스트 #FFFFFF</td></tr>
+          <tr><td>선택 카운터</td><td>섹션 우측 상단, Caption Text 3, “{N}개 선택됨” 실시간</td></tr>
+        </table>
+        <h4>동작 규칙</h4>
+        <ul class="clean">
+          <li>목적지(A-02) — 단일 선택, 기본 미선택, 필수. 7종: 일본·베트남·중국·미국·태국·필리핀·싱가포르</li>
+          <li>동반자(A-03) — 다중 선택. “혼자”와 다른 항목의 동시 선택 허용. 7종: 혼자·친구와·연인과·배우자와·아이와·부모님과·반려동물</li>
+          <li>활동(A-03) — 다중 선택, 미선택 허용. 10종: 사진 여행·캠핑·하이킹·등산·골프·수영·물놀이·온천·스파·겨울 스포츠·놀이공원·페스티벌·종교시설·사원</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>5.4 Checklist Item Row</h3>
+    <div class="spec">
+      <div class="stage">
+        <div class="label">기본 상태 — 텍스트 링크 “아이템 추가”</div>
+        <div class="canvas">
+          <div class="row row--sub"><span class="cbx cbx--off"></span><span class="body"><span class="name">콘택트렌즈 용액</span><span class="desc">100ml 이하 소분</span></span>
+            <svg class="ic-heart" viewBox="0 0 18 16"><path d="M9 15C9 15 1.6 10.2 1.6 5.6 1.6 3.1 3.5 1.2 5.9 1.2 7.2 1.2 8.4 1.9 9 3 9.6 1.9 10.8 1.2 12.1 1.2 14.5 1.2 16.4 3.1 16.4 5.6 16.4 10.2 9 15 9 15Z"/></svg></div>
+          <div class="row"><span class="cbx cbx--on"><svg viewBox="0 0 12 12"><path d="M2.6 6.2 5 8.6 9.4 3.6"/></svg></span><span class="body"><span class="name">카메라 충전기</span></span>
+            <svg class="ic-heart ic-heart--off" viewBox="0 0 18 16"><path d="M9 15C9 15 1.6 10.2 1.6 5.6 1.6 3.1 3.5 1.2 5.9 1.2 7.2 1.2 8.4 1.9 9 3 9.6 1.9 10.8 1.2 12.1 1.2 14.5 1.2 16.4 3.1 16.4 5.6 16.4 10.2 9 15 9 15Z"/></svg></div>
+          <div class="row"><span class="cbx cbx--add"></span><span class="body"><span class="name name--add">아이템 추가</span></span></div>
+        </div>
+        <div class="label">“아이템 추가” 탭 이후 — 입력행이 항목 목록 맨 아래에 위치</div>
+        <div class="canvas">
+          <div class="row row--sub"><span class="cbx cbx--off"></span><span class="body"><span class="name">콘택트렌즈 용액</span><span class="desc">100ml 이하 소분</span></span>
+            <svg class="ic-heart" viewBox="0 0 18 16"><path d="M9 15C9 15 1.6 10.2 1.6 5.6 1.6 3.1 3.5 1.2 5.9 1.2 7.2 1.2 8.4 1.9 9 3 9.6 1.9 10.8 1.2 12.1 1.2 14.5 1.2 16.4 3.1 16.4 5.6 16.4 10.2 9 15 9 15Z"/></svg></div>
+          <div class="row"><span class="cbx cbx--on"><svg viewBox="0 0 12 12"><path d="M2.6 6.2 5 8.6 9.4 3.6"/></svg></span><span class="body"><span class="name">카메라 충전기</span></span>
+            <svg class="ic-heart ic-heart--off" viewBox="0 0 18 16"><path d="M9 15C9 15 1.6 10.2 1.6 5.6 1.6 3.1 3.5 1.2 5.9 1.2 7.2 1.2 8.4 1.9 9 3 9.6 1.9 10.8 1.2 12.1 1.2 14.5 1.2 16.4 3.1 16.4 5.6 16.4 10.2 9 15 9 15Z"/></svg></div>
+          <div class="row"><span class="cbx cbx--add"></span><span class="body"><span class="name name--ph">직접 아이템을 입력해주세요</span></span>
+            <svg class="ic-plus" viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></svg></div>
+        </div>
+        <div class="label">입력 중(1~30자) — <code>+</code> Primary · 30자 초과 — <code>+</code> Text 3(회색)로 변경</div>
+        <div class="canvas">
+          <div class="row"><span class="cbx cbx--add"></span><span class="body"><span class="name">필기도구</span></span>
+            <svg class="ic-plus" viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></svg></div>
+          <div class="row"><span class="cbx cbx--add"></span><span class="body"><span class="name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">여행 갈 때 꼭 챙겨야 하는 여권과 지갑 그리고 충전기</span></span>
+            <svg class="ic-plus ic-plus--off" viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></svg></div>
+        </div>
+        <div class="label">편집 모드 — 직접 생성 아이템(연필+X) · 자동 생성 아이템(X만)</div>
+        <div class="canvas">
+          <div class="row"><span class="cbx cbx--off"></span><span class="body"><span class="name">콘택트렌즈 용액</span></span>
+            <span class="ic-edit-actions">
+              <svg class="ic-pencil" viewBox="0 0 16 16"><path d="M11 2.2a1.8 1.8 0 0 1 2.55 2.55L5.2 13.1l-3.4 1 1-3.4Z"/></svg>
+              <svg class="ic-x" viewBox="0 0 14 14"><path d="M2.5 2.5l9 9M11.5 2.5l-9 9"/></svg>
+            </span></div>
+          <div class="row"><span class="cbx cbx--on"><svg viewBox="0 0 12 12"><path d="M2.6 6.2 5 8.6 9.4 3.6"/></svg></span><span class="body"><span class="name">카메라 충전기</span></span>
+            <span class="ic-edit-actions">
+              <svg class="ic-pencil" viewBox="0 0 16 16"><path d="M11 2.2a1.8 1.8 0 0 1 2.55 2.55L5.2 13.1l-3.4 1 1-3.4Z"/></svg>
+              <svg class="ic-x" viewBox="0 0 14 14"><path d="M2.5 2.5l9 9M11.5 2.5l-9 9"/></svg>
+            </span></div>
+        </div>
+        <div class="canvas">
+          <div class="row"><span class="cbx cbx--off"></span><span class="body"><span class="name">여권</span></span>
+            <svg class="ic-x" viewBox="0 0 14 14"><path d="M2.5 2.5l9 9M11.5 2.5l-9 9"/></svg></div>
+          <div class="row"><span class="cbx cbx--on"><svg viewBox="0 0 12 12"><path d="M2.6 6.2 5 8.6 9.4 3.6"/></svg></span><span class="body"><span class="name">환전</span></span>
+            <svg class="ic-x" viewBox="0 0 14 14"><path d="M2.5 2.5l9 9M11.5 2.5l-9 9"/></svg></div>
+        </div>
+        <div class="label">삭제 선택 모드 — 아이콘은 편집 모드와 동일, 선택된 체크박스만 Accent</div>
+        <div class="canvas">
+          <div class="row"><span class="cbx cbx--del"><svg viewBox="0 0 12 12"><path d="M2.6 6.2 5 8.6 9.4 3.6"/></svg></span><span class="body"><span class="name">콘택트렌즈 용액</span></span>
+            <span class="ic-edit-actions">
+              <svg class="ic-pencil" viewBox="0 0 16 16"><path d="M11 2.2a1.8 1.8 0 0 1 2.55 2.55L5.2 13.1l-3.4 1 1-3.4Z"/></svg>
+              <svg class="ic-x" viewBox="0 0 14 14"><path d="M2.5 2.5l9 9M11.5 2.5l-9 9"/></svg>
+            </span></div>
+          <div class="row"><span class="cbx cbx--off"></span><span class="body"><span class="name">카메라 충전기</span></span>
+            <span class="ic-edit-actions">
+              <svg class="ic-pencil" viewBox="0 0 16 16"><path d="M11 2.2a1.8 1.8 0 0 1 2.55 2.55L5.2 13.1l-3.4 1 1-3.4Z"/></svg>
+              <svg class="ic-x" viewBox="0 0 14 14"><path d="M2.5 2.5l9 9M11.5 2.5l-9 9"/></svg>
+            </span></div>
+          <div class="row row--muted"><span class="cbx cbx--add"></span><span class="body"><span class="name name--add">아이템 추가</span></span></div>
+        </div>
+      </div>
+      <div>
+        <table>
+          <tr><th style="width:140px">항목</th><th>값</th></tr>
+          <tr><td>높이</td><td>단일행 48px · 설명 포함 64px</td></tr>
+          <tr><td>체크박스</td><td>20×20 원형, 좌측 28px<br>미체크 border 1.5px Line<br>체크 fill Primary + 흰 체크마크<br>삭제 선택 fill Accent + 흰 체크마크<br>추가/입력 행 1.5px dashed Primary</td></tr>
+          <tr><td>체크마크</td><td>12×12, stroke 2px #FFFFFF, round cap, 원 정중앙 배치</td></tr>
+          <tr><td>텍스트 시작</td><td>좌측 72px</td></tr>
+          <tr><td>아이템명</td><td>Body 16/24 Text 1</td></tr>
+          <tr><td>보조 설명</td><td>Caption Text 3, 상단 여백 2px</td></tr>
+          <tr><td>divider</td><td>행 상단, left/right 28px, 1px Background Sub, 첫 행 제외</td></tr>
+          <tr><td>찜 아이콘</td><td>하트 18×16, 우측 20px, 항상 꽉 찬 형태(아웃라인 없음)<br>선택 fill Accent(빨강) / 미선택 fill Letterbox(#DADBDF) — 색만 다르고 모양은 동일</td></tr>
+          <tr><td>편집 모드 아이콘</td><td>기본 모드의 하트 자리를 대체. 직접 생성 아이템은 연필(15×15)+X(13×13) 2개, gap 10px, 우측 정렬<br>자동 생성 아이템(일정 기반 생성)은 X만 노출, 연필 없음<br>둘 다 Text 3, 우측 20px 정렬</td></tr>
+          <tr><td>아이템 추가 행</td><td>기본은 텍스트 링크(Primary). 탭하면 같은 위치(항목 목록 맨 아래)에서 입력 필드로 전환. 삭제 선택 모드에서는 opacity 0.25 + 비활성</td></tr>
+          <tr><td>인라인 입력</td><td>placeholder Text 3, 입력 시 Text 1, 캐럿 Primary<br>우측 <code>+</code> 24×24 stroke 2px — 미입력·1~30자 입력 시 Primary(미입력은 클릭만 비활성), 30자 초과 시 Text 3(회색)로 바뀌며 클릭도 비활성</td></tr>
+        </table>
+        <h4>동작 규칙</h4>
+        <ul class="clean">
+          <li>준비 완료 체크와 삭제 선택은 상태가 분리됩니다. 선택 모드를 끝내도 기존 체크 상태는 유지</li>
+          <li>기본 정렬은 미체크 아이템 우선</li>
+          <li>편집 모드에서 연필 클릭 → 이름 변경 다이얼로그, X 클릭 → 즉시 삭제 + 되돌리기 토스트 (5.13 참고)</li>
+          <li>삭제 선택 모드에서도 연필·X는 그대로 동작. 체크박스는 여러 아이템을 모아 하단 액션바로 한 번에 삭제할 때만 사용</li>
+          <li>“아이템 추가” 텍스트를 누르면 같은 자리(항목 목록 맨 아래)가 입력 필드로 바뀌고 자동 포커스</li>
+          <li>글자 수 제한 — 30자를 넘겨도 입력은 자유롭게 허용합니다. 30자 초과 시 <code>+</code>가 Text 3(회색)로 바뀌며 클릭이 막히고, 클릭을 시도하면 “최대 30자까지 입력할 수 있어요” 토스트가 뜹니다. 미입력 상태의 <code>+</code>는 Primary 그대로이고 클릭만 막힙니다</li>
+          <li><code>+</code> 클릭, Enter, 모바일 키보드 “다음”으로 추가. 추가되면 새로 생긴 “아이템 추가” 행의 입력 필드로 포커스 자동 이동</li>
+          <li>카테고리 내 모든 아이템이 삭제되면 “아이템 추가” 행만 남습니다</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>5.5 Category Section</h3>
+    <div class="spec">
+      <div class="stage">
+        <div class="label">기본 — 펼침 / 접힘(개수 노출), chevron</div>
+        <div class="canvas">
+          <div class="cat-head"><span class="title">나만의 준비물</span><span class="grow"></span><span class="hint">모든 여행 일정에 담겨요</span>
+            <svg class="chev" viewBox="0 0 16 16"><path d="M3 10l5-5 5 5"/></svg></div>
+          <div class="row"><span class="cbx cbx--off"></span><span class="body"><span class="name">여권</span></span></div>
+          <div class="cat-head"><span class="title">필수 준비물 · 12</span><span class="grow"></span>
+            <svg class="chev" viewBox="0 0 16 16"><path d="M3 6l5 5 5-5"/></svg></div>
+        </div>
+        <div class="label">편집 모드 — chevron이 미트볼로 교체</div>
+        <div class="canvas">
+          <div class="cat-head"><span class="title">나만의 준비물</span><span class="grow"></span><span class="hint">모든 여행 일정에 담겨요</span>
+            <svg class="ic-meatball" viewBox="0 0 16 2"><circle cx="1" cy="1" r="1"/><circle cx="8" cy="1" r="1"/><circle cx="15" cy="1" r="1"/></svg></div>
+          <div class="row"><span class="cbx cbx--off"></span><span class="body"><span class="name">여권</span></span>
+            <svg class="ic-x" viewBox="0 0 14 14"><path d="M2.5 2.5l9 9M11.5 2.5l-9 9"/></svg></div>
+          <div class="cat-head"><span class="title">기본 짐싸기</span><span class="grow"></span>
+            <svg class="ic-meatball" viewBox="0 0 16 2"><circle cx="1" cy="1" r="1"/><circle cx="8" cy="1" r="1"/><circle cx="15" cy="1" r="1"/></svg></div>
+        </div>
+      </div>
+      <div>
+        <table>
+          <tr><th style="width:140px">항목</th><th>값</th></tr>
+          <tr><td>헤더 높이</td><td>60px, 좌우 20px</td></tr>
+          <tr><td>카테고리명</td><td>SubTitle 16/600 Primary Sub</td></tr>
+          <tr><td>아이템 수</td><td>접힌 상태에만 노출. 표기는 “{카테고리명} · {N}” — 이름과 개수 사이에 가운뎃점을 넣고 앞뒤 각 한 칸 띄웁니다 (예: “필수 준비물 · 12”). 개수도 제목과 같은 Primary Sub</td></tr>
+          <tr><td>우측 설명</td><td>Caption Text 3. “나만의 준비물” 카테고리에만 고정 문구가 붙고, 나머지 카테고리는 아무것도 표시하지 않습니다</td></tr>
+          <tr><td>기본 모드 우측 아이콘</td><td>chevron 16×16, stroke 1.6px Text 3, 헤더 기준 세로 중앙 정렬. 펼침 ∧ / 접힘 ∨</td></tr>
+          <tr><td>편집 모드 우측 아이콘</td><td>chevron 자리를 미트볼(16×2)로 완전히 교체. 펼침·접힘 토글 없이 항상 이 상태. 메뉴에 “카테고리 삭제하기”만 노출</td></tr>
+          <tr><td>기본 상태</td><td>펼침</td></tr>
+          <tr><td>섹션 구분</td><td>블록 상단 1px Background Sub</td></tr>
+        </table>
+        <h4>우측 설명 문구 (고정)</h4>
+        <table>
+          <tr><th style="width:210px">카테고리 출처</th><th>문구</th></tr>
+          <tr><td>나만의 준비물</td><td>모든 여행 일정에 담겨요</td></tr>
+          <tr><td>그 외 모든 카테고리<br>(직접 입력으로 추가 / 일정 정보 기반 자동 생성)</td><td>표시하지 않음</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>5.6 Simple List Row</h3>
+    <div class="spec">
+      <div class="stage">
+        <div class="label">D-01 프리셋 카테고리 목록</div>
+        <div class="canvas">
+          <div style="padding:16px 32px 0"><span class="t-button" style="color:var(--primary)">직접 입력</span></div>
+          <div style="height:12px"></div>
+          <div class="listrow"><span class="lab">트리플에서 챙기기</span><svg class="ic-plus" viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></svg></div>
+          <div class="listrow"><span class="lab">통신/교통 준비</span><svg class="ic-plus" viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></svg></div>
+          <div class="listrow"><span class="lab">아이 준비물</span><svg class="ic-plus" viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></svg></div>
+        </div>
+      </div>
+      <div>
+        <table>
+          <tr><th style="width:140px">항목</th><th>값</th></tr>
+          <tr><td>높이</td><td>56px, 좌우 32px</td></tr>
+          <tr><td>라벨</td><td>Body 16/24 Text 1</td></tr>
+          <tr><td>우측 아이콘</td><td><code>+</code> 24×24, stroke 2px Primary, round cap, 터치 영역 44×44</td></tr>
+          <tr><td>divider</td><td>행 상단, left/right 28px, 1px Background Sub</td></tr>
+          <tr><td>“직접 입력”</td><td>목록 위 링크, Button 14/500 Primary, 좌측 32px</td></tr>
+        </table>
+        <h4>동작 규칙</h4>
+        <ul class="clean">
+          <li>행 전체가 터치 영역. 선택 즉시 카테고리가 체크리스트에 등록되고 D-01은 닫힘</li>
+          <li>이미 등록된 카테고리는 목록에서 제외합니다</li>
+          <li>“직접 입력” 클릭 시 입력 다이얼로그 노출</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>5.7 Card</h3>
+    <div class="spec">
+      <div class="stage">
+        <div class="label">추천 카드 (캐러셀) · 여행 카드 · 등록 카드</div>
+        <div class="reco">
+          <div><div class="txt">여행자님이 좋아하실 상품을 준비하고 있어요.</div><div class="src">트리플 추천</div></div>
+          <div class="thumb"></div>
+        </div>
+        <div class="trip">
+          <svg class="ic-meatball kb" viewBox="0 0 16 2"><circle cx="1" cy="1" r="1"/><circle cx="8" cy="1" r="1"/><circle cx="15" cy="1" r="1"/></svg>
+          <div class="head"><span class="place">일본</span><span class="badge">여행중</span></div>
+          <div class="when">2026.10.09 ~ 2026.10.11 · 2박 3일</div>
+          <div class="tags"><span class="tag">사진 여행</span><span class="tag">하이킹·등산</span><span class="tag">온천·스파</span></div>
+        </div>
+        <div class="trip trip--new">
+          <div><div class="place">새 여행 등록하기</div><div class="when" style="margin-bottom:0">나에게 맞는 준비물을 정리해 드려요</div></div>
+          <div class="fab"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>
+        </div>
+        <div class="label">일정 공유하기 버튼 (B-01, 카드 목록 하단)</div>
+        <div style="display:flex;justify-content:center;padding:8px 0">
+          <button class="share-btn">일정 공유하기</button>
+        </div>
+      </div>
+      <div>
+        <h4>추천 카드 (C-01)</h4>
+        <table>
+          <tr><td style="width:130px">크기</td><td>298 × 107px, radius 8px, 그림자 있음</td></tr>
+          <tr><td>패딩</td><td>20px, 썸네일 50×50 radius 4px</td></tr>
+          <tr><td>텍스트</td><td>상품명 Body 16/20 Text 1 · 출처 Caption Text 3</td></tr>
+          <tr><td>동작</td><td>안내 문구 카드 2개를 캐러셀로 고정 노출, 클릭 불가</td></tr>
+        </table>
+        <h4>여행 카드 (B-01)</h4>
+        <table>
+          <tr><td style="width:130px">크기</td><td>345px 폭 · 높이 가변(기본 114px) · radius 16px · border 1px Line</td></tr>
+          <tr><td>패딩 / 간격</td><td>16px 24px 20px · 카드 간 12px</td></tr>
+          <tr><td>구성</td><td>지명(SubTitle Text 1) + D-day 배지 → 기간(Caption Text 3) → 활동 태그 · 우상단 미트볼</td></tr>
+          <tr><td>기간 표기</td><td>YYYY.MM.DD ~ YYYY.MM.DD · N박 N일</td></tr>
+          <tr><td>동작</td><td>카드 클릭 → C-01. 미트볼 → “삭제하기” 메뉴</td></tr>
+        </table>
+        <h4>등록 카드</h4>
+        <table>
+          <tr><td style="width:130px">배경</td><td>Background Sub, 보더 없음, radius 16px</td></tr>
+          <tr><td>텍스트</td><td>제목 SubTitle Text 1 · 설명 Caption Text 3</td></tr>
+          <tr><td>+ 버튼</td><td>원형 40×40 bg Primary, 내부 아이콘 20×20 stroke 2.2px #FFFFFF</td></tr>
+        </table>
+        <h4>일정 공유하기 버튼 (B-01)</h4>
+        <table>
+          <tr><td style="width:130px">크기</td><td>높이 32px · 좌우 패딩 20px(내용 폭 기준 111px) · radius 999px(pill)</td></tr>
+          <tr><td>스타일</td><td>bg Primary · 텍스트 흰색 Button 14/500 · 아이콘 없이 텍스트만</td></tr>
+          <tr><td>위치</td><td>여행 카드·등록 카드 목록 하단, 화면 가로 중앙</td></tr>
+          <tr><td>동작</td><td>클릭 시 공유 링크를 클립보드에 복사하고 하단에 “일정 링크가 복사되었습니다” 토스트 노출<br>이 링크로 접속하면 계정처럼 동작해 동일한 “내 여행 준비” 화면으로 진입 가능</td></tr>
+        </table>
+        <h4>배지 · 태그</h4>
+        <table>
+          <tr><td style="width:130px">배지 3상태</td><td>여행 전 D-{N} / 여행 중 여행중 / 여행 후 완료<br>높이 24px · radius 16px · 좌우 8px · Caption 12/600<br>여행 전·중 bg Primary 12% 텍스트 Primary<br>완료 bg Text Disabled 텍스트 Text 3</td></tr>
+          <tr><td>태그</td><td>패딩 6px 10px · radius 8px · bg Background Sub · 텍스트 Text 2 Caption</td></tr>
+        </table>
+        <h4>일정 정렬 규칙</h4>
+        <ul class="clean">
+          <li>1차 — 여행 중 → 다가오는 여행 → 지난 여행</li>
+          <li>2차 — 여행 중: 도착일 빠른 순 / 다가오는 여행: 출발일 빠른 순 / 지난 여행: 도착일 최근 순</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>5.8 Calendar</h3>
+    <div class="spec">
+      <div class="stage center">
+        <div class="label" style="align-self:flex-start">A-02 기간 선택</div>
+        <div class="cal">
+          <div class="capt"><button aria-label="이전 달">‹</button><span class="m">2026년 10월</span><button aria-label="다음 달">›</button></div>
+          <table>
+            <thead><tr><th>일</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th>토</th></tr></thead>
+            <tbody>
+              <tr><td></td><td></td><td></td><td></td><td><span class="d">1</span></td><td><span class="d">2</span></td><td><span class="d">3</span></td></tr>
+              <tr><td><span class="d">4</span></td><td><span class="d">5</span></td><td><span class="d">6</span></td><td><span class="d">7</span></td><td><span class="d">8</span></td><td><span class="d is-edge">9</span></td><td><span class="d is-range">10</span></td></tr>
+              <tr><td><span class="d is-range">11</span></td><td><span class="d is-range">12</span></td><td><span class="d is-edge">13</span></td><td><span class="d">14</span></td><td><span class="d">15</span></td><td><span class="d">16</span></td><td><span class="d">17</span></td></tr>
+              <tr><td><span class="d">18</span></td><td><span class="d">19</span></td><td><span class="d">20</span></td><td><span class="d">21</span></td><td><span class="d">22</span></td><td><span class="d">23</span></td><td><span class="d">24</span></td></tr>
+              <tr><td><span class="d">25</span></td><td><span class="d">26</span></td><td><span class="d">27</span></td><td><span class="d">28</span></td><td><span class="d">29</span></td><td><span class="d">30</span></td><td><span class="d">31</span></td></tr>
+            </tbody>
+          </table>
+          <div class="sum"><span>2026.10.09 ~ 2026.10.13</span><span class="r">4박 5일</span></div>
+        </div>
+      </div>
+      <div>
+        <table>
+          <tr><th style="width:140px">항목</th><th>값</th></tr>
+          <tr><td>컨테이너</td><td>329 × 326px · radius 16px · border 2px Background Sub · 패딩 24px 22px 20px</td></tr>
+          <tr><td>캡션</td><td>“YYYY년 M월” SubTitle 16/600 Text 1 중앙. 좌우 화살표 10×20 Text 1</td></tr>
+          <tr><td>요일 헤더</td><td>Caption 12/500 Text 3, 7열 균등</td></tr>
+          <tr><td>날짜 셀</td><td>높이 40px, 셀 간격 1px, Button Strong 14/600</td></tr>
+          <tr><td>Default</td><td>배경 없음, 텍스트 Text 1</td></tr>
+          <tr><td>Edge (출발·도착일)</td><td>bg Primary · 텍스트 #FFFFFF · radius 8px</td></tr>
+          <tr><td>Range (사이 날짜)</td><td>bg Background Sub · 텍스트 Text 1 · radius 8px</td></tr>
+          <tr><td>Hidden / 비활성</td><td>빈 셀 또는 Line 텍스트, 클릭 불가</td></tr>
+          <tr><td>요약 영역</td><td>상단 1px Background Sub<br>좌 “YYYY.MM.DD ~ YYYY.MM.DD” Text 1 / 우 “N박 N일” Text 3, 둘 다 Caption</td></tr>
+        </table>
+        <h4>동작 규칙</h4>
+        <ul class="clean">
+          <li>출발일 → 도착일 순서로 2회 클릭해 기간 지정. 1회만 클릭하면 당일 선택</li>
+          <li>3번째 클릭은 새 출발일로 리셋</li>
+          <li>선택할 때마다 하단 요약 텍스트가 실시간 갱신</li>
+          <li>상단 화살표로 이전 달·다음 달 이동</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>5.9 Dialog</h3>
+    <div class="spec">
+      <div class="stage center">
+        <div class="label" style="align-self:flex-start">입력 다이얼로그 320 × 312 (미입력 / 입력 중)</div>
+        <div class="dialog">
+          <div class="con">
+            <div class="tt">직접 입력</div>
+            <div class="ds">최대 30글자로<br>카테고리/아이템 직접 입력하기</div>
+          </div>
+          <div class="acts"><button>취소</button><button class="off">확인</button></div>
+        </div>
+        <div class="dialog">
+          <div class="con">
+            <div class="tt">직접 입력</div>
+            <div class="ds"><span class="typed">여행용 상비약</span><span class="caret"></span></div>
+          </div>
+          <div class="acts"><button>취소</button><button>확인</button></div>
+        </div>
+        <div class="label" style="align-self:flex-start">확인 다이얼로그 320 × 192 — 제목 없이 문구 하나만 중앙 정렬</div>
+        <div class="confirm">
+          <div class="msg">등록한 일정을<br>모두 삭제하시겠습니까?</div>
+          <div class="acts"><button>취소</button><button>확인</button></div>
+        </div>
+        <div class="confirm">
+          <div class="msg">카테고리에 속한 아이템이<br>함께 삭제됩니다.<br>카테고리를 삭제하시겠습니까?</div>
+          <div class="acts"><button>취소</button><button>확인</button></div>
+        </div>
+      </div>
+      <div>
+        <h4>입력 다이얼로그</h4>
+        <table>
+          <tr><th style="width:140px">항목</th><th>값</th></tr>
+          <tr><td>크기</td><td>320 × 312px — 콘텐츠 264px + 액션 48px</td></tr>
+          <tr><td>구조</td><td>좌측 정렬 제목(Title2) + 본문/입력 영역, 아래 액션 2분할</td></tr>
+          <tr><td>제목</td><td>Title2 20/600 Text 1</td></tr>
+          <tr><td>본문 / placeholder</td><td>Body 16/24. 안내 문구 Text 3 → 입력 시작 시 Text 1, 캐럿 Primary</td></tr>
+        </table>
+        <h4>확인 다이얼로그 — 입력 다이얼로그와 다른 별도 구조</h4>
+        <table>
+          <tr><th style="width:140px">항목</th><th>값</th></tr>
+          <tr><td>크기</td><td>320 × 192px, radius 8px</td></tr>
+          <tr><td>그림자</td><td><code>0 0 4px rgba(0,0,0,0.25)</code> — 다른 카드류(0.12)보다 짙음</td></tr>
+          <tr><td>본문 영역</td><td>버튼 영역(48px)을 제외한 144px 전체에서 <b>세로·가로 중앙 정렬</b>. 좌측 정렬 제목이 따로 없고 문구 하나만 놓입니다</td></tr>
+          <tr><td>텍스트</td><td>Body 16/24 Text 1, 가운데 정렬. 문장이 길면 자연스럽게 줄바꿈되고 다이얼로그 높이가 늘어날 수 있음</td></tr>
+          <tr><td>액션 영역</td><td>높이 48px, 상단 1px Background Sub, 2분할 가운데 1px 분리선</td></tr>
+          <tr><td>액션 라벨</td><td>Body 16/400. 취소 Text 3 · 확인 Primary — 파괴적 동작이라도 확인 버튼을 Accent로 바꾸지 않음</td></tr>
+        </table>
+        <h4>공통 동작 규칙</h4>
+        <ul class="clean">
+          <li>열리자마자 키보드 자동 노출, 자동 포커스. 이름 변경일 때는 기존 값이 전체 선택된 상태로 표시</li>
+          <li>글자 수 제한 — 30자를 넘겨도 입력은 자유롭게 허용하고, “확인” 버튼만 비활성화합니다</li>
+          <li>빈 값이거나 이미 존재하는 카테고리명이면 “확인” 비활성</li>
+          <li>카테고리 삭제 확인은 소속 아이템이 함께 삭제된다는 사실을 본문에 명시</li>
+          <li>아이템 삭제는 확인 다이얼로그 없이 즉시 처리</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>5.10 Dropdown Menu</h3>
+    <div class="spec">
+      <div class="stage center">
+        <div class="label" style="align-self:flex-start">헤더 케밥 · 카테고리 미트볼</div>
+        <div class="menu">
+          <button>편집</button>
+          <button>미체크 아이템 모아보기</button>
+          <button>찜한 아이템 모아보기</button>
+        </div>
+        <div class="menu" style="width:160px">
+          <button>카테고리 삭제하기</button>
+        </div>
+      </div>
+      <div>
+        <table>
+          <tr><th style="width:140px">항목</th><th>값</th></tr>
+          <tr><td>폭</td><td>160~180px</td></tr>
+          <tr><td>항목 높이</td><td>44px, 좌측 패딩 16px</td></tr>
+          <tr><td>텍스트</td><td>Body 16/400 Text 1 — 삭제 항목도 동일합니다</td></tr>
+          <tr><td>radius / 그림자</td><td>4px · 그림자 있음</td></tr>
+          <tr><td>Hover / Press</td><td>항목 배경 Primary 25%, 텍스트는 그대로 Text 1</td></tr>
+          <tr><td>위치</td><td>트리거 우측 정렬, 트리거 하단 8px 아래. 화면 하단 공간이 부족하면 위로 반전</td></tr>
+        </table>
+        <h4>메뉴 구성</h4>
+        <table>
+          <tr><th style="width:150px">트리거</th><th>항목</th></tr>
+          <tr><td>헤더 케밥 (C-01)</td><td>편집 → 미체크 아이템 모아보기 → 찜한 아이템 모아보기<br>필터가 걸린 상태에서는 해당 항목이 “전체 아이템 보기”로 바뀝니다</td></tr>
+          <tr><td>카테고리 미트볼 (F-01)</td><td>카테고리 삭제하기</td></tr>
+          <tr><td>여행 카드 미트볼 (B-01)</td><td>삭제하기</td></tr>
+        </table>
+        <div class="note">아이템 단위 이름 변경·삭제는 더 이상 드롭다운 메뉴가 아니라 5.4의 연필(이름 변경)·X(삭제) 인라인 아이콘으로 처리합니다.</div>
+        <h4>동작 규칙</h4>
+        <ul class="clean">
+          <li>메뉴가 열린 트리거는 Primary로 표시해 어느 항목의 메뉴인지 구분</li>
+          <li>메뉴 외부 클릭 또는 스크롤 시 닫힘</li>
+          <li>“편집” → 편집 모드 진입 / “미체크 아이템 모아보기” → 체크된 아이템 숨김 / “찜한 아이템 모아보기” → 찜하지 않은 아이템 숨김 / “전체 아이템 보기” → 필터 해제</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>5.11 Selection Action Bar</h3>
+    <div class="spec">
+      <div class="stage">
+        <div class="label">비활성 (0개) · 활성</div>
+        <div class="actionbar"><span class="cnt">0개 선택됨</span><span class="act act--off">삭제</span></div>
+        <div class="actionbar"><span class="cnt">3개 선택됨</span><span class="act">삭제</span></div>
+      </div>
+      <div>
+        <table>
+          <tr><th style="width:140px">항목</th><th>값</th></tr>
+          <tr><td>크기</td><td>393 × 64px, 화면 하단 고정</td></tr>
+          <tr><td>상단 보더</td><td>1px Text 3</td></tr>
+          <tr><td>좌측 카운트</td><td>좌측 28px, SubTitle 16/600 Text 1, “{N}개 선택됨” 실시간</td></tr>
+          <tr><td>우측 액션</td><td>우측 20px, Button 14/500<br>활성 Accent / 0개일 때 Text 3</td></tr>
+          <tr><td>동작</td><td>“삭제” 클릭 시 확인 다이얼로그 없이 즉시 삭제하며, 삭제 후 되돌릴 수 없습니다</td></tr>
+        </table>
+        <div class="note">Accent 텍스트가 쓰이는 유일한 버튼입니다. 다른 화면의 “삭제”는 Text 1입니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>5.12 Info Box · Badge</h3>
+    <div class="spec">
+      <div class="stage">
+        <div class="label">A-01 안내 배지 · 질문 미리보기 박스</div>
+        <div style="background:var(--bg);padding:20px;border-radius:8px;display:flex;flex-direction:column;gap:16px;align-items:flex-start">
+          <span class="badge" style="min-width:0;height:32px;padding:0 16px">여행 준비 시작</span>
+          <div class="infobox">
+            <div class="t">이런 걸 여쭤볼게요</div>
+            <ul>
+              <li><span class="n">1</span>언제, 어디로 가시는지</li>
+              <li><span class="n">2</span>누구와 함께 가시는지</li>
+              <li><span class="n">3</span>어떤 활동을 하실지</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div>
+        <table>
+          <tr><th style="width:140px">항목</th><th>값</th></tr>
+          <tr><td>안내 배지</td><td>높이 32px · radius 16px · 좌우 16px · bg Primary 12% · 텍스트 Primary Caption 12/600</td></tr>
+          <tr><td>박스</td><td>329px 폭 · radius 16px · border 2px Background Sub · 패딩 20px 24px</td></tr>
+          <tr><td>박스 제목</td><td>SubTitle 16/600 Text 1</td></tr>
+          <tr><td>번호 마커</td><td>24×24 · radius 4px · bg Primary 12% · 텍스트 Primary Button Strong 14/600</td></tr>
+          <tr><td>항목 텍스트</td><td>Body 16/24 Text 1</td></tr>
+          <tr><td>사용 범위</td><td>번호 마커는 순서가 있는 목록에만 사용</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>5.13 Toast</h3>
+    <div class="spec">
+      <div class="stage">
+        <div class="label">액션 링크 포함 (E-01, 개별 아이템 삭제)</div>
+        <div class="toast"><span class="msg">해당 항목을 지웠어요</span><span class="act">되돌리기</span></div>
+        <div class="label">메시지만 (B-01, 일정 공유하기 / G-01, 30자 초과)</div>
+        <div class="toast"><span class="msg">일정 링크가 복사되었습니다</span></div>
+        <div class="toast"><span class="msg">최대 30자까지 입력할 수 있어요</span></div>
+      </div>
+      <div>
+        <table>
+          <tr><th style="width:140px">항목</th><th>값</th></tr>
+          <tr><td>크기</td><td>폭 345px(화면 좌우 24px 여백 기준) · 높이 48px</td></tr>
+          <tr><td>배경 / radius</td><td>#3A3A3A 80% 불투명도 · radius 8px</td></tr>
+          <tr><td>메시지</td><td>Button 14/500, 흰색, 좌측 24px에서 시작</td></tr>
+          <tr><td>액션 링크</td><td>있을 때만 노출. Button 14/500 Primary, 우측 24px 정렬</td></tr>
+          <tr><td>위치</td><td>화면 하단, 고정 요소(CTA·액션바) 위에 떠 있는 형태</td></tr>
+          <tr><td>노출 시간</td><td>일정 시간 후 자동으로 사라짐(예: 3~4초). 액션 링크가 있으면 그 시간 동안만 되돌리기 가능</td></tr>
+        </table>
+        <h4>사용처</h4>
+        <table>
+          <tr><th style="width:150px">화면</th><th>메시지</th><th>액션</th></tr>
+          <tr><td>E-01 (아이템 개별 삭제)</td><td>해당 항목을 지웠어요</td><td>되돌리기 — 클릭 시 삭제 취소</td></tr>
+          <tr><td>B-01 (일정 공유하기)</td><td>일정 링크가 복사되었습니다</td><td>없음</td></tr>
+          <tr><td>G-01 (아이템 직접 추가, 30자 초과)</td><td>최대 30자까지 입력할 수 있어요</td><td>없음</td></tr>
+        </table>
+        <div class="note">E-01의 개별 아이템 삭제(X 버튼)만 토스트로 되돌리기를 제공합니다. F-01 선택 삭제와 F-02 카테고리 삭제는 08번에 정리된 대로 되돌릴 수 없는 즉시 삭제로 유지됩니다 — 같은 “삭제”라도 진입 경로에 따라 복구 가능 여부가 다릅니다.</div>
+        <div class="note">G-01의 30자 초과 토스트는 <code>+</code> 클릭(또는 Enter)을 시도했을 때 노출되는 안내입니다. 08번에 정리된 대로 입력 자체를 막지는 않지만, 30자를 넘는 순간 <code>+</code>는 Primary에서 Text 3(회색)로 바뀌고 클릭도 막힙니다. 미입력 상태의 <code>+</code>만 Primary를 유지한 채 클릭이 막힙니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>5.14 Footer · 면책 조항 · 라이선스 표시 (C-01, C-03)</h3>
+    <div class="spec">
+      <div class="stage">
+        <div class="label">C-01 체크리스트 홈 최하단</div>
+        <div class="footer-legal">
+          <button class="addcat">카테고리 추가</button>
+          <div class="legalblock">
+            <div class="legalwrap">
+              <p class="legal">챙겨요(가칭)가 제공하는 국가별 반입 주의·금지 품목 및 관련 법적·규정 정보는 각 항목에 표시된 작성·갱신 기준일 시점에 확인된 내용을 바탕으로 한 참고용 정보입니다. 관련 법령 및 규정은 국가와 시기에 따라 사전 예고 없이 변경될 수 있으며, 본 서비스가 제공하는 정보가 실제 세관·출입국 규정과 다를 수 있습니다. 챙겨요(가칭)는 해당 정보의 최신성·정확성·완전성을 보장하지 않으며, 이를 신뢰하여 발생한 불이익이나 손해에 대해 책임을 지지 않습니다. 정확한 반입 규정은 반드시 이용 항공사, 목적지 국가의 대사관·영사관, 관세청 등 공식 기관을 통해 여행 전 별도로 확인하시기 바랍니다.</p>
+              <div class="legaldiv"></div>
+              <p class="legal2">기후 정보는 2015년~2024년 관측값을 바탕으로 한 추정값입니다.</p>
+              <p class="legal2">Weather data by Open-Meteo.com (CC BY 4.0)</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <table>
+          <tr><th style="width:140px">항목</th><th>값</th></tr>
+          <tr><td>위치</td><td>C-01 체크리스트 홈 최하단, 카테고리 목록 다음. 스크롤해야 보이는 일반 콘텐츠(고정 요소 아님)</td></tr>
+          <tr><td>컨테이너</td><td>전체 폭, 상단 1px Background Sub 보더, bg Background(흰색)</td></tr>
+          <tr><td>“카테고리 추가” 버튼</td><td>pill 104×32, radius 16px, bg Primary, 텍스트 흰색 13px/600(SemiBold), 가로 중앙<br>클릭 시 D-01(카테고리 추가)로 이동 — 5.6 D-01 진입점과 동일한 동작</td></tr>
+          <tr><td>면책 조항 배경</td><td>버튼 아래 48px 여백까지는 흰 배경. 그 다음부터 텍스트 블록의 배경 자체가 위 32px 구간에서 Background → Background Sub로 페이드되고, 32px 이후로는 쭉 솔리드 Background Sub<br>텍스트 상단 패딩이 20px이라 <b>첫 줄(약 12px)이 그라데이션의 마지막 12px 구간과 겹치고</b>, 둘째 줄부터 완전한 솔리드 배경 위에 놓임 — 그라데이션이 별도 레이어가 아니라 텍스트 블록과 같은 배경에서 시작됨</td></tr>
+          <tr><td>면책 조항 텍스트</td><td>좌우 20px 여백(최대 폭 353px), <b>Legal 9/12/500</b>, 색상 Text 3<br>본문 텍스트 스케일(03번)보다 작은 전용 스타일 — 이 위치에만 사용</td></tr>
+          <tr><td>구분선</td><td>면책 조항 문단과 라이선스 표시 문단 사이, left/right 여백을 둔 1px 구분선. 다른 리스트 divider와 동일한 asset을 재사용</td></tr>
+          <tr><td>라이선스 표시</td><td>구분선 아래, 같은 Legal 9/12/500 · Text 3 스타일 2줄<br>날씨 데이터 출처(Open-Meteo, CC BY 4.0)를 밝히는 별도 문단. 좌측 여백은 면책 조항과 1px 차이(21px)만 나고 사실상 동일한 정렬</td></tr>
+          <tr><td>줄바꿈</td><td>문단 전체를 자동 줄바꿈. 별도 조작(더보기, 접기) 없이 항상 전체 노출</td></tr>
+        </table>
+        <h4>C-03과의 관계</h4>
+        <p style="font-size:14px;line-height:22px;color:var(--text-2);margin:8px 0 0">C-03은 이 면책 조항 컴포넌트를 확인하기 위한 별도 화면 설계서 항목이며, 실제로는 새 화면이 아니라 <b>C-01 최하단에 포함된 섹션</b>입니다. 별도 라우팅이나 진입 동선이 없습니다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 06 -->
+<section id="s6">
+  <h2><span class="num">06</span>아이콘</h2>
+  <div class="panel">
+    <table>
+      <tr><th style="width:150px">아이콘</th><th style="width:110px">사이즈</th><th>스펙</th></tr>
+      <tr><td>back (←)</td><td>24 × 24</td><td>stroke 1.8px Text 1</td></tr>
+      <tr><td>close (✕)</td><td>16 × 16</td><td>stroke 1.8px Text 1, 모달형 상단 바</td></tr>
+      <tr><td>kebab (⋮ 세로)</td><td>2 × 18</td><td>Text 1. 화면 단위 메뉴(헤더)</td></tr>
+      <tr><td>meatball (⋯ 가로)</td><td>16 × 2</td><td>Text 3 (열림 Primary). 카테고리·여행 카드 단위 메뉴 전용</td></tr>
+      <tr><td>pencil (연필)</td><td>15 × 15</td><td>stroke 1.3px Text 3. 편집 모드에서 직접 생성 아이템에만 노출, 이름 변경</td></tr>
+      <tr><td>x (닫기, 소형)</td><td>13 × 13</td><td>stroke 1.5px Text 3. 편집 모드에서 모든 아이템에 노출, 즉시 삭제. 연필과 함께일 때 gap 10px</td></tr>
+      <tr><td>chevron (∧ ∨)</td><td>16 × 16</td><td>stroke 1.6px Text 3, 카테고리 토글</td></tr>
+      <tr><td>chevron (‹ ›)</td><td>10 × 20</td><td>stroke 1.6px Text 1, 달력 월 이동</td></tr>
+      <tr><td>heart</td><td>18 × 16</td><td>항상 꽉 찬 형태. 선택 fill Accent / 미선택 fill Letterbox</td></tr>
+      <tr><td>plus (+)</td><td>24 × 24</td><td>stroke 2px round cap. 기본·1~30자 입력 시 Primary, 30자 초과 시 Text 3(회색)</td></tr>
+      <tr><td>plus (등록 카드)</td><td>20 × 20</td><td>stroke 2.2px #FFFFFF, 40px 원형 Primary 안에 중앙 배치</td></tr>
+      <tr><td>check</td><td>12 × 12</td><td>stroke 2px #FFFFFF, 20px 체크박스 안에 정중앙 정렬</td></tr>
+    </table>
+    <h4>공통 규칙</h4>
+    <ul class="clean">
+      <li>모두 단색 아이콘</li>
+      <li>케밥(세로)·미트볼(가로)은 화면·그룹 단위 메뉴 전용이고, 아이템 개별 동작(이름 변경·삭제)은 연필·X로 인라인 처리합니다. 서로 섞어 쓰지 않습니다</li>
+      <li>시각 크기와 무관하게 터치 영역은 최소 44×44px</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 07 -->
+<section id="s7">
+  <h2><span class="num">07</span>상태 정의</h2>
+  <div class="panel">
+    <table>
+      <tr><th style="width:130px">상태</th><th>표현</th><th>적용</th></tr>
+      <tr><td>Default</td><td>기본값</td><td>전체</td></tr>
+      <tr><td>Pressed</td><td>면 컴포넌트는 살짝 어두워짐 · 리스트/메뉴 행은 배경 Primary 25% (텍스트 색은 유지)</td><td>버튼, 칩, 행, 메뉴</td></tr>
+      <tr><td>Selected</td><td>배경 Primary + 흰 텍스트, 또는 아이콘 fill Primary</td><td>칩, 체크박스, 달력</td></tr>
+      <tr><td>Selected (삭제)</td><td>체크박스 fill Accent</td><td>삭제 선택 모드</td></tr>
+      <tr><td>Disabled</td><td>면형 bg Line + 흰 텍스트 · 텍스트형 Text 3 또는 Line · 아이콘 Line · 행 전체 opacity 25%</td><td>CTA, 다이얼로그 확인, <code>+</code> 버튼, 액션바, 추가 행</td></tr>
+      <tr><td>Placeholder</td><td>Text 3 → 입력 시작 시 Text 1</td><td>인라인 입력, 다이얼로그</td></tr>
+      <tr><td>Loading</td><td>Background Sub 스켈레톤</td><td>추천 카드, 리스트</td></tr>
+      <tr><td>Empty</td><td>Background Sub 배경 카드 + 안내 Caption + 액션 1개</td><td>B-01, 카테고리 내 아이템 0개</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 08 -->
+<section id="s8">
+  <h2><span class="num">08</span>인터랙션 규칙</h2>
+
+  <div class="panel">
+    <h3>모드 전환</h3>
+    <table>
+      <tr><th style="width:130px">모드</th><th>진입</th><th>화면 변화</th><th>종료</th></tr>
+      <tr><td>기본</td><td>—</td><td>우측 아이콘 = 하트, 체크박스 = 완료 체크</td><td>—</td></tr>
+      <tr><td>편집</td><td>헤더 케밥 → “편집”</td><td>상단 우측에 “완료”, 아이템 우측이 연필(직접 생성 아이템만)+X로 교체, 카테고리 헤더 chevron이 미트볼로 교체</td><td>“완료” → C-01 복귀</td></tr>
+      <tr><td>삭제 선택</td><td>편집 모드에서 아이템 선택</td><td>체크박스가 Accent, “아이템 추가” 행 비활성, 하단 액션바 노출</td><td>“완료” 또는 삭제 실행</td></tr>
+      <tr><td>필터</td><td>케밥 → “미체크 아이템 모아보기” / “찜한 아이템 모아보기”</td><td>해당하지 않는 아이템 숨김</td><td>케밥 → “전체 아이템 보기”</td></tr>
+    </table>
+    <div class="note">필터가 적용된 동안 케밥 메뉴의 해당 항목은 “전체 아이템 보기”로 바뀌며, 선택하면 필터가 해제되고 원래 라벨로 돌아갑니다.</div>
+  </div>
+
+  <div class="panel">
+    <h3>삭제 정책</h3>
+    <table>
+      <tr><th style="width:200px">대상</th><th>확인 절차</th></tr>
+      <tr><td>아이템 (X 버튼, 개별 삭제)</td><td>확인 없이 즉시 삭제 + 하단 토스트로 되돌리기 제공</td></tr>
+      <tr><td>아이템 (메뉴 “삭제”)</td><td>확인 없이 즉시 삭제, 되돌리기 없음</td></tr>
+      <tr><td>아이템 (선택 삭제)</td><td>확인 없이 즉시 삭제, 되돌리기 없음</td></tr>
+      <tr><td>카테고리</td><td>다이얼로그로 확인 (소속 아이템 동반 삭제를 명시), 되돌리기 없음</td></tr>
+      <tr><td>여행 일정</td><td>미트볼 → “삭제하기” → 확인 다이얼로그, 되돌리기 없음</td></tr>
+    </table>
+    <div class="note">되돌리기가 있는 경우는 X 버튼 개별 삭제 하나뿐입니다. 그 외 삭제는 실행 즉시 확정되며 되돌릴 수 없습니다.</div>
+  </div>
+
+  <div class="panel">
+    <h3>입력 · 포커스</h3>
+    <ul class="clean">
+      <li>다이얼로그 열림 → 키보드 자동 노출 + 입력 필드 자동 포커스. 이름 변경은 기존 값이 전체 선택된 상태</li>
+      <li>인라인 아이템 추가 → “아이템 추가” 텍스트 클릭 시 입력 필드로 전환 + 자동 포커스</li>
+      <li>추가 확정(<code>+</code> / Enter / 키보드 “다음”) → 새로 생긴 “아이템 추가” 행으로 포커스 자동 이동</li>
+      <li>글자 수 — 30자를 넘겨도 입력은 막지 않습니다. 30자를 초과하면 확정 버튼(<code>+</code>, “확인”)만 비활성화되고, 30자 이하로 줄이면 다시 활성화됩니다</li>
+      <li>중복 카테고리명 → “확인” 비활성</li>
+    </ul>
+  </div>
+
+  <div class="panel">
+    <h3>스크롤 · 위치</h3>
+    <ul class="clean">
+      <li>C-01 상단 바는 스크롤해도 항상 상단에 고정</li>
+      <li>드롭다운 메뉴는 스크롤 시 닫힘</li>
+      <li>메뉴가 화면 하단에 걸리면 트리거 위쪽으로 반전</li>
+      <li>추천 카드 캐러셀은 가로 스크롤</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 09 -->
+<section id="s9">
+  <h2><span class="num">09</span>마이크로카피</h2>
+  <div class="panel">
+    <table>
+      <tr><th style="width:110px">화면</th><th style="width:150px">위치</th><th>문구</th></tr>
+      <tr><td>A-01</td><td>배지 / 메인 / 서브</td><td>여행 준비 시작 · 지금부터 여행 준비물 리스트를 뽑아볼게요 · 몇 가지만 알려주시면 이번 여행에 꼭 필요한 준비물만 골라서 정리해드려요. 2분이면 충분해요.</td></tr>
+      <tr><td>A-01</td><td>박스</td><td>이런 걸 여쭤볼게요 / 언제, 어디로 가시는지 / 누구와 함께 가시는지 / 어떤 활동을 하실지</td></tr>
+      <tr><td>A-02</td><td>질문 1·2</td><td>어디로 가세요? <span class="req">*</span> — 나라에 따라 챙길 것들이 달라져요.<br>언제 가세요? <span class="req">*</span> — 계절과 일정에 맞춰 준비물을 골라드려요.</td></tr>
+      <tr><td>A-03</td><td>질문 1·2</td><td>누구와 함께 가세요? — 함께 가는 사람에 따라 챙길 것이 늘어나요.<br>어떤 활동을 하세요? — 해당하는 활동을 여러 개 선택할 수 있어요. 선택한 활동에 맞는 준비물이 체크리스트에 함께 담겨요.</td></tr>
+      <tr><td>B-01</td><td>타이틀 / 등록 카드</td><td>내 여행 준비 · 알려주신 일정 기반으로 준비물을 정리해드렸어요<br>새 여행 등록하기 · 나에게 맞는 준비물을 정리해 드려요</td></tr>
+      <tr><td>B-01</td><td>일정 삭제 확인 / 공유 버튼</td><td>등록한 일정을 모두 삭제하시겠습니까?<br>일정 공유하기</td></tr>
+      <tr><td>B-01 / E-01</td><td>토스트</td><td>일정 링크가 복사되었습니다<br>해당 항목을 지웠어요 · 되돌리기</td></tr>
+      <tr><td>C-01</td><td>일정 / 타이틀 / 추천</td><td>{목적지} 여행 · {N}박 {N}일 (1일이면 “{목적지} 여행 · 1일”)<br>여행 준비 체크리스트 · 여행자님을 위한 추천 · 추천 아이템 모두 보기</td></tr>
+      <tr><td>C-01</td><td>추천 카드</td><td>여행자님이 좋아하실 상품을 준비하고 있어요.</td></tr>
+      <tr><td>C-01</td><td>케밥 메뉴</td><td>편집 / 미체크 아이템 모아보기 / 찜한 아이템 모아보기 / 전체 아이템 보기</td></tr>
+      <tr><td>C-01 / C-03</td><td>면책 조항 (최하단)</td><td>챙겨요(가칭)가 제공하는 국가별 반입 주의·금지 품목 및 관련 법적·규정 정보는 각 항목에 표시된 작성·갱신 기준일 시점에 확인된 내용을 바탕으로 한 참고용 정보입니다. 관련 법령 및 규정은 국가와 시기에 따라 사전 예고 없이 변경될 수 있으며, 본 서비스가 제공하는 정보가 실제 세관·출입국 규정과 다를 수 있습니다. 챙겨요(가칭)는 해당 정보의 최신성·정확성·완전성을 보장하지 않으며, 이를 신뢰하여 발생한 불이익이나 손해에 대해 책임을 지지 않습니다. 정확한 반입 규정은 반드시 이용 항공사, 목적지 국가의 대사관·영사관, 관세청 등 공식 기관을 통해 여행 전 별도로 확인하시기 바랍니다.</td></tr>
+      <tr><td>C-01 / C-03</td><td>라이선스 표시 (면책 조항 아래)</td><td>기후 정보는 2015년~2024년 관측값을 바탕으로 한 추정값입니다.<br>Weather data by Open-Meteo.com (CC BY 4.0)</td></tr>
+      <tr><td>D-01</td><td>헤더 / 링크</td><td>카테고리 추가 · 직접 입력</td></tr>
+      <tr><td>D-01·E-02</td><td>다이얼로그</td><td>직접 입력 / 최대 30글자로 카테고리·아이템 직접 입력하기</td></tr>
+      <tr><td>F-02</td><td>삭제 확인</td><td>카테고리에 속한 아이템이 함께 삭제됩니다. 카테고리를 삭제하시겠습니까?</td></tr>
+      <tr><td>F-01</td><td>액션바</td><td>{N}개 선택됨 · 삭제</td></tr>
+      <tr><td>G-01</td><td>인라인 입력</td><td>직접 아이템을 입력해주세요</td></tr>
+      <tr><td>G-01</td><td>토스트 (30자 초과)</td><td>최대 30자까지 입력할 수 있어요</td></tr>
+    </table>
+    <h4>작성 원칙</h4>
+    <ul class="clean">
+      <li>버튼 라벨은 눌렀을 때 일어나는 일을 그대로 씁니다</li>
+      <li>같은 동작은 화면이 달라도 같은 단어를 씁니다</li>
+      <li>안내 문구는 무엇을 하면 되는지 알려줍니다</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 10 -->
+<section id="s10">
+  <h2><span class="num">10</span>접근성</h2>
+  <div class="panel">
+    <ul class="clean">
+      <li>터치 타겟 — 최소 44×44px. 리스트 행 48px, 메뉴 항목 44px, 버튼 56px은 충족. 미트볼·닫기·달력 화살표는 투명 패딩으로 확장</li>
+      <li>명도대비 — Text 3(50%)는 흰 배경에서 약 4.6:1로 본문 통과. Line(25%)은 텍스트로 쓰지 않고 보더·비활성 아이콘 전용</li>
+      <li>Primary 위 흰 텍스트 — 약 3.1:1. CTA(20px/600)는 통과, 칩·달력의 14px 흰 텍스트는 기준 미달</li>
+      <li>삭제 선택 모드 — 체크박스 색만 바뀌므로 액션바의 “{N}개 선택됨”이 보조 신호로 항상 함께 노출되어야 합니다</li>
+      <li>동적 텍스트 — 폰트 확대에도 레이아웃이 깨지지 않게 고정 높이 대신 최소 높이로 설계</li>
+    </ul>
+  </div>
+</section>
+
+<footer class="doc">
+  출처: Figma “화면만 보기”, “와이어프레임 상세” 페이지.
+</footer>
+
+</div>
+</body>
+</html>
