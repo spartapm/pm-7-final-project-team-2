@@ -65,6 +65,7 @@ a { color: inherit; text-decoration: none; }
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
+.shell-scroll.lock { overflow: hidden; }
 .shell-footer {
   flex: none;
   padding: 20px 24px calc(20px + env(safe-area-inset-bottom));
@@ -122,7 +123,7 @@ a { color: inherit; text-decoration: none; }
   border: none;
   border-radius: var(--r-md);
   width: 100%;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 20px;
   line-height: 28px;
   display: flex;
@@ -184,7 +185,7 @@ a { color: inherit; text-decoration: none; }
 .pad { padding: 8px 32px 24px; }
 .pad-a { padding: 32px; }
 .pad-b { padding: 28px 24px 24px; }
-.pad-c { padding: 8px 24px 0; }
+.pad-c { padding: 8px 20px 0; }
 .q-title { margin: 0; }
 .q-sub { margin: 12px 0 20px; color: var(--text-3); font-weight: 500; font-size: 12px; line-height: 16px; }
 .q-block + .q-block { margin-top: 48px; }
@@ -203,9 +204,9 @@ a { color: inherit; text-decoration: none; }
   padding: 20px 24px;
   background: var(--bg);
 }
-.infobox .t { font-weight: 600; font-size: 16px; line-height: 24px; margin-bottom: 12px; }
-.infobox ul { list-style: none; margin: 0; padding: 0; }
-.infobox li { display: flex; align-items: center; gap: 16px; margin: 8px 0; }
+.infobox .t { font-weight: 600; font-size: 16px; line-height: 24px; margin-bottom: 16px; }
+.infobox ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 16px; }
+.infobox li { display: flex; align-items: center; gap: 16px; margin: 0; }
 .infobox .n {
   width: 24px; height: 24px; border-radius: var(--r-xs);
   background: var(--primary-12); color: var(--primary);
@@ -317,7 +318,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 .dim {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+  position: absolute; inset: 0; background: rgba(0,0,0,0.4);
   z-index: 40; display: flex; align-items: center; justify-content: center;
   padding: 24px;
 }
@@ -387,8 +388,8 @@ a { color: inherit; text-decoration: none; }
 .menu button:hover, .menu button:active { background: var(--primary-25); }
 
 .toast-wrap {
-  position: fixed; left: 50%; transform: translateX(-50%);
-  bottom: calc(88px + env(safe-area-inset-bottom));
+  position: absolute; left: 50%; transform: translateX(-50%);
+  top: calc(12px + env(safe-area-inset-top));
   width: min(345px, calc(100% - 48px));
   z-index: 50;
 }
@@ -410,7 +411,7 @@ a { color: inherit; text-decoration: none; }
 }
 .cat-head .title {
   flex: 1; min-width: 0;
-  font-weight: 600; font-size: 16px; line-height: 24px; color: var(--primary-sub);
+  font-weight: 600; font-size: 16px; line-height: 20px; color: var(--primary-sub);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .cat-head .grow { flex: 1; }
@@ -421,7 +422,10 @@ a { color: inherit; text-decoration: none; }
   display: flex; align-items: center;
   padding: 0 20px 0 28px; gap: 24px;
   background: var(--bg); width: 100%; text-align: left; border: none;
+  touch-action: pan-y;
 }
+.row.dragging { opacity: 0.55; z-index: 3; }
+.row.drag-over::before { background: var(--primary); height: 2px; }
 .row.sub { height: 64px; }
 .row::before {
   content: ""; position: absolute; top: 0; left: 28px; right: 28px;
@@ -473,8 +477,14 @@ div:has(.cat-head) + .row::before { display: none; }
 }
 
 .reco-row {
-  display: flex; gap: 12px; overflow-x: auto; padding: 12px 24px 0;
+  display: flex; gap: 12px; overflow-x: auto; padding: 12px 20px 0;
   scrollbar-width: none;
+}
+.reco-head {
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  margin-top: 28px;
 }
 .reco-more {
   text-align: center;
@@ -482,7 +492,8 @@ div:has(.cat-head) + .row::before { display: none; }
   font-weight: 500;
   font-size: 14px;
   line-height: 21px;
-  padding: 16px 24px 28px;
+  padding: 24px 24px 28px;
+  pointer-events: none;
 }
 .reco-more + section .cat-head { border-top: none; }
 .reco-row::-webkit-scrollbar { display: none; }
@@ -493,7 +504,7 @@ div:has(.cat-head) + .row::before { display: none; }
   display: flex; gap: 16px; flex: none;
 }
 .reco .txt { flex: 1; font-weight: 400; font-size: 16px; line-height: 20px; }
-.reco .src { font-weight: 500; font-size: 12px; line-height: 16px; color: var(--text-3); margin-top: 10px; }
+.reco .src { font-weight: 400; font-size: 13px; line-height: 20px; color: var(--text-3); margin-top: 10px; }
 .reco .thumb { width: 50px; height: 50px; border-radius: var(--r-xs); background: var(--bg-sub); flex: none; }
 
 .actionbar {

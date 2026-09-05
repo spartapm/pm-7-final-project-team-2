@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
-import { countryName } from "@/lib/catalog";
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { countryName, PRESET_CATEGORY_NAMES } from "@/lib/catalog";
 import { checklistSubtitle } from "@/lib/dates";
 import { track } from "@/lib/analytics";
 import { emptyCustomCategory } from "@/lib/generate";
@@ -40,11 +40,31 @@ export function ChecklistView({ tripId }: { tripId: string }) {
   const [toast, setToast] = useState<{ msg: string; undo?: () => void } | null>(null);
   const addRef = useRef<HTMLInputElement>(null);
   const undoRef = useRef<Trip | null>(null);
+  const [confirmBulk, setConfirmBulk] = useState(false);
+  const [drag, setDrag] = useState<{ itemId: string; overId: string } | null>(null);
+  const dragRef = useRef<{
+    catId: string;
+    itemId: string;
+    overId: string;
+    timer: number | null;
+    armed: boolean;
+    startX: number;
+    startY: number;
+  } | null>(null);
 
   const selectedCount = useMemo(
     () => trip?.categories.reduce((n, c) => n + c.items.filter((i) => i.selected).length, 0) ?? 0,
     [trip]
   );
+
+  useEffect(() => {
+    if (!trip) return;
+    const added = new URLSearchParams(window.location.search).get("added");
+    if (!added) return;
+    const el = document.querySelector(`[data-cat-name="${CSS.escape(added)}"]`);
+    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    router.replace(`/trips/${trip.id}`, { scroll: false });
+  }, [router, trip]);
 
   if (!trip) {
     return (
@@ -61,6 +81,92 @@ export function ChecklistView({ tripId }: { tripId: string }) {
     if (filter === "unchecked") return !item.checked;
     if (filter === "wished") return item.wished;
     return true;
+  };
+
+  const endDrag = (commit: boolean) => {
+    const d = dragRef.current;
+    if (d?.timer) window.clearTimeout(d.timer);
+    if (commit && d?.armed && d.itemId !== d.overId) {
+      save((t) =>
+        patchCategory(t, d.catId, (c) => {
+          const vis = c.items.filter(visible);
+          const from = vis.findIndex((i) => i.id === d.itemId);
+          const to = vis.findIndex((i) => i.id === d.overId);
+          if (from < 0 || to < 0) return c;
+          const ids = vis.map((i) => i.id);
+          const [moved] = ids.splice(from, 1);
+          ids.splice(to, 0, moved);
+          const visSet = new Set(ids);
+          const hidden = c.items.filter((i) => !visSet.has(i.id));
+          const ordered = ids.map((id) => c.items.find((i) => i.id === id)!);
+          return { ...c, items: [...ordered, ...hidden] };
+        })
+      );
+    }
+    dragRef.current = null;
+    setDrag(null);
+    document.querySelector(".shell-scroll")?.classList.remove("lock");
+  };
+
+  const onItemPointerDown = (catId: string, itemId: string, e: ReactPointerEvent) => {
+    if (editing || selecting) return;
+    if ((e.target as HTMLElement).closest("button, input")) return;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const timer = window.setTimeout(() => {
+      if (!dragRef.current) return;
+      dragRef.current.armed = true;
+      document.querySelector(".shell-scroll")?.classList.add("lock");
+      setDrag({ itemId, overId: itemId });
+    }, 1000);
+    dragRef.current = { catId, itemId, overId: itemId, timer, armed: false, startX, startY };
+
+    const move = (ev: PointerEvent) => {
+      const cur = dragRef.current;
+      if (!cur) return;
+      if (!cur.armed) {
+        if (Math.hypot(ev.clientX - cur.startX, ev.clientY - cur.startY) > 8) {
+          if (cur.timer) window.clearTimeout(cur.timer);
+          cur.timer = null;
+        }
+        return;
+      }
+      ev.preventDefault();
+      const el = document.elementFromPoint(ev.clientX, ev.clientY);
+      const row = el?.closest("[data-item-id]") as HTMLElement | null;
+      const overId = row?.dataset.itemId;
+      if (overId && overId !== cur.overId) {
+        cur.overId = overId;
+        setDrag({ itemId: cur.itemId, overId });
+      }
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
+      endDrag(true);
+    };
+    window.addEventListener("pointermove", move, { passive: false });
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up);
+  };
+
+  const toggleChecked = (catId: string, item: ChecklistItem) => {
+    save((t) =>
+      patchCategory(t, catId, (c) => {
+        const next = c.items.map((i) =>
+          i.id === item.id ? { ...i, checked: !i.checked } : i
+        );
+        const target = next.find((i) => i.id === item.id);
+        if (!target) return c;
+        const rest = next.filter((i) => i.id !== item.id);
+        return { ...c, items: target.checked ? [...rest, target] : [target, ...rest] };
+      })
+    );
+    track("item_status_changed", {
+      item_id: item.id,
+      status: item.checked ? "skip" : "has",
+    });
   };
 
   const enterSelect = (catId: string, itemId: string) => {
@@ -100,7 +206,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
       },
     });
     items.push({
-      label: "찜한 아이템 모아보기",
+      label: "찜한 상품 모아보기",
       onClick: () => {
         setFilter("wished");
         expandAll();
@@ -199,12 +305,10 @@ export function ChecklistView({ tripId }: { tripId: string }) {
             <br />
             체크리스트
           </h1>
-          <div className="t-subtitle" style={{ marginTop: 28 }}>
-            여행자님을 위한 추천
-          </div>
+          <div className="reco-head">여행자님을 위한 추천</div>
         </div>
         <div className="reco-row">
-          {[0, 1].map((i) => (
+          {[0, 1, 2].map((i) => (
             <div className="reco" key={i}>
               <div>
                 <div className="txt">여행자님이 좋아하실 상품을 준비하고 있어요.</div>
@@ -217,10 +321,10 @@ export function ChecklistView({ tripId }: { tripId: string }) {
         <div className="reco-more">추천 아이템 모두 보기</div>
 
         {trip.categories.map((cat) => {
-          const items = [...cat.items.filter(visible)].sort((a, b) => Number(a.checked) - Number(b.checked));
+          const items = cat.items.filter(visible);
           const empty = items.length === 0;
           return (
-            <section key={cat.id}>
+            <section key={cat.id} data-cat-name={cat.name}>
               <div style={{ position: "relative" }}>
                 <div
                   className="cat-head"
@@ -242,7 +346,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                     {cat.name}
                     {cat.collapsed ? ` · ${cat.items.length}` : ""}
                   </span>
-                  {cat.hint && !cat.collapsed ? <span className="hint">{cat.hint}</span> : null}
+                  {cat.hint ? <span className="hint">{cat.hint}</span> : null}
                   {editing ? (
                     <button
                       className="icon-btn"
@@ -267,7 +371,12 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                     <div className="empty tight">해당하는 항목이 없어요</div>
                   ) : null}
                   {items.map((item) => (
-                    <div className={`row${item.reason ? " sub" : ""}`} key={item.id}>
+                    <div
+                      className={`row${item.reason ? " sub" : ""}${drag?.itemId === item.id ? " dragging" : ""}${drag?.overId === item.id && drag.itemId !== item.id ? " drag-over" : ""}`}
+                      key={item.id}
+                      data-item-id={item.id}
+                      onPointerDown={(e) => onItemPointerDown(cat.id, item.id, e)}
+                    >
                       <button
                         className={`cbx${editing ? (item.selected ? " del" : "") : item.checked ? " on" : ""}`}
                         aria-label={editing ? "삭제 선택" : "준비 완료"}
@@ -276,13 +385,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                             enterSelect(cat.id, item.id);
                             return;
                           }
-                          save((t) =>
-                            patchItem(t, cat.id, item.id, (i) => ({ ...i, checked: !i.checked }))
-                          );
-                          track("item_status_changed", {
-                            item_id: item.id,
-                            status: item.checked ? "skip" : "has",
-                          });
+                          toggleChecked(cat.id, item);
                         }}
                       >
                         {(editing && item.selected) || (!editing && item.checked) ? <IconCheck /> : null}
@@ -333,8 +436,22 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                           ref={addRef}
                           autoFocus
                           value={addText}
+                          maxLength={30}
                           placeholder="직접 아이템을 입력해주세요"
                           onChange={(e) => setAddText(e.target.value)}
+                          onBeforeInput={(e) => {
+                            const ne = e.nativeEvent as InputEvent;
+                            if (!ne.inputType?.startsWith("insert")) return;
+                            if (ne.inputType === "insertCompositionText") return;
+                            const el = e.currentTarget;
+                            const insert = ne.data ?? "";
+                            if (!insert) return;
+                            const selected = el.selectionEnd - el.selectionStart;
+                            if (addText.length - selected + insert.length > 30) {
+                              e.preventDefault();
+                              setToast({ msg: "최대 30자까지 입력할 수 있어요" });
+                            }
+                          }}
                           onKeyDown={(e) => {
                             if (e.key === "Enter") tryAdd(cat.id, cat);
                           }}
@@ -392,7 +509,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
       {selecting ? (
         <div className="actionbar">
           <span className="cnt">{selectedCount}개 선택됨</span>
-          <button className={`act${selectedCount === 0 ? " off" : ""}`} disabled={selectedCount === 0} onClick={deleteSelected}>
+          <button className={`act${selectedCount === 0 ? " off" : ""}`} disabled={selectedCount === 0} onClick={() => setConfirmBulk(true)}>
             삭제
           </button>
         </div>
@@ -409,6 +526,17 @@ export function ChecklistView({ tripId }: { tripId: string }) {
               onClick: () => setConfirmCat(catMenu.id),
             },
           ]}
+        />
+      ) : null}
+
+      {confirmBulk ? (
+        <ConfirmDialog
+          message={"선택한 전체 아이템이\n함께 삭제됩니다.\n아이템을 삭제하시겠습니까?"}
+          onCancel={() => setConfirmBulk(false)}
+          onConfirm={() => {
+            deleteSelected();
+            setConfirmBulk(false);
+          }}
         />
       ) : null}
 
@@ -429,6 +557,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
           value={rename.name}
           onChange={(v) => setRename({ ...rename, name: v })}
           confirmDisabled={!rename.name.trim() || rename.name.length > 30}
+          onLimit={() => setToast({ msg: "최대 30자까지 입력할 수 있어요" })}
           onCancel={() => setRename(null)}
           onConfirm={() => {
             save((t) => patchItem(t, rename.catId, rename.itemId, (i) => ({ ...i, name: rename.name.trim() })));
@@ -452,24 +581,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
 export function unusedPresetNames(trip: Trip) {
   const alias: Record<string, string> = { 필수: "필수 준비물", 기본: "기본 짐싸기" };
   const used = new Set(trip.categories.map((c) => alias[c.name.trim()] ?? c.name.trim()));
-  return [
-    "필수 준비물",
-    "기본 짐싸기",
-    "사진 여행",
-    "캠핑",
-    "하이킹·등산",
-    "골프",
-    "수영·물놀이",
-    "온천·스파",
-    "겨울 스포츠",
-    "놀이공원",
-    "페스티벌",
-    "종교시설·사원",
-    "나만의 준비물",
-    "트리플에서 챙기기",
-    "통신/교통 준비",
-    "아이 준비물",
-  ].filter((n) => !used.has(n));
+  return PRESET_CATEGORY_NAMES.filter((n) => !used.has(n));
 }
 
 export function addCategoryToTrip(trip: Trip, name: string): Trip {
@@ -477,9 +589,14 @@ export function addCategoryToTrip(trip: Trip, name: string): Trip {
   const canon = alias[name] ?? name;
   if (trip.categories.some((c) => (alias[c.name] ?? c.name) === canon)) return trip;
   const cat = emptyCustomCategory(name);
+  const presets = new Set(PRESET_CATEGORY_NAMES);
   if (name === "나만의 준비물") {
     cat.kind = "personal";
     cat.hint = "모든 여행 일정에 담겨요";
+    return { ...trip, categories: [cat, ...trip.categories] };
+  }
+  if (!presets.has(canon)) {
+    cat.hint = "직접 추가한 항목";
   }
   return { ...trip, categories: [...trip.categories, cat] };
 }

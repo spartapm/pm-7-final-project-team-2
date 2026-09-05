@@ -149,13 +149,14 @@ export function ConfirmDialog({
 }
 
 export function InputDialog({
-  title = "직접 입력",
+  title = "직접입력",
   value,
   onChange,
-  placeholder = "최대 30글자로\n카테고리·아이템 직접 입력하기",
+  placeholder = "최대 30글자로\n카테고리/아이템 직접 입력하기",
   confirmDisabled,
   onCancel,
   onConfirm,
+  onLimit,
 }: {
   title?: string;
   value: string;
@@ -164,6 +165,7 @@ export function InputDialog({
   confirmDisabled?: boolean;
   onCancel: () => void;
   onConfirm: () => void;
+  onLimit?: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   return (
@@ -176,9 +178,21 @@ export function InputDialog({
             <input
               ref={inputRef}
               autoFocus
+              maxLength={30}
               value={value}
               className={value ? "typed" : "empty"}
-              onChange={(e) => onChange(e.target.value)}
+              onChange={(e) => onChange(e.target.value.slice(0, 30))}
+              onBeforeInput={(e) => {
+                const ne = e.nativeEvent as InputEvent;
+                if (!ne.inputType?.startsWith("insert") || !ne.data) return;
+                if (ne.inputType === "insertCompositionText") return;
+                const el = e.currentTarget;
+                const selected = el.selectionEnd - el.selectionStart;
+                if (value.length - selected + ne.data.length > 30) {
+                  e.preventDefault();
+                  onLimit?.();
+                }
+              }}
               onFocus={(e) => {
                 if (value) e.target.select();
               }}

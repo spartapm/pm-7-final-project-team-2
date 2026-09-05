@@ -108,18 +108,16 @@ export function generateCategories(input: {
     bySection.set(section, list);
   }
 
-  if (input.personalItems.length) {
-    bySection.set(
-      "personal",
-      input.personalItems.map((p) => ({
-        id: uid("it"),
-        name: p.name,
-        checked: false,
-        wished: false,
-        custom: true,
-      }))
-    );
-  }
+  bySection.set(
+    "personal",
+    input.personalItems.map((p) => ({
+      id: uid("it"),
+      name: p.name,
+      checked: false,
+      wished: false,
+      custom: true,
+    }))
+  );
 
   const sections = [...bySection.entries()].sort((a, b) => {
     const da = CATEGORY_META[a[0]]?.displayOrder ?? 50;

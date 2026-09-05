@@ -46,13 +46,22 @@ export const ACTIVITIES: { id: ActivityId; name: string }[] = [
 export const EXTRA_PRESET_CATEGORIES = [
   { id: "triple", name: "트리플에서 챙기기" },
   { id: "transit", name: "통신/교통 준비" },
+  { id: "fun", name: "즐길거리 준비" },
   { id: "kids", name: "아이 준비물" },
+  { id: "parents", name: "부모님을 위한 준비물" },
 ];
 
 export const CATEGORY_META: Record<
   string,
   { name: string; kind: CategoryKind; hint?: string; matchPriority: number; displayOrder: number }
 > = {
+  personal: {
+    name: "나만의 준비물",
+    kind: "personal",
+    hint: "모든 여행 일정에 담겨요",
+    matchPriority: 13,
+    displayOrder: 0,
+  },
   essential: {
     name: "필수 준비물",
     kind: "essential",
@@ -105,14 +114,28 @@ export const CATEGORY_META: Record<
     matchPriority: 11,
     displayOrder: 12,
   },
-  personal: {
-    name: "나만의 준비물",
-    kind: "personal",
-    hint: "모든 여행 일정에 담겨요",
-    matchPriority: 13,
-    displayOrder: 13,
-  },
 };
+
+export const PRESET_CATEGORY_NAMES = [
+  "트리플에서 챙기기",
+  "통신/교통 준비",
+  "즐길거리 준비",
+  "아이 준비물",
+  "부모님을 위한 준비물",
+  "필수 준비물",
+  "기본 짐싸기",
+  "사진 여행",
+  "캠핑",
+  "하이킹·등산",
+  "골프",
+  "수영·물놀이",
+  "온천·스파",
+  "겨울 스포츠",
+  "놀이공원",
+  "페스티벌",
+  "종교시설·사원",
+  "나만의 준비물",
+];
 
 export function countryName(id: CountryId) {
   return COUNTRIES.find((c) => c.id === id)?.name ?? id;

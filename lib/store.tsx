@@ -18,6 +18,7 @@ import type {
   Trip,
 } from "./types";
 import { generateCategories } from "./generate";
+import { PRESET_CATEGORY_NAMES } from "./catalog";
 import { climateBands, fetchClimate } from "./weather";
 import { pullAccount, pushAccount, type CloudAccount, type CloudStatus } from "./cloud";
 
@@ -36,17 +37,41 @@ function emptyDraft(): OnboardingDraft {
 }
 
 function migrateTrips(trips: Trip[]): Trip[] {
-  return trips.map((trip) => ({
-    ...trip,
-    categories: trip.categories.map((c) => {
+  const presets = new Set(PRESET_CATEGORY_NAMES);
+  return trips.map((trip) => {
+    let categories = trip.categories.map((c) => {
       const name = CAT_RENAME[c.name.trim()] ?? c.name;
+      const personal = name === "나만의 준비물";
       return {
         ...c,
         name,
-        hint: name === "나만의 준비물" ? "모든 여행 일정에 담겨요" : undefined,
+        kind: personal ? "personal" as const : c.kind,
+        hint: personal
+          ? "모든 여행 일정에 담겨요"
+          : presets.has(name)
+            ? undefined
+            : (c.hint || "직접 추가한 항목"),
       };
-    }),
-  }));
+    });
+    const personal = categories.filter((c) => c.name === "나만의 준비물");
+    const rest = categories.filter((c) => c.name !== "나만의 준비물");
+    if (personal.length === 0) {
+      categories = [
+        {
+          id: uid("cat"),
+          name: "나만의 준비물",
+          kind: "personal",
+          hint: "모든 여행 일정에 담겨요",
+          collapsed: false,
+          items: [],
+        },
+        ...rest,
+      ];
+    } else {
+      categories = [...personal, ...rest];
+    }
+    return { ...trip, categories };
+  });
 }
 
 function load(): AppState {

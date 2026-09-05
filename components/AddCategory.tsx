@@ -33,7 +33,7 @@ export function AddCategory({ tripId }: { tripId: string }) {
 
   const add = (label: string) => {
     updateTrip(trip.id, (t) => addCategoryToTrip(t, label));
-    router.push(`/trips/${trip.id}`);
+    router.push(`/trips/${trip.id}?added=${encodeURIComponent(label)}`);
   };
 
   return (
@@ -64,9 +64,9 @@ export function AddCategory({ tripId }: { tripId: string }) {
           value={name}
           onChange={(v) => {
             setName(v);
-            if (v.length > 30) setToast("최대 30자까지 입력할 수 있어요");
           }}
           confirmDisabled={invalid}
+          onLimit={() => setToast("최대 30자까지 입력할 수 있어요")}
           onCancel={() => setDialog(false)}
           onConfirm={() => add(name.trim())}
         />
