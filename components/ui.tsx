@@ -187,7 +187,7 @@ export function InputDialog({
                 if (!ne.inputType?.startsWith("insert") || !ne.data) return;
                 if (ne.inputType === "insertCompositionText") return;
                 const el = e.currentTarget;
-                const selected = el.selectionEnd - el.selectionStart;
+                const selected = (el.selectionEnd ?? 0) - (el.selectionStart ?? 0);
                 if (value.length - selected + ne.data.length > 30) {
                   e.preventDefault();
                   onLimit?.();

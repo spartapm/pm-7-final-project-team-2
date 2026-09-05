@@ -446,7 +446,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                             const el = e.currentTarget;
                             const insert = ne.data ?? "";
                             if (!insert) return;
-                            const selected = el.selectionEnd - el.selectionStart;
+                            const selected = (el.selectionEnd ?? 0) - (el.selectionStart ?? 0);
                             if (addText.length - selected + insert.length > 30) {
                               e.preventDefault();
                               setToast({ msg: "최대 30자까지 입력할 수 있어요" });
