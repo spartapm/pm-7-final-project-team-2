@@ -118,6 +118,25 @@ const deleteRates = read("item_delete_rate.csv")
     exposure: r.exposure_count ? Number(r.exposure_count) : 0,
   }));
 
+const wmo = {};
+for (const r of read("map_weather_code.csv")) {
+  if (r.wmo_code === "") continue;
+  wmo[Number(r.wmo_code)] = r.weather_condition_id;
+}
+
+const climate = read("climate_normal_period.csv").map((r) => ({
+  countryId: r.country_id,
+  month: Number(r.month),
+  dayFrom: Number(r.day_from),
+  dayTo: Number(r.day_to),
+  min: Number(r.temp_min_c),
+  max: Number(r.temp_max_c),
+  weather: String(r.weather_condition_ids)
+    .split(";")
+    .map((w) => w.trim())
+    .filter(Boolean),
+}));
+
 function itemName(id) {
   return master[id]?.name ?? id;
 }
@@ -211,9 +230,35 @@ export const SPEC_LINKS: SpecLink[] = ${JSON.stringify(links, null, 2)};
 
 export const SPEC_DELETE_RATES: { activityId: string; itemId: string; rate: number; shown: boolean; exposure: number }[] = ${JSON.stringify(deleteRates, null, 2)};
 
+export const SPEC_WMO_MAP: Record<number, string> = ${JSON.stringify(wmo, null, 2)};
+
+export type SpecClimatePeriod = {
+  countryId: string;
+  month: number;
+  dayFrom: number;
+  dayTo: number;
+  min: number;
+  max: number;
+  weather: string[];
+};
+
+export const SPEC_CLIMATE_PERIODS: SpecClimatePeriod[] = ${JSON.stringify(climate, null, 2)};
+
 export const SPEC_RULES = ${JSON.stringify(rules, null, 2)};
 `;
 
 fs.mkdirSync(path.join(root, "lib"), { recursive: true });
 fs.writeFileSync(path.join(root, "lib/specData.ts"), out);
-console.log("wrote lib/specData.ts", "items", Object.keys(master).length, "rules", rules.length, "links", links.length);
+console.log(
+  "wrote lib/specData.ts",
+  "items",
+  Object.keys(master).length,
+  "rules",
+  rules.length,
+  "links",
+  links.length,
+  "climate",
+  climate.length,
+  "wmo",
+  Object.keys(wmo).length
+);

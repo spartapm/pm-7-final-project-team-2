@@ -1,16 +1,26 @@
 import type { ClimateInfo, CountryId, WeatherId } from "./types";
 import { COUNTRIES } from "./catalog";
-import { CLIMATE_NORMAL, WMO_MAP } from "./rules";
+import { WMO_MAP } from "./rules";
+import { SPEC_CLIMATE_PERIODS } from "./specData";
 import { overlappingTempBands } from "./generate";
 import { daysUntil, parseDate } from "./dates";
 
 export function climateFromNormal(countryId: CountryId, startDate: string): ClimateInfo {
-  const month = parseDate(startDate).getMonth();
-  const row = CLIMATE_NORMAL[countryId][month];
+  const date = parseDate(startDate);
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const rows = SPEC_CLIMATE_PERIODS.filter((r) => r.countryId === countryId);
+  const row =
+    rows.find((r) => r.month === month && day >= r.dayFrom && day <= r.dayTo) ??
+    rows.find((r) => r.month === month) ??
+    rows[0];
+  if (!row) {
+    return { tempMin: 15, tempMax: 25, weatherIds: ["sunny"], source: "normal" };
+  }
   return {
     tempMin: row.min,
     tempMax: row.max,
-    weatherIds: row.weather,
+    weatherIds: row.weather as WeatherId[],
     source: "normal",
   };
 }

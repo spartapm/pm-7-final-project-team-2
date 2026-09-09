@@ -915,6 +915,3006 @@ export const SPEC_LINKS: SpecLink[] = [
 
 export const SPEC_DELETE_RATES: { activityId: string; itemId: string; rate: number; shown: boolean; exposure: number }[] = [];
 
+export const SPEC_WMO_MAP: Record<number, string> = {
+  "0": "sunny",
+  "1": "sunny",
+  "2": "cloudy",
+  "3": "cloudy",
+  "45": "cloudy",
+  "48": "cloudy",
+  "51": "rain",
+  "53": "rain",
+  "55": "rain",
+  "56": "rain",
+  "57": "rain",
+  "61": "rain",
+  "63": "rain",
+  "65": "rain",
+  "66": "rain",
+  "67": "rain",
+  "71": "snow",
+  "73": "snow",
+  "75": "snow",
+  "77": "snow",
+  "80": "rain",
+  "81": "rain",
+  "82": "rain",
+  "85": "snow",
+  "86": "snow",
+  "95": "rain",
+  "96": "rain",
+  "99": "rain"
+};
+
+export type SpecClimatePeriod = {
+  countryId: string;
+  month: number;
+  dayFrom: number;
+  dayTo: number;
+  min: number;
+  max: number;
+  weather: string[];
+};
+
+export const SPEC_CLIMATE_PERIODS: SpecClimatePeriod[] = [
+  {
+    "countryId": "JP",
+    "month": 1,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 0,
+    "max": 9,
+    "weather": [
+      "sunny",
+      "windy"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 1,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 0,
+    "max": 9,
+    "weather": [
+      "sunny",
+      "windy"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 1,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 0,
+    "max": 9,
+    "weather": [
+      "sunny",
+      "windy"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 2,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 0,
+    "max": 9,
+    "weather": [
+      "sunny",
+      "windy"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 2,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 1,
+    "max": 12,
+    "weather": [
+      "sunny",
+      "windy"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 2,
+    "dayFrom": 21,
+    "dayTo": 29,
+    "min": 2,
+    "max": 11,
+    "weather": [
+      "sunny",
+      "windy"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 3,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 4,
+    "max": 13,
+    "weather": [
+      "sunny",
+      "windy",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 3,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 4,
+    "max": 15,
+    "weather": [
+      "sunny",
+      "windy"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 3,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 6,
+    "max": 15,
+    "weather": [
+      "sunny",
+      "windy",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 4,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 8,
+    "max": 17,
+    "weather": [
+      "sunny",
+      "windy",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 4,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 9,
+    "max": 19,
+    "weather": [
+      "sunny",
+      "windy",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 4,
+    "dayFrom": 21,
+    "dayTo": 30,
+    "min": 12,
+    "max": 20,
+    "weather": [
+      "sunny",
+      "windy",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 5,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 13,
+    "max": 22,
+    "weather": [
+      "sunny",
+      "windy",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 5,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 15,
+    "max": 23,
+    "weather": [
+      "sunny",
+      "windy",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 5,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 16,
+    "max": 25,
+    "weather": [
+      "sunny",
+      "windy",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 6,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 17,
+    "max": 25,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 6,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 18,
+    "max": 26,
+    "weather": [
+      "rain"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 6,
+    "dayFrom": 21,
+    "dayTo": 30,
+    "min": 20,
+    "max": 27,
+    "weather": [
+      "rain"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 7,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 22,
+    "max": 29,
+    "weather": [
+      "windy",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 7,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 23,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 7,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 24,
+    "max": 31,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 8,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 25,
+    "max": 32,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 8,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 24,
+    "max": 31,
+    "weather": [
+      "sunny",
+      "windy",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 8,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 24,
+    "max": 31,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 9,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 22,
+    "max": 29,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 9,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 21,
+    "max": 28,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 9,
+    "dayFrom": 21,
+    "dayTo": 30,
+    "min": 19,
+    "max": 25,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 10,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 17,
+    "max": 24,
+    "weather": [
+      "sunny",
+      "windy",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 10,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 14,
+    "max": 21,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 10,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 12,
+    "max": 19,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 11,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 10,
+    "max": 19,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 11,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 9,
+    "max": 17,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 11,
+    "dayFrom": 21,
+    "dayTo": 30,
+    "min": 6,
+    "max": 15,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 12,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 4,
+    "max": 13,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 12,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 2,
+    "max": 11,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "JP",
+    "month": 12,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 1,
+    "max": 10,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 1,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 15,
+    "max": 22,
+    "weather": [
+      "rain"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 1,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 14,
+    "max": 21,
+    "weather": [
+      "rain"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 1,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 14,
+    "max": 20,
+    "weather": [
+      "rain"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 2,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 15,
+    "max": 21,
+    "weather": [
+      "cloudy",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 2,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 16,
+    "max": 23,
+    "weather": [
+      "cloudy"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 2,
+    "dayFrom": 21,
+    "dayTo": 29,
+    "min": 16,
+    "max": 23,
+    "weather": [
+      "cloudy"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 3,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 18,
+    "max": 25,
+    "weather": [
+      "cloudy",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 3,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 20,
+    "max": 26,
+    "weather": [
+      "cloudy",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 3,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 20,
+    "max": 27,
+    "weather": [
+      "rain"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 4,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 20,
+    "max": 28,
+    "weather": [
+      "rain"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 4,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 22,
+    "max": 29,
+    "weather": [
+      "rain"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 4,
+    "dayFrom": 21,
+    "dayTo": 30,
+    "min": 23,
+    "max": 30,
+    "weather": [
+      "rain"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 5,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 24,
+    "max": 32,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 5,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 25,
+    "max": 32,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 5,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 26,
+    "max": 32,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 6,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 26,
+    "max": 33,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 6,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 27,
+    "max": 34,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 6,
+    "dayFrom": 21,
+    "dayTo": 30,
+    "min": 27,
+    "max": 34,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 7,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 27,
+    "max": 33,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 7,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 26,
+    "max": 33,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 7,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 26,
+    "max": 32,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 8,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 26,
+    "max": 32,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 8,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 26,
+    "max": 32,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 8,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 26,
+    "max": 32,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 9,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 25,
+    "max": 31,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 9,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 25,
+    "max": 31,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 9,
+    "dayFrom": 21,
+    "dayTo": 30,
+    "min": 24,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 10,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 23,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 10,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 21,
+    "max": 28,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 10,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 21,
+    "max": 28,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 11,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 20,
+    "max": 27,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 11,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 20,
+    "max": 27,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 11,
+    "dayFrom": 21,
+    "dayTo": 30,
+    "min": 18,
+    "max": 24,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 12,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 15,
+    "max": 22,
+    "weather": [
+      "cloudy"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 12,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 14,
+    "max": 21,
+    "weather": [
+      "cloudy"
+    ]
+  },
+  {
+    "countryId": "VN",
+    "month": 12,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 14,
+    "max": 21,
+    "weather": [
+      "cloudy"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 1,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": -7,
+    "max": 3,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 1,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": -7,
+    "max": 2,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 1,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": -7,
+    "max": 2,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 2,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": -6,
+    "max": 4,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 2,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": -5,
+    "max": 6,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 2,
+    "dayFrom": 21,
+    "dayTo": 29,
+    "min": -4,
+    "max": 8,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 3,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": -2,
+    "max": 12,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 3,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 1,
+    "max": 15,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 3,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 3,
+    "max": 18,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 4,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 6,
+    "max": 20,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 4,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 9,
+    "max": 23,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 4,
+    "dayFrom": 21,
+    "dayTo": 30,
+    "min": 10,
+    "max": 24,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 5,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 12,
+    "max": 26,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 5,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 14,
+    "max": 28,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 5,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 16,
+    "max": 30,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 6,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 18,
+    "max": 32,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 6,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 20,
+    "max": 33,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 6,
+    "dayFrom": 21,
+    "dayTo": 30,
+    "min": 22,
+    "max": 33,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 7,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 22,
+    "max": 32,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 7,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 23,
+    "max": 32,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 7,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 23,
+    "max": 31,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 8,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 23,
+    "max": 31,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 8,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 22,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 8,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 19,
+    "max": 29,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 9,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 18,
+    "max": 28,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 9,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 16,
+    "max": 27,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 9,
+    "dayFrom": 21,
+    "dayTo": 30,
+    "min": 14,
+    "max": 25,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 10,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 10,
+    "max": 21,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 10,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 8,
+    "max": 19,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 10,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 6,
+    "max": 17,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 11,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 3,
+    "max": 13,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 11,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 1,
+    "max": 10,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 11,
+    "dayFrom": 21,
+    "dayTo": 30,
+    "min": -4,
+    "max": 5,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 12,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": -5,
+    "max": 5,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 12,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": -6,
+    "max": 2,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "CN",
+    "month": 12,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": -7,
+    "max": 2,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 1,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": -3,
+    "max": 5,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 1,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": -3,
+    "max": 5,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 1,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": -4,
+    "max": 4,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 2,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": -4,
+    "max": 5,
+    "weather": [
+      "sunny",
+      "snow"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 2,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": -4,
+    "max": 5,
+    "weather": [
+      "sunny",
+      "snow"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 2,
+    "dayFrom": 21,
+    "dayTo": 29,
+    "min": -2,
+    "max": 8,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 3,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": -1,
+    "max": 8,
+    "weather": [
+      "sunny",
+      "snow"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 3,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 0,
+    "max": 10,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 3,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 2,
+    "max": 11,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 4,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 4,
+    "max": 13,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 4,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 7,
+    "max": 17,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 4,
+    "dayFrom": 21,
+    "dayTo": 30,
+    "min": 7,
+    "max": 16,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 5,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 9,
+    "max": 19,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 5,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 11,
+    "max": 21,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 5,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 14,
+    "max": 24,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 6,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 15,
+    "max": 25,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 6,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 17,
+    "max": 26,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 6,
+    "dayFrom": 21,
+    "dayTo": 30,
+    "min": 19,
+    "max": 28,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 7,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 20,
+    "max": 29,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 7,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 21,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 7,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 21,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 8,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 20,
+    "max": 29,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 8,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 21,
+    "max": 28,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 8,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 19,
+    "max": 28,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 9,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 18,
+    "max": 26,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 9,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 17,
+    "max": 25,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 9,
+    "dayFrom": 21,
+    "dayTo": 30,
+    "min": 15,
+    "max": 23,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 10,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 13,
+    "max": 21,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 10,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 10,
+    "max": 19,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 10,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 9,
+    "max": 17,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 11,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 7,
+    "max": 16,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 11,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 3,
+    "max": 11,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 11,
+    "dayFrom": 21,
+    "dayTo": 30,
+    "min": 2,
+    "max": 10,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 12,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 1,
+    "max": 8,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 12,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 0,
+    "max": 7,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "US",
+    "month": 12,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": -1,
+    "max": 7,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 1,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 22,
+    "max": 31,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 1,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 22,
+    "max": 31,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 1,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 22,
+    "max": 31,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 2,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 23,
+    "max": 32,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 2,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 24,
+    "max": 32,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 2,
+    "dayFrom": 21,
+    "dayTo": 29,
+    "min": 24,
+    "max": 33,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 3,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 25,
+    "max": 33,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 3,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 26,
+    "max": 33,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 3,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 26,
+    "max": 33,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 4,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 26,
+    "max": 34,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 4,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 27,
+    "max": 35,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 4,
+    "dayFrom": 21,
+    "dayTo": 30,
+    "min": 27,
+    "max": 34,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 5,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 27,
+    "max": 34,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 5,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 27,
+    "max": 34,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 5,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 27,
+    "max": 33,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 6,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 26,
+    "max": 33,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 6,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 26,
+    "max": 33,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 6,
+    "dayFrom": 21,
+    "dayTo": 30,
+    "min": 26,
+    "max": 32,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 7,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 26,
+    "max": 32,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 7,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 26,
+    "max": 32,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 7,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 26,
+    "max": 31,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 8,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 26,
+    "max": 31,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 8,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 26,
+    "max": 32,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 8,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 25,
+    "max": 32,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 9,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 25,
+    "max": 31,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 9,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 25,
+    "max": 31,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 9,
+    "dayFrom": 21,
+    "dayTo": 30,
+    "min": 25,
+    "max": 31,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 10,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 25,
+    "max": 31,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 10,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 24,
+    "max": 31,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 10,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 24,
+    "max": 31,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 11,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 24,
+    "max": 31,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 11,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 24,
+    "max": 32,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 11,
+    "dayFrom": 21,
+    "dayTo": 30,
+    "min": 24,
+    "max": 31,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 12,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 23,
+    "max": 31,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 12,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 23,
+    "max": 31,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "TH",
+    "month": 12,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 22,
+    "max": 31,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 1,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 23,
+    "max": 29,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 1,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 23,
+    "max": 29,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 1,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 23,
+    "max": 29,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 2,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 23,
+    "max": 29,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 2,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 23,
+    "max": 30,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 2,
+    "dayFrom": 21,
+    "dayTo": 29,
+    "min": 23,
+    "max": 31,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 3,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 23,
+    "max": 31,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 3,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 24,
+    "max": 31,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 3,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 24,
+    "max": 32,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 4,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 25,
+    "max": 33,
+    "weather": [
+      "sunny"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 4,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 25,
+    "max": 33,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 4,
+    "dayFrom": 21,
+    "dayTo": 30,
+    "min": 26,
+    "max": 34,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 5,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 27,
+    "max": 34,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 5,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 27,
+    "max": 33,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 5,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 26,
+    "max": 32,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 6,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 26,
+    "max": 32,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 6,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 26,
+    "max": 31,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 6,
+    "dayFrom": 21,
+    "dayTo": 30,
+    "min": 26,
+    "max": 31,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 7,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 25,
+    "max": 31,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 7,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 25,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 7,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 25,
+    "max": 29,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 8,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 26,
+    "max": 29,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 8,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 26,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 8,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 25,
+    "max": 29,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 9,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 25,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 9,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 25,
+    "max": 29,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 9,
+    "dayFrom": 21,
+    "dayTo": 30,
+    "min": 25,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 10,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 25,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 10,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 25,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 10,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 25,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 11,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 25,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 11,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 25,
+    "max": 31,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 11,
+    "dayFrom": 21,
+    "dayTo": 30,
+    "min": 25,
+    "max": 31,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 12,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 24,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 12,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 24,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "PH",
+    "month": 12,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 24,
+    "max": 29,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 1,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 24,
+    "max": 29,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 1,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 24,
+    "max": 29,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 1,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 24,
+    "max": 29,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 2,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 24,
+    "max": 29,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 2,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 24,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 2,
+    "dayFrom": 21,
+    "dayTo": 29,
+    "min": 24,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 3,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 24,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 3,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 24,
+    "max": 31,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 3,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 25,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 4,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 24,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 4,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 25,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 4,
+    "dayFrom": 21,
+    "dayTo": 30,
+    "min": 25,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 5,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 25,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 5,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 25,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 5,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 25,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 6,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 25,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 6,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 25,
+    "max": 29,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 6,
+    "dayFrom": 21,
+    "dayTo": 30,
+    "min": 25,
+    "max": 29,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 7,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 25,
+    "max": 29,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 7,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 25,
+    "max": 29,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 7,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 25,
+    "max": 29,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 8,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 25,
+    "max": 29,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 8,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 25,
+    "max": 29,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 8,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 25,
+    "max": 29,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 9,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 25,
+    "max": 29,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 9,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 25,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 9,
+    "dayFrom": 21,
+    "dayTo": 30,
+    "min": 25,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 10,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 24,
+    "max": 29,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 10,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 25,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 10,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 24,
+    "max": 30,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 11,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 24,
+    "max": 29,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 11,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 24,
+    "max": 29,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 11,
+    "dayFrom": 21,
+    "dayTo": 30,
+    "min": 24,
+    "max": 29,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 12,
+    "dayFrom": 1,
+    "dayTo": 10,
+    "min": 24,
+    "max": 29,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 12,
+    "dayFrom": 11,
+    "dayTo": 20,
+    "min": 24,
+    "max": 29,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  },
+  {
+    "countryId": "SG",
+    "month": 12,
+    "dayFrom": 21,
+    "dayTo": 31,
+    "min": 24,
+    "max": 29,
+    "weather": [
+      "sunny",
+      "rain"
+    ]
+  }
+];
+
 export const SPEC_RULES = [
   {
     "itemId": "I0001",
