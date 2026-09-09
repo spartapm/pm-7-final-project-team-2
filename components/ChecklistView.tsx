@@ -5,30 +5,87 @@ import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointer
 import { countryName, PRESET_CATEGORY_NAMES } from "@/lib/catalog";
 import { checklistSubtitle } from "@/lib/dates";
 import { track } from "@/lib/analytics";
-import { emptyCustomCategory } from "@/lib/generate";
+import { categoryFromPreset, emptyCustomCategory } from "@/lib/generate";
+import { overpackCopy } from "@/lib/itemMeta";
+import { setLastHome } from "@/lib/lastHome";
 import { newItem, patchCategory, patchItem, useStore } from "@/lib/store";
 import type { Category, ChecklistItem, FilterMode, Trip } from "@/lib/types";
 import {
   IconCheck,
   IconChevron,
   IconHeart,
+  IconInfo,
   IconMeatball,
+  IconOverpack,
   IconPencil,
   IconPlus,
   IconXSmall,
   PhoneShell,
 } from "./icons";
-import { ConfirmDialog, InputDialog, Menu, Toast, TopBar } from "./ui";
+import { ConfirmDialog, InfoDialog, Menu, Toast, TopBar } from "./ui";
 
 const LEGAL =
   "챙겨요(가칭)가 제공하는 국가별 반입 주의·금지 품목 및 관련 법적·규정 정보는 각 항목에 표시된 작성·갱신 기준일 시점에 확인된 내용을 바탕으로 한 참고용 정보입니다. 관련 법령 및 규정은 국가와 시기에 따라 사전 예고 없이 변경될 수 있으며, 본 서비스가 제공하는 정보가 실제 세관·출입국 규정과 다를 수 있습니다. 챙겨요(가칭)는 해당 정보의 최신성·정확성·완전성을 보장하지 않으며, 이를 신뢰하여 발생한 불이익이나 손해에 대해 책임을 지지 않습니다. 정확한 반입 규정은 반드시 이용 항공사, 목적지 국가의 대사관·영사관, 관세청 등 공식 기관을 통해 여행 전 별도로 확인하시기 바랍니다.";
 
+function isPersonalCat(c: Category) {
+  return c.kind === "personal" || c.name === "나만의 준비물";
+}
+
+function RecoCarousel() {
+  const ref = useRef<HTMLDivElement>(null);
+  const drag = useRef<{ x: number; sl: number } | null>(null);
+
+  const onDown = (e: ReactPointerEvent) => {
+    const el = ref.current;
+    if (!el) return;
+    drag.current = { x: e.clientX, sl: el.scrollLeft };
+    el.setPointerCapture(e.pointerId);
+  };
+  const onMove = (e: ReactPointerEvent) => {
+    const el = ref.current;
+    const d = drag.current;
+    if (!el || !d) return;
+    el.scrollLeft = d.sl - (e.clientX - d.x);
+  };
+  const onUp = () => {
+    drag.current = null;
+  };
+
+  return (
+    <div
+      ref={ref}
+      className="reco-row"
+      onPointerDown={onDown}
+      onPointerMove={onMove}
+      onPointerUp={onUp}
+      onPointerCancel={onUp}
+    >
+      {[0, 1, 2].map((i) => (
+        <div className="reco" key={i}>
+          <div>
+            <div className="txt">여행자님이 좋아하실 상품을 준비하고 있어요.</div>
+            <div className="src">트리플 추천</div>
+          </div>
+          <div className="thumb" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function ChecklistView({ tripId }: { tripId: string }) {
   const router = useRouter();
-  const { trips, updateTrip, addPersonalItem } = useStore();
+  const {
+    trips,
+    personalItems,
+    updateTrip,
+    addPersonalItem,
+    renamePersonalItem,
+    removePersonalItem,
+    restoreSnapshot,
+  } = useStore();
   const trip = trips.find((t) => t.id === tripId);
   const [editing, setEditing] = useState(false);
-  const [selecting, setSelecting] = useState(false);
   const [filter, setFilter] = useState<FilterMode>("all");
   const [kebabOpen, setKebabOpen] = useState(false);
   const [catMenu, setCatMenu] = useState<{ id: string; anchor: HTMLElement } | null>(null);
@@ -37,25 +94,33 @@ export function ChecklistView({ tripId }: { tripId: string }) {
   const [rename, setRename] = useState<{ catId: string; itemId: string; name: string } | null>(null);
   const [adding, setAdding] = useState<string | null>(null);
   const [addText, setAddText] = useState("");
-  const [toast, setToast] = useState<{ msg: string; undo?: () => void } | null>(null);
-  const addRef = useRef<HTMLInputElement>(null);
-  const undoRef = useRef<Trip | null>(null);
-  const [confirmBulk, setConfirmBulk] = useState(false);
-  const [drag, setDrag] = useState<{ itemId: string; overId: string } | null>(null);
-  const dragRef = useRef<{
-    catId: string;
-    itemId: string;
-    overId: string;
-    timer: number | null;
-    armed: boolean;
-    startX: number;
-    startY: number;
+  const [toast, setToast] = useState<{
+    msg: string;
+    undo?: () => void;
+    place?: "top" | "bottom";
   } | null>(null);
+  const addRef = useRef<HTMLInputElement>(null);
+  const renameRef = useRef<HTMLInputElement>(null);
+  const undoRef = useRef<{ trips: Trip[]; personalItems: { id: string; name: string }[] } | null>(null);
+  const collapseRef = useRef<Record<string, boolean>>({});
+  const [confirmBulk, setConfirmBulk] = useState(false);
+  const [info, setInfo] = useState<string | null>(null);
+  const [counterOn, setCounterOn] = useState(true);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const selectedCount = useMemo(
     () => trip?.categories.reduce((n, c) => n + c.items.filter((i) => i.selected).length, 0) ?? 0,
     [trip]
   );
+
+  const counts = useMemo(() => {
+    const items = trip?.categories.flatMap((c) => c.items) ?? [];
+    return {
+      checked: items.filter((i) => i.checked).length,
+      total: items.length,
+      wished: items.filter((i) => i.wished).length,
+    };
+  }, [trip]);
 
   useEffect(() => {
     if (!trip) return;
@@ -65,6 +130,59 @@ export function ChecklistView({ tripId }: { tripId: string }) {
     el?.scrollIntoView({ behavior: "smooth", block: "start" });
     router.replace(`/trips/${trip.id}`, { scroll: false });
   }, [router, trip]);
+
+  useEffect(() => {
+    if (!trip) return;
+    setLastHome(`/trips/${trip.id}`);
+    if (!trip.seen) updateTrip(trip.id, (t) => (t.seen ? t : { ...t, seen: true }));
+  }, [trip?.id]);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    let last = el.scrollTop;
+    const onScroll = () => {
+      const y = el.scrollTop;
+      if (y < last - 4) setCounterOn(true);
+      else if (y > last + 4) setCounterOn(false);
+      last = y;
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [trip?.id]);
+
+  useEffect(() => {
+    if (!adding) return;
+    const close = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest("[data-add-row]")) return;
+      if (!addText.trim()) {
+        setAdding(null);
+        setAddText("");
+      }
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [adding, addText]);
+
+  useEffect(() => {
+    if (rename) requestAnimationFrame(() => renameRef.current?.focus());
+  }, [rename]);
+
+  const orderedCats = useMemo(() => {
+    const cats = trip?.categories ?? [];
+    if (filter === "all") return cats;
+    const vis = (item: ChecklistItem) => {
+      if (filter === "unchecked") return !item.checked;
+      if (filter === "wished") return item.wished;
+      return true;
+    };
+    return [...cats].sort((a, b) => {
+      const am = a.items.some(vis) ? 0 : 1;
+      const bm = b.items.some(vis) ? 0 : 1;
+      return am - bm;
+    });
+  }, [trip?.categories, filter]);
 
   if (!trip) {
     return (
@@ -83,97 +201,16 @@ export function ChecklistView({ tripId }: { tripId: string }) {
     return true;
   };
 
-  const endDrag = (commit: boolean) => {
-    const d = dragRef.current;
-    if (d?.timer) window.clearTimeout(d.timer);
-    if (commit && d?.armed && d.itemId !== d.overId) {
-      save((t) =>
-        patchCategory(t, d.catId, (c) => {
-          const vis = c.items.filter(visible);
-          const from = vis.findIndex((i) => i.id === d.itemId);
-          const to = vis.findIndex((i) => i.id === d.overId);
-          if (from < 0 || to < 0) return c;
-          const ids = vis.map((i) => i.id);
-          const [moved] = ids.splice(from, 1);
-          ids.splice(to, 0, moved);
-          const visSet = new Set(ids);
-          const hidden = c.items.filter((i) => !visSet.has(i.id));
-          const ordered = ids.map((id) => c.items.find((i) => i.id === id)!);
-          return { ...c, items: [...ordered, ...hidden] };
-        })
-      );
-    }
-    dragRef.current = null;
-    setDrag(null);
-    document.querySelector(".shell-scroll")?.classList.remove("lock");
-  };
-
-  const onItemPointerDown = (catId: string, itemId: string, e: ReactPointerEvent) => {
-    if (editing || selecting) return;
-    if ((e.target as HTMLElement).closest("button, input")) return;
-    const startX = e.clientX;
-    const startY = e.clientY;
-    const timer = window.setTimeout(() => {
-      if (!dragRef.current) return;
-      dragRef.current.armed = true;
-      document.querySelector(".shell-scroll")?.classList.add("lock");
-      setDrag({ itemId, overId: itemId });
-    }, 1000);
-    dragRef.current = { catId, itemId, overId: itemId, timer, armed: false, startX, startY };
-
-    const move = (ev: PointerEvent) => {
-      const cur = dragRef.current;
-      if (!cur) return;
-      if (!cur.armed) {
-        if (Math.hypot(ev.clientX - cur.startX, ev.clientY - cur.startY) > 8) {
-          if (cur.timer) window.clearTimeout(cur.timer);
-          cur.timer = null;
-        }
-        return;
-      }
-      ev.preventDefault();
-      const el = document.elementFromPoint(ev.clientX, ev.clientY);
-      const row = el?.closest("[data-item-id]") as HTMLElement | null;
-      const overId = row?.dataset.itemId;
-      if (overId && overId !== cur.overId) {
-        cur.overId = overId;
-        setDrag({ itemId: cur.itemId, overId });
-      }
-    };
-    const up = () => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-      window.removeEventListener("pointercancel", up);
-      endDrag(true);
-    };
-    window.addEventListener("pointermove", move, { passive: false });
-    window.addEventListener("pointerup", up);
-    window.addEventListener("pointercancel", up);
-  };
-
   const toggleChecked = (catId: string, item: ChecklistItem) => {
-    save((t) =>
-      patchCategory(t, catId, (c) => {
-        const next = c.items.map((i) =>
-          i.id === item.id ? { ...i, checked: !i.checked } : i
-        );
-        const target = next.find((i) => i.id === item.id);
-        if (!target) return c;
-        const rest = next.filter((i) => i.id !== item.id);
-        return { ...c, items: target.checked ? [...rest, target] : [target, ...rest] };
-      })
-    );
+    save((t) => patchItem(t, catId, item.id, (i) => ({ ...i, checked: !i.checked })));
     track("item_status_changed", {
       item_id: item.id,
       status: item.checked ? "skip" : "has",
     });
   };
 
-  const enterSelect = (catId: string, itemId: string) => {
-    setSelecting(true);
-    save((t) =>
-      patchItem(t, catId, itemId, (i) => ({ ...i, selected: !i.selected }))
-    );
+  const toggleSelect = (catId: string, itemId: string) => {
+    save((t) => patchItem(t, catId, itemId, (i) => ({ ...i, selected: !i.selected })));
   };
 
   const kebabItems = () => {
@@ -181,8 +218,12 @@ export function ChecklistView({ tripId }: { tripId: string }) {
       {
         label: "편집",
         onClick: () => {
+          collapseRef.current = Object.fromEntries(trip.categories.map((c) => [c.id, c.collapsed]));
           setEditing(true);
-          setSelecting(false);
+          save((t) => ({
+            ...t,
+            categories: t.categories.map((c) => ({ ...c, collapsed: false })),
+          }));
         },
       },
     ];
@@ -216,57 +257,86 @@ export function ChecklistView({ tripId }: { tripId: string }) {
   };
 
   const finishEdit = () => {
+    const snap = collapseRef.current;
     setEditing(false);
-    setSelecting(false);
+    setRename(null);
     save((t) => ({
       ...t,
       categories: t.categories.map((c) => ({
         ...c,
+        collapsed: snap[c.id] ?? c.collapsed,
         items: c.items.map((i) => ({ ...i, selected: false })),
       })),
     }));
   };
 
   const deleteSelected = () => {
+    const selected = trip.categories.flatMap((c) =>
+      c.items.filter((i) => i.selected).map((i) => ({ cat: c, item: i }))
+    );
+    undoRef.current = { trips, personalItems };
+    selected
+      .filter(({ cat }) => isPersonalCat(cat))
+      .forEach(({ item }) => removePersonalItem({ personalId: item.personalId, name: item.name }));
     save((t) => ({
       ...t,
-      categories: t.categories.map((c) => ({
-        ...c,
-        items: c.items.filter((i) => !i.selected),
-      })),
+      categories: t.categories.map((c) =>
+        isPersonalCat(c) ? c : { ...c, items: c.items.filter((i) => !i.selected) }
+      ),
     }));
-    setSelecting(false);
     track("item_removed", { is_bulk: true });
   };
 
-  const deleteOne = (catId: string, item: ChecklistItem) => {
-    undoRef.current = trip;
-    save((t) =>
-      patchCategory(t, catId, (c) => ({
-        ...c,
-        items: c.items.filter((i) => i.id !== item.id),
-      }))
-    );
+  const deleteOne = (cat: Category, item: ChecklistItem) => {
+    undoRef.current = { trips, personalItems };
+    if (isPersonalCat(cat)) {
+      removePersonalItem({ personalId: item.personalId, name: item.name });
+    } else {
+      save((t) =>
+        patchCategory(t, cat.id, (c) => ({
+          ...c,
+          items: c.items.filter((i) => i.id !== item.id),
+        }))
+      );
+    }
     setToast({
       msg: "해당 항목을 지웠어요",
+      place: "bottom",
       undo: () => {
-        if (undoRef.current) updateTrip(trip.id, () => undoRef.current as Trip);
+        if (undoRef.current) restoreSnapshot(undoRef.current);
       },
     });
     track("item_removed", { is_bulk: false, item_id: item.id });
+  };
+
+  const commitRename = () => {
+    if (!rename) return;
+    const name = rename.name.trim();
+    if (!name || name.length > 30) return;
+    const cat = trip.categories.find((c) => c.id === rename.catId);
+    const item = cat?.items.find((i) => i.id === rename.itemId);
+    if (cat && item && isPersonalCat(cat)) {
+      renamePersonalItem({ personalId: item.personalId, name: item.name }, name);
+    } else {
+      save((t) => patchItem(t, rename.catId, rename.itemId, (i) => ({ ...i, name })));
+    }
+    setRename(null);
   };
 
   const tryAdd = (catId: string, category: Category) => {
     const name = addText.trim();
     if (!name) return;
     if (name.length > 30) {
-      setToast({ msg: "최대 30자까지 입력할 수 있어요" });
+      setToast({ msg: "최대 30자까지 입력할 수 있어요", place: "top" });
       return;
     }
-    save((t) =>
-      patchCategory(t, catId, (c) => ({ ...c, items: [...c.items, newItem(name)] }))
-    );
-    if (category.kind === "personal") addPersonalItem(name);
+    if (isPersonalCat(category)) {
+      addPersonalItem(name);
+    } else {
+      save((t) =>
+        patchCategory(t, catId, (c) => ({ ...c, items: [...c.items, newItem(name)] }))
+      );
+    }
     track("item_added", { is_bulk: false });
     setAddText("");
     setAdding(catId);
@@ -279,13 +349,24 @@ export function ChecklistView({ tripId }: { tripId: string }) {
     <PhoneShell>
       <TopBar
         float
-        back={() => router.push("/trips")}
-        kebab={!editing ? () => { setCatMenu(null); setKebabOpen((v) => !v); } : undefined}
+        back={editing ? undefined : () => router.push("/trips")}
+        kebab={
+          !editing
+            ? () => {
+                setCatMenu(null);
+                setKebabOpen((v) => !v);
+              }
+            : undefined
+        }
         kebabActive={kebabOpen}
         kebabRef={kebabRef}
         right={
           editing ? (
-            <button className="t-button" style={{ color: "var(--primary)", background: "none", border: "none" }} onClick={finishEdit}>
+            <button
+              className="t-button"
+              style={{ color: "var(--primary)", background: "none", border: "none" }}
+              onClick={finishEdit}
+            >
               완료
             </button>
           ) : undefined
@@ -295,7 +376,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
         <Menu anchor={kebabRef.current} items={kebabItems()} onClose={() => setKebabOpen(false)} />
       ) : null}
 
-      <div className="shell-scroll">
+      <div className="shell-scroll" ref={scrollRef}>
         <div className="pad-c">
           <p className="t-caption" style={{ color: "var(--text-3)", margin: "0 0 4px" }}>
             {checklistSubtitle(countryName(trip.countryId), trip.startDate, trip.endDate)}
@@ -307,22 +388,11 @@ export function ChecklistView({ tripId }: { tripId: string }) {
           </h1>
           <div className="reco-head">여행자님을 위한 추천</div>
         </div>
-        <div className="reco-row">
-          {[0, 1, 2].map((i) => (
-            <div className="reco" key={i}>
-              <div>
-                <div className="txt">여행자님이 좋아하실 상품을 준비하고 있어요.</div>
-                <div className="src">트리플 추천</div>
-              </div>
-              <div className="thumb" />
-            </div>
-          ))}
-        </div>
+        <RecoCarousel />
         <div className="reco-more">추천 아이템 모두 보기</div>
 
-        {trip.categories.map((cat) => {
+        {orderedCats.map((cat) => {
           const items = cat.items.filter(visible);
-          const empty = items.length === 0;
           return (
             <section key={cat.id} data-cat-name={cat.name}>
               <div style={{ position: "relative" }}>
@@ -367,126 +437,187 @@ export function ChecklistView({ tripId }: { tripId: string }) {
               </div>
               {cat.collapsed ? null : (
                 <>
-                  {empty && filter !== "all" ? (
-                    <div className="empty tight">해당하는 항목이 없어요</div>
-                  ) : null}
-                  {items.map((item) => (
-                    <div
-                      className={`row${item.reason ? " sub" : ""}${drag?.itemId === item.id ? " dragging" : ""}${drag?.overId === item.id && drag.itemId !== item.id ? " drag-over" : ""}`}
-                      key={item.id}
-                      data-item-id={item.id}
-                      onPointerDown={(e) => onItemPointerDown(cat.id, item.id, e)}
-                    >
-                      <button
-                        className={`cbx${editing ? (item.selected ? " del" : "") : item.checked ? " on" : ""}`}
-                        aria-label={editing ? "삭제 선택" : "준비 완료"}
-                        onClick={() => {
+                  {items.map((item) => {
+                    const pack = editing && cat.kind === "activity" ? overpackCopy(item.deleteRate) : null;
+                    const reason = pack ? null : item.reason;
+                    const renaming = rename?.catId === cat.id && rename.itemId === item.id;
+                    return (
+                      <div
+                        className={`row${reason || pack ? " sub" : ""}`}
+                        key={item.id}
+                        data-item-id={item.id}
+                        onClick={(e) => {
+                          const target = e.target as HTMLElement;
+                          if (target.closest("button, input, textarea, a")) return;
                           if (editing) {
-                            enterSelect(cat.id, item.id);
+                            toggleSelect(cat.id, item.id);
                             return;
                           }
                           toggleChecked(cat.id, item);
                         }}
                       >
-                        {(editing && item.selected) || (!editing && item.checked) ? <IconCheck /> : null}
-                      </button>
-                      <div className="body">
-                        <span className="name">{item.name}</span>
-                        {item.reason ? <span className="desc">{item.reason}</span> : null}
-                      </div>
-                      {editing ? (
-                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          {item.custom ? (
+                        <button
+                          className={`cbx${editing ? (item.selected ? " del" : "") : item.checked ? " on" : ""}`}
+                          aria-label={editing ? "삭제 선택" : "준비 완료"}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (editing) {
+                              toggleSelect(cat.id, item.id);
+                              return;
+                            }
+                            toggleChecked(cat.id, item);
+                          }}
+                        >
+                          {(editing && item.selected) || (!editing && item.checked) ? <IconCheck /> : null}
+                        </button>
+                        <div className="body">
+                          {renaming ? (
+                            <input
+                              ref={renameRef}
+                              value={rename.name}
+                              maxLength={30}
+                              onChange={(e) => setRename({ ...rename, name: e.target.value })}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") commitRename();
+                                if (e.key === "Escape") setRename(null);
+                              }}
+                              onBlur={commitRename}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          ) : (
+                            <span className="name">{item.name}</span>
+                          )}
+                          {pack ? (
+                            <span className="desc overpack">
+                              <IconOverpack />
+                              {pack}
+                            </span>
+                          ) : reason ? (
+                            <span className="desc">{reason}</span>
+                          ) : null}
+                        </div>
+                        {editing ? (
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            {item.custom ? (
+                              <button
+                                className="icon-btn"
+                                aria-label="이름 변경"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setRename({ catId: cat.id, itemId: item.id, name: item.name });
+                                }}
+                              >
+                                <IconPencil />
+                              </button>
+                            ) : null}
                             <button
                               className="icon-btn"
-                              aria-label="이름 변경"
-                              onClick={() => setRename({ catId: cat.id, itemId: item.id, name: item.name })}
+                              aria-label="삭제"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteOne(cat, item);
+                              }}
                             >
-                              <IconPencil />
+                              <IconXSmall />
                             </button>
-                          ) : null}
-                          <button className="icon-btn" aria-label="삭제" onClick={() => deleteOne(cat.id, item)}>
-                            <IconXSmall />
+                          </div>
+                        ) : (
+                          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                            {item.linkNote ? (
+                              <button
+                                className="icon-btn"
+                                aria-label="정보"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setInfo(item.linkNote ?? null);
+                                }}
+                              >
+                                <IconInfo />
+                              </button>
+                            ) : null}
+                            <button
+                              className="icon-btn"
+                              aria-label="찜"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                save((t) =>
+                                  patchItem(t, cat.id, item.id, (i) => ({ ...i, wished: !i.wished }))
+                                );
+                                track("item_status_changed", {
+                                  item_id: item.id,
+                                  status: item.wished ? "has" : "need",
+                                });
+                              }}
+                            >
+                              <IconHeart on={item.wished} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {editing ? null : (
+                    <div className="row" data-add-row>
+                      <span className="cbx add" />
+                      <div className="body">
+                        {adding === cat.id ? (
+                          <input
+                            ref={addRef}
+                            autoFocus
+                            value={addText}
+                            maxLength={30}
+                            placeholder="직접 아이템을 입력해주세요"
+                            onChange={(e) => setAddText(e.target.value)}
+                            onBeforeInput={(e) => {
+                              const ne = e.nativeEvent as InputEvent;
+                              if (!ne.inputType?.startsWith("insert")) return;
+                              if (ne.inputType === "insertCompositionText") return;
+                              const el = e.currentTarget;
+                              const insert = ne.data ?? "";
+                              if (!insert) return;
+                              const selected = (el.selectionEnd ?? 0) - (el.selectionStart ?? 0);
+                              if (addText.length - selected + insert.length > 30) {
+                                e.preventDefault();
+                                setToast({ msg: "최대 30자까지 입력할 수 있어요", place: "top" });
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") tryAdd(cat.id, cat);
+                            }}
+                          />
+                        ) : (
+                          <button
+                            className="name name-add"
+                            style={{ background: "none", border: "none", padding: 0, textAlign: "left" }}
+                            onClick={() => {
+                              setAdding(cat.id);
+                              setAddText("");
+                              requestAnimationFrame(() => addRef.current?.focus());
+                            }}
+                          >
+                            아이템 추가
                           </button>
-                        </div>
-                      ) : (
+                        )}
+                      </div>
+                      {adding === cat.id ? (
                         <button
                           className="icon-btn"
-                          aria-label="찜"
+                          aria-label="추가"
+                          disabled={!addText.trim() && !over}
+                          onMouseDown={(e) => e.preventDefault()}
                           onClick={() => {
-                            save((t) =>
-                              patchItem(t, cat.id, item.id, (i) => ({ ...i, wished: !i.wished }))
-                            );
-                            track("item_status_changed", {
-                              item_id: item.id,
-                              status: item.wished ? "has" : "need",
-                            });
-                          }}
-                        >
-                          <IconHeart on={item.wished} />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  <div className={`row${selecting ? " muted" : ""}`}>
-                    <span className="cbx add" />
-                    <div className="body">
-                      {adding === cat.id ? (
-                        <input
-                          ref={addRef}
-                          autoFocus
-                          value={addText}
-                          maxLength={30}
-                          placeholder="직접 아이템을 입력해주세요"
-                          onChange={(e) => setAddText(e.target.value)}
-                          onBeforeInput={(e) => {
-                            const ne = e.nativeEvent as InputEvent;
-                            if (!ne.inputType?.startsWith("insert")) return;
-                            if (ne.inputType === "insertCompositionText") return;
-                            const el = e.currentTarget;
-                            const insert = ne.data ?? "";
-                            if (!insert) return;
-                            const selected = (el.selectionEnd ?? 0) - (el.selectionStart ?? 0);
-                            if (addText.length - selected + insert.length > 30) {
-                              e.preventDefault();
-                              setToast({ msg: "최대 30자까지 입력할 수 있어요" });
+                            if (over) {
+                              setToast({ msg: "최대 30자까지 입력할 수 있어요", place: "top" });
+                              return;
                             }
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") tryAdd(cat.id, cat);
-                          }}
-                        />
-                      ) : (
-                        <button
-                          className="name name-add"
-                          style={{ background: "none", border: "none", padding: 0, textAlign: "left" }}
-                          onClick={() => {
-                            setAdding(cat.id);
-                            setAddText("");
-                            requestAnimationFrame(() => addRef.current?.focus());
+                            tryAdd(cat.id, cat);
                           }}
                         >
-                          아이템 추가
+                          <IconPlus color={over ? "var(--text-3)" : "var(--primary)"} />
                         </button>
-                      )}
+                      ) : null}
                     </div>
-                    {adding === cat.id ? (
-                      <button
-                        className="icon-btn"
-                        aria-label="추가"
-                        disabled={selecting || (!addText.trim() && !over)}
-                        onClick={() => {
-                          if (over) {
-                            setToast({ msg: "최대 30자까지 입력할 수 있어요" });
-                            return;
-                          }
-                          tryAdd(cat.id, cat);
-                        }}
-                      >
-                        <IconPlus color={over ? "var(--text-3)" : "var(--primary)"} />
-                      </button>
-                    ) : null}
-                  </div>
+                  )}
                 </>
               )}
             </section>
@@ -501,19 +632,40 @@ export function ChecklistView({ tripId }: { tripId: string }) {
             <p className="legal">{LEGAL}</p>
             <div className="legaldiv" />
             <p className="legal2">기후 정보는 2015년~2024년 관측값을 바탕으로 한 추정값입니다.</p>
-            <p className="legal2">Weather data by Open-Meteo.com (CC BY 4.0)</p>
+            <p className="legal2">
+              Weather data by{" "}
+              <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">
+                Open-Meteo.com
+              </a>{" "}
+              (CC BY 4.0)
+            </p>
           </div>
         </div>
       </div>
 
-      {selecting ? (
+      {editing ? (
         <div className="actionbar">
           <span className="cnt">{selectedCount}개 선택됨</span>
-          <button className={`act${selectedCount === 0 ? " off" : ""}`} disabled={selectedCount === 0} onClick={() => setConfirmBulk(true)}>
+          <button
+            className={`act${selectedCount === 0 ? " off" : ""}`}
+            disabled={selectedCount === 0}
+            onClick={() => setConfirmBulk(true)}
+          >
             삭제
           </button>
         </div>
-      ) : null}
+      ) : (
+        <div className={`float-count${counterOn ? "" : " off"}`}>
+          <span className="n">
+            <IconCheck />
+            {counts.checked} / {counts.total}
+          </span>
+          <span className="n heart">
+            <IconHeart on />
+            {counts.wished}
+          </span>
+        </div>
+      )}
 
       {catMenu ? (
         <Menu
@@ -552,19 +704,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
         />
       ) : null}
 
-      {rename ? (
-        <InputDialog
-          value={rename.name}
-          onChange={(v) => setRename({ ...rename, name: v })}
-          confirmDisabled={!rename.name.trim() || rename.name.length > 30}
-          onLimit={() => setToast({ msg: "최대 30자까지 입력할 수 있어요" })}
-          onCancel={() => setRename(null)}
-          onConfirm={() => {
-            save((t) => patchItem(t, rename.catId, rename.itemId, (i) => ({ ...i, name: rename.name.trim() })));
-            setRename(null);
-          }}
-        />
-      ) : null}
+      {info ? <InfoDialog text={info} onClose={() => setInfo(null)} /> : null}
 
       {toast ? (
         <Toast
@@ -572,6 +712,8 @@ export function ChecklistView({ tripId }: { tripId: string }) {
           action={toast.undo ? "되돌리기" : undefined}
           onAction={toast.undo}
           onDone={() => setToast(null)}
+          place={toast.place ?? "top"}
+          raised={editing && toast.place === "bottom"}
         />
       ) : null}
     </PhoneShell>
@@ -584,18 +726,25 @@ export function unusedPresetNames(trip: Trip) {
   return PRESET_CATEGORY_NAMES.filter((n) => !used.has(n));
 }
 
-export function addCategoryToTrip(trip: Trip, name: string): Trip {
+export function addCategoryToTrip(
+  trip: Trip,
+  name: string,
+  personalItems: { id: string; name: string }[] = []
+): Trip {
   const alias: Record<string, string> = { 필수: "필수 준비물", 기본: "기본 짐싸기" };
   const canon = alias[name] ?? name;
   if (trip.categories.some((c) => (alias[c.name] ?? c.name) === canon)) return trip;
-  const cat = emptyCustomCategory(name);
-  const presets = new Set(PRESET_CATEGORY_NAMES);
+  const cat = categoryFromPreset(name, personalItems);
+  if (name !== cat.name && cat.items.length === 0 && cat.kind === "custom") {
+    const fallback = emptyCustomCategory(name);
+    fallback.hint = "직접 추가한 항목";
+    return { ...trip, categories: [...trip.categories, fallback] };
+  }
   if (name === "나만의 준비물") {
-    cat.kind = "personal";
-    cat.hint = "모든 여행 일정에 담겨요";
     return { ...trip, categories: [cat, ...trip.categories] };
   }
-  if (!presets.has(canon)) {
+  const presets = new Set(PRESET_CATEGORY_NAMES);
+  if (!presets.has(canon) && cat.kind === "custom") {
     cat.hint = "직접 추가한 항목";
   }
   return { ...trip, categories: [...trip.categories, cat] };

@@ -115,6 +115,24 @@ export function IconXSmall() {
   );
 }
 
+export function IconInfo() {
+  return (
+    <Svg width="16" height="16" viewBox="0 0 16 16">
+      <circle cx="8" cy="8" r="7" stroke="var(--text-3)" strokeWidth="1.4" />
+      <path d="M8 7.2v4" stroke="var(--text-3)" strokeWidth="1.5" strokeLinecap="round" />
+      <circle cx="8" cy="4.8" r="0.9" fill="var(--text-3)" />
+    </Svg>
+  );
+}
+
+export function IconOverpack() {
+  return (
+    <Svg width="12" height="12" viewBox="0 0 12 12">
+      <path d="M2 6h7M6.5 3l3 3-3 3" stroke="var(--accent)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
 export function PhoneShell({ children }: { children: ReactNode }) {
   return <div className="shell">{children}</div>;
 }

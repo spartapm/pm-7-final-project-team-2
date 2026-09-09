@@ -9,6 +9,7 @@ import type {
   WeatherId,
 } from "./types";
 import { CATEGORY_META } from "./catalog";
+import { ITEM_META } from "./itemMeta";
 import { RULES, SOURCE_RANK, type Rule } from "./rules";
 
 function uid(prefix: string) {
@@ -25,6 +26,21 @@ function srcRank(section: string, table: string) {
   const order = SOURCE_RANK[section] ?? ["activity", "country", "companion", "weather", "temp", "base"];
   const i = order.indexOf(table);
   return i === -1 ? 99 : i;
+}
+
+export function itemFromRule(rule: Rule): ChecklistItem {
+  const meta = ITEM_META[rule.itemId];
+  return {
+    id: uid("it"),
+    masterId: rule.itemId,
+    name: rule.name,
+    reason: rule.reason,
+    checked: false,
+    wished: false,
+    custom: false,
+    linkNote: meta?.linkNote,
+    deleteRate: meta?.deleteRate,
+  };
 }
 
 export function overlappingTempBands(min: number, max: number): TempBandId[] {
@@ -97,14 +113,7 @@ export function generateCategories(input: {
   const bySection = new Map<string, ChecklistItem[]>();
   for (const { rule, section } of picked.values()) {
     const list = bySection.get(section) ?? [];
-    list.push({
-      id: uid("it"),
-      name: rule.name,
-      reason: rule.reason,
-      checked: false,
-      wished: false,
-      custom: false,
-    });
+    list.push(itemFromRule(rule));
     bySection.set(section, list);
   }
 
@@ -112,6 +121,7 @@ export function generateCategories(input: {
     "personal",
     input.personalItems.map((p) => ({
       id: uid("it"),
+      personalId: p.id,
       name: p.name,
       checked: false,
       wished: false,
@@ -147,6 +157,41 @@ export function emptyCustomCategory(name: string): Category {
     hint: undefined,
     collapsed: false,
     items: [],
+  };
+}
+
+export function categoryFromPreset(
+  name: string,
+  personalItems: { id: string; name: string }[] = []
+): Category {
+  const found = Object.entries(CATEGORY_META).find(([, m]) => m.name === name);
+  if (!found) return emptyCustomCategory(name);
+  const [key, meta] = found;
+  let items: ChecklistItem[] = [];
+  if (meta.kind === "activity") {
+    items = RULES.filter((r) => r.table === "activity" && r.activityId === key).map(itemFromRule);
+  } else if (key === "essential") {
+    items = RULES.filter((r) => r.table === "essential").map(itemFromRule);
+  } else if (key === "base") {
+    items = RULES.filter((r) => r.table === "base").map(itemFromRule);
+  } else if (key === "personal") {
+    items = personalItems.map((p) => ({
+      id: uid("it"),
+      personalId: p.id,
+      name: p.name,
+      checked: false,
+      wished: false,
+      custom: true,
+    }));
+  }
+  return {
+    id: uid("cat"),
+    name: meta.name,
+    kind: meta.kind,
+    activityId: meta.kind === "activity" ? (key as ActivityId) : undefined,
+    hint: meta.hint,
+    collapsed: false,
+    items,
   };
 }
 

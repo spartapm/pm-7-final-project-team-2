@@ -18,7 +18,8 @@ export function climateFromNormal(countryId: CountryId, startDate: string): Clim
 export async function fetchClimate(
   countryId: CountryId,
   startDate: string,
-  endDate: string
+  endDate: string,
+  opts?: { timeoutMs?: number }
 ): Promise<ClimateInfo> {
   const fallback = climateFromNormal(countryId, startDate);
   const until = daysUntil(startDate);
@@ -26,6 +27,10 @@ export async function fetchClimate(
 
   const country = COUNTRIES.find((c) => c.id === countryId);
   if (!country) return fallback;
+
+  const timeoutMs = opts?.timeoutMs ?? 5000;
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), timeoutMs);
 
   try {
     const url = new URL("https://api.open-meteo.com/v1/forecast");
@@ -38,7 +43,7 @@ export async function fetchClimate(
       "temperature_2m_max,temperature_2m_min,weather_code,wind_speed_10m_max"
     );
     url.searchParams.set("timezone", "auto");
-    const res = await fetch(url.toString());
+    const res = await fetch(url.toString(), { signal: ac.signal });
     if (!res.ok) return fallback;
     const json = await res.json();
     const daily = json.daily;
@@ -61,8 +66,12 @@ export async function fetchClimate(
       weatherIds: [...weather],
       source: "forecast",
     };
-  } catch {
+  } catch (err) {
+    if (ac.signal.aborted) throw new Error("timeout");
+    if (err instanceof Error && err.name === "AbortError") throw new Error("timeout");
     return fallback;
+  } finally {
+    clearTimeout(timer);
   }
 }
 

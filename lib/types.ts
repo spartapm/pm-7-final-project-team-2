@@ -32,6 +32,10 @@ export type ChecklistItem = {
   wished: boolean;
   custom: boolean;
   selected?: boolean;
+  masterId?: string;
+  personalId?: string;
+  linkNote?: string;
+  deleteRate?: number;
 };
 
 export type Category = {
@@ -62,6 +66,7 @@ export type Trip = {
   climate?: ClimateInfo;
   categories: Category[];
   remindersShown: string[];
+  seen?: boolean;
 };
 
 export type OnboardingDraft = {

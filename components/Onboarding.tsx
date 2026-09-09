@@ -1,26 +1,91 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ACTIVITIES, COMPANIONS, COUNTRIES } from "@/lib/catalog";
 import { track } from "@/lib/analytics";
 import { useStore } from "@/lib/store";
 import type { ActivityId, CompanionId, CountryId } from "@/lib/types";
 import { PhoneShell } from "./icons";
-import { Calendar, Chip, PrimaryButton, ProgressBar, TopBar } from "./ui";
+import { Calendar, Chip, ConfirmDialog, LoadingOverlay, PrimaryButton, ProgressBar, Toast, TopBar } from "./ui";
+
+const GEN_ERROR = "오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+const DUP_MSG = "잠깐!\n이미 선택된 날짜로 등록된\n일정이 있습니다. 계속해서 새로\n등록하시겠습니까?";
 
 export function Onboarding({ step }: { step: 1 | 2 | 3 }) {
   const router = useRouter();
-  const { draft, setDraft, createTrip } = useStore();
+  const { draft, setDraft, resetDraft, createTrip, trips } = useStore();
   const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
+  const [showLoad, setShowLoad] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const [dupOpen, setDupOpen] = useState(false);
+
+  useEffect(() => {
+    if (!busy) {
+      setShowLoad(false);
+      return;
+    }
+    const t = window.setTimeout(() => setShowLoad(true), 500);
+    return () => window.clearTimeout(t);
+  }, [busy]);
+
+  useEffect(() => {
+    if (step !== 1) return;
+    const onPop = () => resetDraft();
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [step, resetDraft]);
 
   const go = (n: 1 | 2 | 3) => router.push(n === 1 ? "/onboarding" : `/onboarding?step=${n}`);
+
+  const isDup = () =>
+    Boolean(
+      draft.countryId &&
+        draft.startDate &&
+        draft.endDate &&
+        trips.some(
+          (t) =>
+            t.countryId === draft.countryId &&
+            t.startDate === draft.startDate &&
+            t.endDate === draft.endDate
+        )
+    );
+
+  const generate = async () => {
+    setBusy(true);
+    const ac = new AbortController();
+    const timer = window.setTimeout(() => ac.abort(), 8000);
+    try {
+      track("onboarding_step_complete", { step_name: "a03" });
+      const trip = await createTrip(ac.signal);
+      track("checklist_created", {
+        destination: trip.countryId,
+        companion: trip.companions.join(","),
+        activity: trip.activities.join(","),
+        item_count: trip.categories.reduce((n, c) => n + c.items.length, 0),
+      });
+      if ("Notification" in window && Notification.permission === "default") {
+        Notification.requestPermission().catch(() => undefined);
+      }
+      router.replace("/trips");
+    } catch {
+      setToast(GEN_ERROR);
+    } finally {
+      window.clearTimeout(timer);
+      setBusy(false);
+    }
+  };
 
   if (step === 1) {
     return (
       <PhoneShell>
-        <TopBar back={() => router.push("/trips")} progress="1 / 3" />
+        <TopBar
+          back={() => {
+            resetDraft();
+            router.push("/trips");
+          }}
+          progress="1 / 3"
+        />
         <ProgressBar step={1} total={3} />
         <div className="shell-scroll pad-a">
           <span className="badge lg">여행 준비 시작</span>
@@ -58,6 +123,14 @@ export function Onboarding({ step }: { step: 1 | 2 | 3 }) {
   if (step === 2) {
     const ready = Boolean(draft.countryId && draft.startDate && draft.endDate);
     const toggleCountry = (id: CountryId) => setDraft({ countryId: id });
+    const goNext = () => {
+      track("onboarding_step_complete", { step_name: "a02" });
+      if (isDup()) {
+        setDupOpen(true);
+        return;
+      }
+      go(3);
+    };
     return (
       <PhoneShell>
         <TopBar back={() => go(1)} progress="2 / 3" />
@@ -92,10 +165,20 @@ export function Onboarding({ step }: { step: 1 | 2 | 3 }) {
           </div>
         </div>
         <div className="shell-footer">
-          <PrimaryButton disabled={!ready} onClick={() => { track("onboarding_step_complete", { step_name: "a02" }); go(3); }}>
+          <PrimaryButton disabled={!ready} onClick={goNext}>
             다음
           </PrimaryButton>
         </div>
+        {dupOpen ? (
+          <ConfirmDialog
+            message={DUP_MSG}
+            onCancel={() => setDupOpen(false)}
+            onConfirm={() => {
+              setDupOpen(false);
+              go(3);
+            }}
+          />
+        ) : null}
       </PhoneShell>
     );
   }
@@ -160,39 +243,12 @@ export function Onboarding({ step }: { step: 1 | 2 | 3 }) {
         </div>
       </div>
       <div className="shell-footer">
-        <PrimaryButton
-          disabled={!ready || busy}
-          onClick={async () => {
-            setBusy(true);
-            setErr(null);
-            try {
-              track("onboarding_step_complete", { step_name: "a03" });
-              const trip = await createTrip();
-              track("checklist_created", {
-                destination: trip.countryId,
-                companion: trip.companions.join(","),
-                activity: trip.activities.join(","),
-                item_count: trip.categories.reduce((n, c) => n + c.items.length, 0),
-              });
-              if ("Notification" in window && Notification.permission === "default") {
-                Notification.requestPermission().catch(() => undefined);
-              }
-              router.replace(`/trips/${trip.id}`);
-            } catch {
-              setErr("체크리스트를 만들지 못했어요. 다시 시도해 주세요.");
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          {busy ? "만드는 중..." : "체크리스트 생성하기"}
+        <PrimaryButton disabled={!ready || busy} onClick={generate}>
+          체크리스트 생성하기
         </PrimaryButton>
-        {err ? (
-          <p className="t-caption" style={{ color: "var(--accent)", textAlign: "center", margin: "8px 0 0" }}>
-            {err}
-          </p>
-        ) : null}
       </div>
+      {showLoad ? <LoadingOverlay /> : null}
+      {toast ? <Toast message={toast} onDone={() => setToast(null)} /> : null}
     </PhoneShell>
   );
 }

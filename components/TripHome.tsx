@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { activityName, countryName } from "@/lib/catalog";
 import { sortTrips, statusChip, tripPeriodLabel } from "@/lib/dates";
+import { setLastHome } from "@/lib/lastHome";
 import { pushAccount } from "@/lib/cloud";
 import { useStore } from "@/lib/store";
 import { IconMeatball, IconPlus, PhoneShell } from "./icons";
@@ -16,6 +17,10 @@ export function TripHome() {
   const [menu, setMenu] = useState<{ tripId: string; anchor: HTMLElement } | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLastHome("/trips");
+  }, []);
 
   const share = async () => {
     const url = `${window.location.origin}/s/${accountId}`;
@@ -65,6 +70,7 @@ export function TripHome() {
                         <div className="head">
                           <span className="place">{countryName(trip.countryId)}</span>
                           <span className={`badge${chip.kind === "off" ? " off" : ""}`}>{chip.label}</span>
+                          {!trip.seen ? <span className="badge new">신규</span> : null}
                         </div>
                         <div className="when">{tripPeriodLabel(trip.startDate, trip.endDate)}</div>
                         <div className="tags">
@@ -133,7 +139,7 @@ export function TripHome() {
           }}
         />
       ) : null}
-      {toast ? <Toast message={toast} onDone={() => setToast(null)} /> : null}
+      {toast ? <Toast message={toast} onDone={() => setToast(null)} place="bottom" /> : null}
     </PhoneShell>
   );
 }

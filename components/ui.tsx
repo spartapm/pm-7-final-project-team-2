@@ -96,18 +96,22 @@ export function Toast({
   action,
   onAction,
   onDone,
+  place = "top",
+  raised,
 }: {
   message: string;
   action?: string;
   onAction?: () => void;
   onDone: () => void;
+  place?: "top" | "bottom";
+  raised?: boolean;
 }) {
   useEffect(() => {
     const t = setTimeout(onDone, 3500);
     return () => clearTimeout(t);
   }, [onDone, message]);
   return (
-    <div className="toast-wrap">
+    <div className={`toast-wrap${place === "bottom" ? " bottom" : ""}${raised ? " raised" : ""}`}>
       <div className="toast">
         <span className="msg">{message}</span>
         {action ? (
@@ -167,7 +171,7 @@ export function InputDialog({
   onConfirm: () => void;
   onLimit?: () => void;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   return (
     <div className="dim" onClick={onCancel}>
       <div className="dialog" onClick={(e) => e.stopPropagation()}>
@@ -175,7 +179,7 @@ export function InputDialog({
           <div className="tt">{title}</div>
           <div className="ds" onClick={() => inputRef.current?.focus()}>
             {!value ? <div className="ph">{placeholder}</div> : null}
-            <input
+            <textarea
               ref={inputRef}
               autoFocus
               maxLength={30}
@@ -206,6 +210,27 @@ export function InputDialog({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+export function InfoDialog({ text, onClose }: { text: string; onClose: () => void }) {
+  return (
+    <div className="dim" onClick={onClose}>
+      <div className="confirm" onClick={(e) => e.stopPropagation()}>
+        <div className="msg">{text}</div>
+        <div className="acts">
+          <button onClick={onClose}>확인</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function LoadingOverlay() {
+  return (
+    <div className="loading-dim">
+      <div className="loading-spin" />
     </div>
   );
 }

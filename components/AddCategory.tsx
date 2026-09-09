@@ -9,7 +9,7 @@ import { InputDialog, Toast, TopBar } from "./ui";
 
 export function AddCategory({ tripId }: { tripId: string }) {
   const router = useRouter();
-  const { trips, updateTrip } = useStore();
+  const { trips, updateTrip, personalItems } = useStore();
   const trip = trips.find((t) => t.id === tripId);
   const [dialog, setDialog] = useState(false);
   const [name, setName] = useState("");
@@ -32,7 +32,7 @@ export function AddCategory({ tripId }: { tripId: string }) {
   }
 
   const add = (label: string) => {
-    updateTrip(trip.id, (t) => addCategoryToTrip(t, label));
+    updateTrip(trip.id, (t) => addCategoryToTrip(t, label, personalItems));
     router.push(`/trips/${trip.id}?added=${encodeURIComponent(label)}`);
   };
 

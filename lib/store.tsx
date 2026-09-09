@@ -19,6 +19,8 @@ import type {
 } from "./types";
 import { generateCategories } from "./generate";
 import { PRESET_CATEGORY_NAMES } from "./catalog";
+import { ITEM_META } from "./itemMeta";
+import { RULES } from "./rules";
 import { climateBands, fetchClimate } from "./weather";
 import { pullAccount, pushAccount, type CloudAccount, type CloudStatus } from "./cloud";
 
@@ -36,6 +38,33 @@ function emptyDraft(): OnboardingDraft {
   return { companions: [], activities: [] };
 }
 
+const RULE_BY_NAME = new Map(RULES.map((r) => [r.name, r]));
+
+function enrichItem(i: ChecklistItem): ChecklistItem {
+  const rule = (i.masterId ? RULES.find((r) => r.itemId === i.masterId) : undefined) ?? RULE_BY_NAME.get(i.name);
+  if (!rule) return i;
+  const meta = ITEM_META[rule.itemId];
+  return {
+    ...i,
+    masterId: i.masterId ?? rule.itemId,
+    linkNote: i.linkNote ?? meta?.linkNote,
+    deleteRate: i.deleteRate ?? meta?.deleteRate,
+  };
+}
+
+function isPersonalCat(c: Category) {
+  return c.kind === "personal" || c.name === "나만의 준비물";
+}
+
+function personalHit(
+  id: string | undefined,
+  name: string,
+  match: { personalId?: string; name: string }
+) {
+  if (match.personalId) return id === match.personalId;
+  return name === match.name;
+}
+
 function migrateTrips(trips: Trip[]): Trip[] {
   const presets = new Set(PRESET_CATEGORY_NAMES);
   return trips.map((trip) => {
@@ -51,6 +80,7 @@ function migrateTrips(trips: Trip[]): Trip[] {
           : presets.has(name)
             ? undefined
             : (c.hint || "직접 추가한 항목"),
+        items: (c.items ?? []).map(enrichItem),
       };
     });
     const personal = categories.filter((c) => c.name === "나만의 준비물");
@@ -70,7 +100,7 @@ function migrateTrips(trips: Trip[]): Trip[] {
     } else {
       categories = [...personal, ...rest];
     }
-    return { ...trip, categories };
+    return { ...trip, seen: trip.seen ?? true, categories };
   });
 }
 
@@ -103,12 +133,15 @@ type Store = AppState & {
   cloudStatus: CloudStatus;
   setDraft: (patch: Partial<OnboardingDraft>) => void;
   resetDraft: () => void;
-  createTrip: () => Promise<Trip>;
+  createTrip: (signal?: AbortSignal) => Promise<Trip>;
   deleteTrip: (id: string) => void;
   updateTrip: (id: string, fn: (t: Trip) => Trip) => void;
   importTrips: (trips: Trip[], accountId?: string) => void;
   adoptAccount: (account: CloudAccount) => void;
   addPersonalItem: (name: string) => void;
+  renamePersonalItem: (match: { personalId?: string; name: string }, nextName: string) => void;
+  removePersonalItem: (match: { personalId?: string; name: string }) => void;
+  restoreSnapshot: (snap: { trips: Trip[]; personalItems: { id: string; name: string }[] }) => void;
 };
 
 const Ctx = createContext<Store | null>(null);
@@ -187,12 +220,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setState((s) => ({ ...s, draft: emptyDraft() }));
   }, []);
 
-  const createTrip = useCallback(async () => {
+  const createTrip = useCallback(async (signal?: AbortSignal) => {
     const { draft, personalItems } = stateRef.current;
     if (!draft.countryId || !draft.startDate || !draft.endDate) {
       throw new Error("incomplete");
     }
-    const climate = await fetchClimate(draft.countryId, draft.startDate, draft.endDate);
+    const climate = await fetchClimate(draft.countryId, draft.startDate, draft.endDate, {
+      timeoutMs: 5000,
+    });
+    if (signal?.aborted) throw new Error("timeout");
     const categories = generateCategories({
       countryId: draft.countryId,
       companions: draft.companions,
@@ -212,7 +248,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       climate,
       categories,
       remindersShown: [],
+      seen: false,
     };
+    if (signal?.aborted) throw new Error("timeout");
     setState((s) => ({
       ...s,
       trips: [trip, ...s.trips],
@@ -255,11 +293,86 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addPersonalItem = useCallback((name: string) => {
+    setState((s) => {
+      const catalogId = uid("p");
+      return {
+        ...s,
+        personalItems: [...s.personalItems, { id: catalogId, name }],
+        trips: s.trips.map((trip) => ({
+          ...trip,
+          categories: trip.categories.map((c) =>
+            isPersonalCat(c)
+              ? {
+                  ...c,
+                  items: [
+                    ...c.items,
+                    {
+                      id: uid("it"),
+                      personalId: catalogId,
+                      name,
+                      checked: false,
+                      wished: false,
+                      custom: true,
+                    },
+                  ],
+                }
+              : c
+          ),
+        })),
+      };
+    });
+  }, []);
+
+  const renamePersonalItem = useCallback(
+    (match: { personalId?: string; name: string }, nextName: string) => {
+      setState((s) => ({
+        ...s,
+        personalItems: s.personalItems.map((p) =>
+          personalHit(p.id, p.name, match) ? { ...p, name: nextName } : p
+        ),
+        trips: s.trips.map((trip) => ({
+          ...trip,
+          categories: trip.categories.map((c) =>
+            isPersonalCat(c)
+              ? {
+                  ...c,
+                  items: c.items.map((i) =>
+                    personalHit(i.personalId, i.name, match) ? { ...i, name: nextName } : i
+                  ),
+                }
+              : c
+          ),
+        })),
+      }));
+    },
+    []
+  );
+
+  const removePersonalItem = useCallback((match: { personalId?: string; name: string }) => {
     setState((s) => ({
       ...s,
-      personalItems: [...s.personalItems, { id: uid("p"), name }],
+      personalItems: s.personalItems.filter((p) => !personalHit(p.id, p.name, match)),
+      trips: s.trips.map((trip) => ({
+        ...trip,
+        categories: trip.categories.map((c) =>
+          isPersonalCat(c)
+            ? { ...c, items: c.items.filter((i) => !personalHit(i.personalId, i.name, match)) }
+            : c
+        ),
+      })),
     }));
   }, []);
+
+  const restoreSnapshot = useCallback(
+    (snap: { trips: Trip[]; personalItems: { id: string; name: string }[] }) => {
+      setState((s) => ({
+        ...s,
+        trips: snap.trips,
+        personalItems: snap.personalItems,
+      }));
+    },
+    []
+  );
 
   const value = useMemo(
     () => ({
@@ -274,6 +387,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       importTrips,
       adoptAccount,
       addPersonalItem,
+      renamePersonalItem,
+      removePersonalItem,
+      restoreSnapshot,
     }),
     [
       state,
@@ -287,6 +403,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       importTrips,
       adoptAccount,
       addPersonalItem,
+      renamePersonalItem,
+      removePersonalItem,
+      restoreSnapshot,
     ]
   );
 
