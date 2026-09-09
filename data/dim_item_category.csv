@@ -1,0 +1,13 @@
+﻿category_id,category_name_kr,source_rule_table,display_order,match_priority
+essential,필수,rule_essential_item,1,1
+base,기본,rule_country_item;rule_companion_item;rule_weather_item;rule_temp_item;rule_base_item,2,12
+photo,사진 여행,rule_activity_item,3,2
+camping,캠핑,rule_activity_item,4,3
+hiking,하이킹·등산,rule_activity_item,5,4
+golf,골프,rule_activity_item,6,5
+swimming,수영·물놀이,rule_activity_item,7,6
+amusement_park,놀이공원,rule_activity_item,8,7
+spa,온천·스파,rule_activity_item,9,8
+winter_sports,겨울 스포츠,rule_activity_item,10,9
+temple,종교시설·사원,rule_activity_item,11,10
+festival,"페스티벌, 야외공원",rule_activity_item,12,11

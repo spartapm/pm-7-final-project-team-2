@@ -35,6 +35,8 @@ export type ChecklistItem = {
   masterId?: string;
   personalId?: string;
   linkNote?: string;
+  linkCount?: number;
+  links?: { text: string; url: string; type: string }[];
   deleteRate?: number;
 };
 

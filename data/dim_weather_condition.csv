@@ -1,0 +1,6 @@
+﻿weather_condition_id,weather_condition_name_kr,forecast_source,wind_min_kmh,normal_source,normal_agg,normal_op,normal_threshold,normal_min_ratio
+sunny,맑음,weather_code,,sunshine_ratio,mean,>=,0.55,
+cloudy,구름,weather_code,,sunshine_ratio,mean,<,0.35,
+windy,바람,wind_speed_10m_max,30,wind_speed_10m_max,day_ratio,>=,30,0.25
+rain,비,weather_code,,rain_sum,day_ratio,>=,1.0,0.30
+snow,눈,weather_code,,snowfall_sum,day_ratio,>=,1.0,0.10

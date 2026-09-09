@@ -5,6 +5,7 @@ import { Providers } from "./providers";
 export const metadata: Metadata = {
   title: "챙겨요 · 여행 준비 체크리스트",
   description: "여행 일정에 맞춰 준비물을 정리해 드려요.",
+  icons: { icon: "/favicon.ico" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -214,14 +214,32 @@ export function InputDialog({
   );
 }
 
-export function InfoDialog({ text, onClose }: { text: string; onClose: () => void }) {
+export function InfoSheet({
+  links,
+  note,
+  onClose,
+}: {
+  links: { text: string; url: string }[];
+  note?: string;
+  onClose: () => void;
+}) {
   return (
     <div className="dim" onClick={onClose}>
-      <div className="confirm" onClick={(e) => e.stopPropagation()}>
-        <div className="msg">{text}</div>
-        <div className="acts">
-          <button onClick={onClose}>확인</button>
-        </div>
+      <div className="sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-title">정보 안내</div>
+        {links.length ? (
+          <div className="sheet-list">
+            {links.map((l) => (
+              <a key={l.url} className="sheet-row" href={l.url} target="_blank" rel="noreferrer">
+                {l.text}
+              </a>
+            ))}
+          </div>
+        ) : null}
+        {note ? <p className="sheet-note">{note}</p> : null}
+        <button className="sheet-close" onClick={onClose}>
+          확인
+        </button>
       </div>
     </div>
   );
@@ -230,7 +248,7 @@ export function InfoDialog({ text, onClose }: { text: string; onClose: () => voi
 export function LoadingOverlay() {
   return (
     <div className="loading-dim">
-      <div className="loading-spin" />
+      <img src="/loading.gif" alt="" width={72} height={72} />
     </div>
   );
 }

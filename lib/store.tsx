@@ -19,8 +19,8 @@ import type {
 } from "./types";
 import { generateCategories } from "./generate";
 import { PRESET_CATEGORY_NAMES } from "./catalog";
-import { ITEM_META } from "./itemMeta";
-import { RULES } from "./rules";
+import { tripStatus } from "./dates";
+import { deleteRateFor, linksFor, specOf } from "./itemMeta";
 import { climateBands, fetchClimate } from "./weather";
 import { pullAccount, pushAccount, type CloudAccount, type CloudStatus } from "./cloud";
 
@@ -38,17 +38,18 @@ function emptyDraft(): OnboardingDraft {
   return { companions: [], activities: [] };
 }
 
-const RULE_BY_NAME = new Map(RULES.map((r) => [r.name, r]));
-
-function enrichItem(i: ChecklistItem): ChecklistItem {
-  const rule = (i.masterId ? RULES.find((r) => r.itemId === i.masterId) : undefined) ?? RULE_BY_NAME.get(i.name);
-  if (!rule) return i;
-  const meta = ITEM_META[rule.itemId];
+function enrichItem(i: ChecklistItem, activityId?: string): ChecklistItem {
+  const spec = specOf(i.masterId, i.name);
+  if (!spec) return i;
+  const links = linksFor(spec.id).map((l) => ({ text: l.text, url: l.url, type: l.type }));
   return {
     ...i,
-    masterId: i.masterId ?? rule.itemId,
-    linkNote: i.linkNote ?? meta?.linkNote,
-    deleteRate: i.deleteRate ?? meta?.deleteRate,
+    masterId: spec.id,
+    name: i.custom ? i.name : spec.name,
+    linkNote: spec.linkNote,
+    linkCount: spec.linkCount,
+    links,
+    deleteRate: i.deleteRate ?? deleteRateFor(activityId, spec.id),
   };
 }
 
@@ -80,7 +81,7 @@ function migrateTrips(trips: Trip[]): Trip[] {
           : presets.has(name)
             ? undefined
             : (c.hint || "직접 추가한 항목"),
-        items: (c.items ?? []).map(enrichItem),
+        items: (c.items ?? []).map((i) => enrichItem(i, c.activityId)),
       };
     });
     const personal = categories.filter((c) => c.name === "나만의 준비물");
@@ -298,27 +299,31 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return {
         ...s,
         personalItems: [...s.personalItems, { id: catalogId, name }],
-        trips: s.trips.map((trip) => ({
-          ...trip,
-          categories: trip.categories.map((c) =>
-            isPersonalCat(c)
-              ? {
-                  ...c,
-                  items: [
-                    ...c.items,
-                    {
-                      id: uid("it"),
-                      personalId: catalogId,
-                      name,
-                      checked: false,
-                      wished: false,
-                      custom: true,
-                    },
-                  ],
-                }
-              : c
-          ),
-        })),
+        trips: s.trips.map((trip) =>
+          tripStatus(trip) === "done"
+            ? trip
+            : {
+                ...trip,
+                categories: trip.categories.map((c) =>
+                  isPersonalCat(c)
+                    ? {
+                        ...c,
+                        items: [
+                          ...c.items,
+                          {
+                            id: uid("it"),
+                            personalId: catalogId,
+                            name,
+                            checked: false,
+                            wished: false,
+                            custom: true,
+                          },
+                        ],
+                      }
+                    : c
+                ),
+              }
+        ),
       };
     });
   }, []);
@@ -330,19 +335,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         personalItems: s.personalItems.map((p) =>
           personalHit(p.id, p.name, match) ? { ...p, name: nextName } : p
         ),
-        trips: s.trips.map((trip) => ({
-          ...trip,
-          categories: trip.categories.map((c) =>
-            isPersonalCat(c)
-              ? {
-                  ...c,
-                  items: c.items.map((i) =>
-                    personalHit(i.personalId, i.name, match) ? { ...i, name: nextName } : i
-                  ),
-                }
-              : c
-          ),
-        })),
+        trips: s.trips.map((trip) =>
+          tripStatus(trip) === "done"
+            ? trip
+            : {
+                ...trip,
+                categories: trip.categories.map((c) =>
+                  isPersonalCat(c)
+                    ? {
+                        ...c,
+                        items: c.items.map((i) =>
+                          personalHit(i.personalId, i.name, match) ? { ...i, name: nextName } : i
+                        ),
+                      }
+                    : c
+                ),
+              }
+        ),
       }));
     },
     []
@@ -352,14 +361,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setState((s) => ({
       ...s,
       personalItems: s.personalItems.filter((p) => !personalHit(p.id, p.name, match)),
-      trips: s.trips.map((trip) => ({
-        ...trip,
-        categories: trip.categories.map((c) =>
-          isPersonalCat(c)
-            ? { ...c, items: c.items.filter((i) => !personalHit(i.personalId, i.name, match)) }
-            : c
-        ),
-      })),
+      trips: s.trips.map((trip) =>
+        tripStatus(trip) === "done"
+          ? trip
+          : {
+              ...trip,
+              categories: trip.categories.map((c) =>
+                isPersonalCat(c)
+                  ? { ...c, items: c.items.filter((i) => !personalHit(i.personalId, i.name, match)) }
+                  : c
+              ),
+            }
+      ),
     }));
   }, []);
 

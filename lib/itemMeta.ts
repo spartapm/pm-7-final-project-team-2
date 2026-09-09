@@ -1,34 +1,36 @@
-export const ITEM_META: Record<string, { linkNote?: string; deleteRate?: number }> = {
-  passport: {
-    linkNote: "출국일 기준 유효기간이 6개월 이상 남아 있어야 하는 나라가 많아요.",
-  },
-  ticket: {
-    linkNote: "모바일 탑승권은 항공사 앱에서 출발 전 미리 발급해 두세요.",
-  },
-  esim: {
-    linkNote: "현지 공항에서 개통하거나, 출발 전 QR로 설치할 수 있어요.",
-  },
-  insurance: {
-    linkNote: "보험사 앱이나 이메일에서 증서를 미리 받아 두세요.",
-  },
-  strap: { deleteRate: 0.76 },
-  cleaner: { deleteRate: 0.72 },
-  multitool: { deleteRate: 0.81 },
-  drybag: { deleteRate: 0.73 },
-  salt: { deleteRate: 0.88 },
-  pole: { deleteRate: 0.71 },
-  tee: { deleteRate: 0.92 },
-  rash: { deleteRate: 0.82 },
-  goggle: { deleteRate: 0.74 },
-  inner: { deleteRate: 0.77 },
-  makeup: { deleteRate: 0.85 },
-  tattoo: { deleteRate: 0.91 },
-  goggle_w: { deleteRate: 0.73 },
-  rainponcho: { deleteRate: 0.93 },
-  fold: { deleteRate: 0.79 },
-  light: { deleteRate: 0.71 },
-  cash_t: { deleteRate: 0.75 },
-};
+import { SPEC_DELETE_RATES, SPEC_ITEMS, SPEC_LINKS, type SpecLink } from "./specData";
+
+export function specByName(name: string) {
+  return Object.values(SPEC_ITEMS).find((i) => i.name === name);
+}
+
+export function specOf(masterId?: string, name?: string) {
+  if (masterId && SPEC_ITEMS[masterId]) return SPEC_ITEMS[masterId];
+  if (name) return specByName(name);
+  return undefined;
+}
+
+export function linksFor(masterId?: string, name?: string): SpecLink[] {
+  const spec = specOf(masterId, name);
+  if (!spec) return [];
+  return SPEC_LINKS.filter((l) => l.itemId === spec.id).sort((a, b) => a.order - b.order);
+}
+
+export function hasInfoIcon(masterId?: string, name?: string, linkNote?: string) {
+  const spec = specOf(masterId, name);
+  if (linkNote) return true;
+  if (!spec) return false;
+  return Boolean(spec.linkNote) || spec.linkCount >= 1 || linksFor(spec.id).length > 0;
+}
+
+export function deleteRateFor(activityId?: string, masterId?: string) {
+  if (!activityId || !masterId) return undefined;
+  const row = SPEC_DELETE_RATES.find((r) => r.activityId === activityId && r.itemId === masterId);
+  if (!row) return undefined;
+  if (row.shown) return row.rate;
+  if (row.rate >= 0.7 && row.exposure >= 30) return row.rate;
+  return undefined;
+}
 
 export function overpackCopy(rate?: number) {
   if (rate == null || rate < 0.7) return null;

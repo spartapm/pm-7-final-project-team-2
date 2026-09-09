@@ -6,7 +6,7 @@ import { countryName, PRESET_CATEGORY_NAMES } from "@/lib/catalog";
 import { checklistSubtitle } from "@/lib/dates";
 import { track } from "@/lib/analytics";
 import { categoryFromPreset, emptyCustomCategory } from "@/lib/generate";
-import { overpackCopy } from "@/lib/itemMeta";
+import { hasInfoIcon, overpackCopy } from "@/lib/itemMeta";
 import { setLastHome } from "@/lib/lastHome";
 import { newItem, patchCategory, patchItem, useStore } from "@/lib/store";
 import type { Category, ChecklistItem, FilterMode, Trip } from "@/lib/types";
@@ -22,7 +22,7 @@ import {
   IconXSmall,
   PhoneShell,
 } from "./icons";
-import { ConfirmDialog, InfoDialog, Menu, Toast, TopBar } from "./ui";
+import { ConfirmDialog, InfoSheet, Menu, Toast, TopBar } from "./ui";
 
 const LEGAL =
   "챙겨요(가칭)가 제공하는 국가별 반입 주의·금지 품목 및 관련 법적·규정 정보는 각 항목에 표시된 작성·갱신 기준일 시점에 확인된 내용을 바탕으로 한 참고용 정보입니다. 관련 법령 및 규정은 국가와 시기에 따라 사전 예고 없이 변경될 수 있으며, 본 서비스가 제공하는 정보가 실제 세관·출입국 규정과 다를 수 있습니다. 챙겨요(가칭)는 해당 정보의 최신성·정확성·완전성을 보장하지 않으며, 이를 신뢰하여 발생한 불이익이나 손해에 대해 책임을 지지 않습니다. 정확한 반입 규정은 반드시 이용 항공사, 목적지 국가의 대사관·영사관, 관세청 등 공식 기관을 통해 여행 전 별도로 확인하시기 바랍니다.";
@@ -104,7 +104,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
   const undoRef = useRef<{ trips: Trip[]; personalItems: { id: string; name: string }[] } | null>(null);
   const collapseRef = useRef<Record<string, boolean>>({});
   const [confirmBulk, setConfirmBulk] = useState(false);
-  const [info, setInfo] = useState<string | null>(null);
+  const [info, setInfo] = useState<{ links: { text: string; url: string }[]; note?: string } | null>(null);
   const [counterOn, setCounterOn] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -497,7 +497,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                           ) : null}
                         </div>
                         {editing ? (
-                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
                             {item.custom ? (
                               <button
                                 className="icon-btn"
@@ -522,14 +522,17 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                             </button>
                           </div>
                         ) : (
-                          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                            {item.linkNote ? (
+                          <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+                            {hasInfoIcon(item.masterId, item.name, item.linkNote) ? (
                               <button
                                 className="icon-btn"
                                 aria-label="정보"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setInfo(item.linkNote ?? null);
+                                  setInfo({
+                                    links: item.links ?? [],
+                                    note: item.linkNote,
+                                  });
                                 }}
                               >
                                 <IconInfo />
@@ -704,7 +707,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
         />
       ) : null}
 
-      {info ? <InfoDialog text={info} onClose={() => setInfo(null)} /> : null}
+      {info ? <InfoSheet links={info.links} note={info.note} onClose={() => setInfo(null)} /> : null}
 
       {toast ? (
         <Toast

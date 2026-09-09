@@ -9,7 +9,7 @@ import type {
   WeatherId,
 } from "./types";
 import { CATEGORY_META } from "./catalog";
-import { ITEM_META } from "./itemMeta";
+import { deleteRateFor, linksFor, specOf } from "./itemMeta";
 import { RULES, SOURCE_RANK, type Rule } from "./rules";
 
 function uid(prefix: string) {
@@ -29,17 +29,24 @@ function srcRank(section: string, table: string) {
 }
 
 export function itemFromRule(rule: Rule): ChecklistItem {
-  const meta = ITEM_META[rule.itemId];
+  const spec = specOf(rule.itemId, rule.name);
+  const links = linksFor(rule.itemId, rule.name).map((l) => ({
+    text: l.text,
+    url: l.url,
+    type: l.type,
+  }));
   return {
     id: uid("it"),
-    masterId: rule.itemId,
-    name: rule.name,
-    reason: rule.reason,
+    masterId: spec?.id ?? rule.itemId,
+    name: spec?.name ?? rule.name,
+    reason: rule.reason || spec?.desc,
     checked: false,
     wished: false,
     custom: false,
-    linkNote: meta?.linkNote,
-    deleteRate: meta?.deleteRate,
+    linkNote: spec?.linkNote,
+    linkCount: spec?.linkCount ?? links.length,
+    links,
+    deleteRate: deleteRateFor(rule.activityId, spec?.id ?? rule.itemId),
   };
 }
 
