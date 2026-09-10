@@ -10,7 +10,8 @@ import type {
 } from "./types";
 import { CATEGORY_META } from "./catalog";
 import { deleteRateFor, linksFor, specOf } from "./itemMeta";
-import { RULES, SOURCE_RANK, type Rule } from "./rules";
+import { getLiveCatalog } from "./liveCatalog";
+import { SOURCE_RANK, type Rule } from "./rules";
 
 function uid(prefix: string) {
   return `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
@@ -67,6 +68,7 @@ export function generateCategories(input: {
   tempBands: TempBandId[];
   personalItems: { id: string; name: string }[];
 }): Category[] {
+  const RULES = getLiveCatalog().rules;
   const matched: Rule[] = [];
   for (const rule of RULES) {
     if (rule.table === "essential" || rule.table === "base") {
@@ -124,18 +126,6 @@ export function generateCategories(input: {
     bySection.set(section, list);
   }
 
-  bySection.set(
-    "personal",
-    input.personalItems.map((p) => ({
-      id: uid("it"),
-      personalId: p.id,
-      name: p.name,
-      checked: false,
-      wished: false,
-      custom: true,
-    }))
-  );
-
   const sections = [...bySection.entries()].sort((a, b) => {
     const da = CATEGORY_META[a[0]]?.displayOrder ?? 50;
     const db = CATEGORY_META[b[0]]?.displayOrder ?? 50;
@@ -176,20 +166,15 @@ export function categoryFromPreset(
   const [key, meta] = found;
   let items: ChecklistItem[] = [];
   if (meta.kind === "activity") {
-    items = RULES.filter((r) => r.table === "activity" && r.activityId === key).map(itemFromRule);
+    items = getLiveCatalog()
+      .rules.filter((r) => r.table === "activity" && r.activityId === key)
+      .map(itemFromRule);
   } else if (key === "essential") {
-    items = RULES.filter((r) => r.table === "essential").map(itemFromRule);
+    items = getLiveCatalog().rules.filter((r) => r.table === "essential").map(itemFromRule);
   } else if (key === "base") {
-    items = RULES.filter((r) => r.table === "base").map(itemFromRule);
+    items = getLiveCatalog().rules.filter((r) => r.table === "base").map(itemFromRule);
   } else if (key === "personal") {
-    items = personalItems.map((p) => ({
-      id: uid("it"),
-      personalId: p.id,
-      name: p.name,
-      checked: false,
-      wished: false,
-      custom: true,
-    }));
+    items = [];
   }
   return {
     id: uid("cat"),

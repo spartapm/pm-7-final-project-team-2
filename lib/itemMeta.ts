@@ -1,11 +1,14 @@
-import { SPEC_DELETE_RATES, SPEC_ITEMS, SPEC_LINKS, type SpecLink } from "./specData";
+import { getLiveCatalog } from "./liveCatalog";
+import { liveDeleteRate } from "./stats";
+import type { SpecLink } from "./specData";
 
 export function specByName(name: string) {
-  return Object.values(SPEC_ITEMS).find((i) => i.name === name);
+  return Object.values(getLiveCatalog().items).find((i) => i.name === name);
 }
 
 export function specOf(masterId?: string, name?: string) {
-  if (masterId && SPEC_ITEMS[masterId]) return SPEC_ITEMS[masterId];
+  const items = getLiveCatalog().items;
+  if (masterId && items[masterId]) return items[masterId];
   if (name) return specByName(name);
   return undefined;
 }
@@ -13,7 +16,9 @@ export function specOf(masterId?: string, name?: string) {
 export function linksFor(masterId?: string, name?: string): SpecLink[] {
   const spec = specOf(masterId, name);
   if (!spec) return [];
-  return SPEC_LINKS.filter((l) => l.itemId === spec.id).sort((a, b) => a.order - b.order);
+  return getLiveCatalog()
+    .links.filter((l) => l.itemId === spec.id)
+    .sort((a, b) => a.order - b.order);
 }
 
 export function hasInfoIcon(masterId?: string, name?: string, linkNote?: string) {
@@ -24,12 +29,7 @@ export function hasInfoIcon(masterId?: string, name?: string, linkNote?: string)
 }
 
 export function deleteRateFor(activityId?: string, masterId?: string) {
-  if (!activityId || !masterId) return undefined;
-  const row = SPEC_DELETE_RATES.find((r) => r.activityId === activityId && r.itemId === masterId);
-  if (!row) return undefined;
-  if (row.shown) return row.rate;
-  if (row.rate >= 0.7 && row.exposure >= 30) return row.rate;
-  return undefined;
+  return liveDeleteRate(activityId, masterId);
 }
 
 export function overpackCopy(rate?: number) {

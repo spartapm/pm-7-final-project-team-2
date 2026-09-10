@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type Ref } from "react";
 import { createPortal } from "react-dom";
-import { IconBack, IconCalChevron, IconClose, IconKebab } from "./icons";
+import { IconBack, IconCalChevron, IconClose, IconKebab, IconSheetChevron } from "./icons";
 
 export function TopBar({
   back,
@@ -28,11 +28,11 @@ export function TopBar({
   return (
     <header className={`topbar${float ? " float" : ""}${title ? " modal" : ""}`}>
       {back ? (
-        <button className="icon-btn" aria-label="뒤로" onClick={back}>
+        <button className="icon-btn icon-btn--back" aria-label="뒤로" onClick={back}>
           <IconBack />
         </button>
       ) : close ? (
-        <button className="icon-btn" aria-label="닫기" onClick={close}>
+        <button className="icon-btn icon-btn--close" aria-label="닫기" onClick={close}>
           <IconClose />
         </button>
       ) : null}
@@ -41,7 +41,7 @@ export function TopBar({
       {progress ? <span className="t-button" style={{ color: "var(--text-3)" }}>{progress}</span> : null}
       {right}
       {kebab ? (
-        <button ref={kebabRef} className="icon-btn" aria-label="메뉴" onClick={kebab}>
+        <button ref={kebabRef} className="icon-btn icon-btn--kebab" aria-label="메뉴" onClick={kebab}>
           <IconKebab active={kebabActive} />
         </button>
       ) : null}
@@ -153,7 +153,7 @@ export function ConfirmDialog({
 }
 
 export function InputDialog({
-  title = "직접입력",
+  title = "직접 입력",
   value,
   onChange,
   placeholder = "최대 30글자로\n카테고리/아이템 직접 입력하기",
@@ -172,6 +172,15 @@ export function InputDialog({
   onLimit?: () => void;
 }) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const composing = useRef(false);
+  const apply = (next: string) => {
+    if (next.length > 30) {
+      onChange(next.slice(0, 30));
+      onLimit?.();
+      return;
+    }
+    onChange(next);
+  };
   return (
     <div className="dim" onClick={onCancel}>
       <div className="dialog" onClick={(e) => e.stopPropagation()}>
@@ -182,10 +191,22 @@ export function InputDialog({
             <textarea
               ref={inputRef}
               autoFocus
-              maxLength={30}
               value={value}
               className={value ? "typed" : "empty"}
-              onChange={(e) => onChange(e.target.value.slice(0, 30))}
+              onChange={(e) => {
+                if (composing.current) {
+                  onChange(e.target.value);
+                  return;
+                }
+                apply(e.target.value);
+              }}
+              onCompositionStart={() => {
+                composing.current = true;
+              }}
+              onCompositionEnd={(e) => {
+                composing.current = false;
+                apply(e.currentTarget.value);
+              }}
               onBeforeInput={(e) => {
                 const ne = e.nativeEvent as InputEvent;
                 if (!ne.inputType?.startsWith("insert") || !ne.data) return;
@@ -198,7 +219,9 @@ export function InputDialog({
                 }
               }}
               onFocus={(e) => {
-                if (value) e.target.select();
+                if (value) return;
+                const el = e.currentTarget;
+                requestAnimationFrame(() => el.setSelectionRange(0, 0));
               }}
             />
           </div>
@@ -226,20 +249,17 @@ export function InfoSheet({
   return (
     <div className="dim" onClick={onClose}>
       <div className="sheet" onClick={(e) => e.stopPropagation()}>
-        <div className="sheet-title">정보 안내</div>
         {links.length ? (
           <div className="sheet-list">
             {links.map((l) => (
-              <a key={l.url} className="sheet-row" href={l.url} target="_blank" rel="noreferrer">
-                {l.text}
+              <a key={l.url + l.text} className="sheet-row" href={l.url} target="_blank" rel="noreferrer">
+                <span>{l.text}</span>
+                <IconSheetChevron />
               </a>
             ))}
           </div>
         ) : null}
         {note ? <p className="sheet-note">{note}</p> : null}
-        <button className="sheet-close" onClick={onClose}>
-          확인
-        </button>
       </div>
     </div>
   );
@@ -338,6 +358,8 @@ export function Calendar({
     const base = start ? new Date(start) : today;
     return new Date(base.getFullYear(), base.getMonth(), 1);
   });
+  const rangeRef = useRef({ start, end });
+  rangeRef.current = { start, end };
 
   const y = cursor.getFullYear();
   const m = cursor.getMonth();
@@ -353,16 +375,17 @@ export function Calendar({
 
   const clickDay = (d: number) => {
     const id = iso(d);
-    const ranged = Boolean(start && end && start !== end);
-    if (!start || ranged) {
+    const { start: from, end: to } = rangeRef.current;
+    const ranged = Boolean(from && to && from !== to);
+    if (!from || ranged) {
       onChange(id, id);
       return;
     }
-    if (id < start) {
-      onChange(id, start);
+    if (id < from) {
+      onChange(id, from);
       return;
     }
-    onChange(start, id);
+    onChange(from, id);
   };
 
   const inRange = (id: string) => {

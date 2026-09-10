@@ -1,0 +1,4 @@
+﻿temp_band_id,temp_band_name_kr,min_temp_c,max_temp_c
+low,최저 5도 미만,,5
+mid,5~26도,5,26
+high,최고 26도 이상,26,

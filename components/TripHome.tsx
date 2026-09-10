@@ -52,7 +52,7 @@ export function TripHome() {
   return (
     <PhoneShell>
       <div className="shell-scroll pad-b">
-        <h1 className="t-title2" style={{ margin: 0 }}>내 여행 준비</h1>
+        <h1 className="t-subtitle" style={{ margin: 0, lineHeight: "28px" }}>내 여행 준비</h1>
         <p className="t-caption" style={{ color: "var(--text-3)", margin: "8px 0 20px" }}>
           알려주신 일정 기반으로 준비물을 정리해드렸어요
         </p>
@@ -70,7 +70,7 @@ export function TripHome() {
                         <div className="head">
                           <span className="place">{countryName(trip.countryId)}</span>
                           <span className={`badge${chip.kind === "off" ? " off" : ""}`}>{chip.label}</span>
-                          {!trip.seen ? <span className="badge new">신규</span> : null}
+                          {!trip.seen ? <span className="badge new">NEW</span> : null}
                         </div>
                         <div className="when">{tripPeriodLabel(trip.startDate, trip.endDate)}</div>
                         <div className="tags">
@@ -105,10 +105,10 @@ export function TripHome() {
                 </div>
               </div>
               <div className="fab">
-                <IconPlus color="#fff" size={20} stroke={2.2} />
+                <IconPlus color="#fff" size={10} stroke={2.2} />
               </div>
             </button>
-            <div style={{ display: "flex", justifyContent: "center", padding: "24px 0 40px" }}>
+            <div style={{ display: "flex", justifyContent: "center", padding: "28px 0 40px" }}>
               <button className="share-btn" onClick={share}>
                 일정 공유하기
               </button>

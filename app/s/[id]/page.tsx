@@ -3,6 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { pullAccount } from "@/lib/cloud";
+import { setLastHome } from "@/lib/lastHome";
 import { useStore } from "@/lib/store";
 import type { Trip } from "@/lib/types";
 import { Toast } from "@/components/ui";
@@ -10,7 +11,7 @@ import { Toast } from "@/components/ui";
 export default function SharePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { adoptAccount, importTrips, hydrated } = useStore();
+  const { adoptAccount, hydrated } = useStore();
   const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
@@ -33,6 +34,7 @@ export default function SharePage() {
         done = true;
         window.clearTimeout(failTimer);
         adoptAccount(remote.data);
+        setLastHome("/trips");
         router.replace("/trips");
         return;
       }
@@ -42,10 +44,19 @@ export default function SharePage() {
         sessionStorage.getItem(`chaeggyeo:share:${id}`);
       if (raw) {
         try {
-          const parsed = JSON.parse(raw) as { trips: Trip[]; accountId: string };
+          const parsed = JSON.parse(raw) as {
+            trips: Trip[];
+            accountId: string;
+            personalItems?: { id: string; name: string }[];
+          };
           done = true;
           window.clearTimeout(failTimer);
-          importTrips(parsed.trips, parsed.accountId);
+          adoptAccount({
+            id: parsed.accountId,
+            trips: parsed.trips,
+            personalItems: parsed.personalItems ?? [],
+          });
+          setLastHome("/trips");
           router.replace("/trips");
           return;
         } catch {
@@ -62,7 +73,7 @@ export default function SharePage() {
       cancelled = true;
       window.clearTimeout(failTimer);
     };
-  }, [hydrated, id, adoptAccount, importTrips, router]);
+  }, [hydrated, id, adoptAccount, router]);
 
   return (
     <div className="shell" style={{ padding: 32, color: "var(--text-3)", fontSize: 14 }}>

@@ -29,16 +29,18 @@ export function nightDay(start: string, end: string) {
 export function tripPeriodLabel(start: string, end: string) {
   const { label } = nightDay(start, end);
   const [sy, sm, sd] = start.split("-");
-  const [ey, em, ed] = end.split("-");
-  const left = `${sy}.${sm}.${sd}`;
-  const right = sy === ey ? `${em}.${ed}` : `${ey}.${em}.${ed}`;
-  return `${left} ~ ${right} · ${label}`;
+  const [, em, ed] = end.split("-");
+  return `${sy}.${sm}.${sd} ~ ${em}.${ed} · ${label}`;
 }
 
 export function checklistSubtitle(country: string, start: string, end: string) {
   const { nights, days, label } = nightDay(start, end);
   if (days <= 1) return `${country} 여행 · 1일`;
   return `${country} 여행 · ${nights}박 ${days}일`;
+}
+
+export function rangesOverlap(aStart: string, aEnd: string, bStart: string, bEnd: string) {
+  return aStart <= bEnd && bStart <= aEnd;
 }
 
 export function daysUntil(iso: string, from = new Date()) {

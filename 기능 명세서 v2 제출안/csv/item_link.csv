@@ -1,0 +1,7 @@
+﻿link_id,item_id,item_id_NAME_TEMP,display_order,link_type,link_text,link_url
+L0001,I0031,해외 결제 가능 카드,1,info,현지에서 똑똑하게 카드 사용하는 방법,https://triple.guide/articles/22b8cee7-f99a-4a2e-8718-d24a1c1593ff
+L0002,I0178,환전,1,info,여행 전 똑똑하게 환전하기,https://triple.guide/articles/544a20bb-4d41-4ea5-a8bc-92c2c9127acf
+L0003,I0032,eSIM 또는 로밍 데이터,1,info,해외 데이터 이용 방법,https://triple.guide/articles/7f36b99b-4adc-4153-8274-dfe24e26b3a7
+L0004,I0032,eSIM 또는 로밍 데이터,2,booking,선불유심 예약하기,https://triple.guide/articles/1a6d8231-7a32-4d1d-ae54-230454024bad
+L0005,I0032,eSIM 또는 로밍 데이터,3,booking,포켓와이파이 예약하기,https://triple.guide/articles/76fcf79e-5e62-48c0-a7b0-2ca6ca35525b
+L0006,I0002,여행자보험 증서(모바일),1,booking,여행자 보험 가입하기,https://triple.guide/articles/9f0deb5c-3f30-41aa-8382-54497be996f2

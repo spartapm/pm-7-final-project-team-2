@@ -1,5 +1,4 @@
--- 챙겨요: 일정 공유 + 아이템 카탈로그 + 삭제율
--- Supabase Dashboard → SQL Editor 에 붙여넣고 Run 한 번이면 됩니다.
+export const CATALOG_SQL = `-- 챙겨요 catalog + 삭제율 (accounts/trips 포함)
 
 create table if not exists public.accounts (
   id text primary key,
@@ -83,3 +82,4 @@ grant all on public.catalog_links to anon, authenticated, service_role;
 grant all on public.catalog_rules to anon, authenticated, service_role;
 grant all on public.item_stats to anon, authenticated, service_role;
 grant usage, select on all sequences in schema public to anon, authenticated, service_role;
+`;

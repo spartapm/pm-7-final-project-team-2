@@ -47,7 +47,7 @@ export function IconHeart({ on }: { on: boolean }) {
   return (
     <Svg width="18" height="16" viewBox="0 0 18 16">
       <path
-        d="M9 14.5s-6.5-4.1-6.5-8.2C2.5 4 4.2 2.5 6.2 2.5c1.2 0 2.3.6 2.8 1.5.5-.9 1.6-1.5 2.8-1.5 2 0 3.7 1.5 3.7 3.8 0 4.1-6.5 8.2-6.5 8.2z"
+        d="M9 15C9 15 1.6 10.2 1.6 5.6 1.6 3.1 3.5 1.2 5.9 1.2 7.2 1.2 8.4 1.9 9 3 9.6 1.9 10.8 1.2 12.1 1.2 14.5 1.2 16.4 3.1 16.4 5.6 16.4 10.2 9 15 9 15Z"
         fill={on ? "var(--accent)" : "var(--letterbox)"}
       />
     </Svg>
@@ -65,15 +65,47 @@ export function IconPlus({
 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
-      <path d="M12 5v14M5 12h14" stroke={color} strokeWidth={stroke} strokeLinecap="round" />
+      <path
+        d={size === 20 ? "M12 5v14M5 12h14" : "M12 6v12M6 12h12"}
+        stroke={color}
+        strokeWidth={stroke}
+        strokeLinecap="round"
+      />
     </Svg>
   );
 }
 
-export function IconCheck() {
+export function IconCheck({ color = "#fff" }: { color?: string }) {
   return (
     <Svg width="12" height="12" viewBox="0 0 12 12">
-      <path d="M2 6.2l2.6 2.6L10 3.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M2.6 6.2 5 8.6 9.4 3.6" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+export function IconCheckSm() {
+  return (
+    <Svg width="9" height="8" viewBox="0 0 9 8">
+      <path d="M1 4.2 3.3 7 8 1" stroke="var(--primary)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+export function IconHeartSm() {
+  return (
+    <Svg width="9" height="8" viewBox="0 0 9 8">
+      <path
+        d="M4.5 7.5C4.5 7.5 1 5 1 2.6 1 1.3 2 .5 3 .5 3.6.5 4.2.8 4.5 1.3 4.8.8 5.4.5 6 .5 7 .5 8 1.3 8 2.6 8 5 4.5 7.5 4.5 7.5Z"
+        fill="var(--accent)"
+      />
+    </Svg>
+  );
+}
+
+export function IconSheetChevron() {
+  return (
+    <Svg width="8" height="14" viewBox="0 0 8 14">
+      <path d="M1 1l6 6-6 6" stroke="var(--text-3)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 }
@@ -99,10 +131,10 @@ export function IconChevron({ up }: { up?: boolean }) {
   );
 }
 
-export function IconPencil() {
+export function IconPencil({ color = "var(--text-3)" }: { color?: string }) {
   return (
-    <Svg width="15" height="15" viewBox="0 0 15 15">
-      <path d="M10.2 2.2l2.6 2.6M2 13l.6-3.4L10.2 2.2 12.8 4.8 5.4 12.2 2 13z" stroke="var(--text-3)" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    <Svg width="15" height="15" viewBox="0 0 16 16">
+      <path d="M11 2.2a1.8 1.8 0 0 1 2.55 2.55L5.2 13.1l-3.4 1 1-3.4Z" stroke={color} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 }
@@ -118,17 +150,17 @@ export function IconXSmall() {
 export function IconInfo() {
   return (
     <Svg width="16" height="16" viewBox="0 0 16 16">
-      <circle cx="8" cy="8" r="7" stroke="var(--text-3)" strokeWidth="1.4" />
-      <path d="M8 7.2v4" stroke="var(--text-3)" strokeWidth="1.5" strokeLinecap="round" />
-      <circle cx="8" cy="4.8" r="0.9" fill="var(--text-3)" />
+      <circle cx="8" cy="8" r="6.5" stroke="var(--text-3)" strokeWidth="1.4" />
+      <path d="M8 7v4.2M8 4.8v.2" stroke="var(--text-3)" strokeWidth="1.4" strokeLinecap="round" />
     </Svg>
   );
 }
 
 export function IconOverpack() {
   return (
-    <Svg width="12" height="12" viewBox="0 0 12 12">
-      <path d="M2 6h7M6.5 3l3 3-3 3" stroke="var(--accent)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    <Svg width="10" height="10" viewBox="0 0 24 24" style={{ transform: "scaleX(-1)" }}>
+      <path d="M20 4h-7a4 4 0 0 0-4 4v12" stroke="var(--accent)" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M14 15l-5 5-5-5" stroke="var(--accent)" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 }

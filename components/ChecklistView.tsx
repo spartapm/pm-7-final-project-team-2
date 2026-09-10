@@ -6,14 +6,17 @@ import { countryName, PRESET_CATEGORY_NAMES } from "@/lib/catalog";
 import { checklistSubtitle } from "@/lib/dates";
 import { track } from "@/lib/analytics";
 import { categoryFromPreset, emptyCustomCategory } from "@/lib/generate";
-import { hasInfoIcon, overpackCopy } from "@/lib/itemMeta";
+import { deleteRateFor, hasInfoIcon, overpackCopy } from "@/lib/itemMeta";
+import { subscribeCatalog } from "@/lib/liveCatalog";
 import { setLastHome } from "@/lib/lastHome";
 import { newItem, patchCategory, patchItem, useStore } from "@/lib/store";
 import type { Category, ChecklistItem, FilterMode, Trip } from "@/lib/types";
 import {
   IconCheck,
+  IconCheckSm,
   IconChevron,
   IconHeart,
+  IconHeartSm,
   IconInfo,
   IconMeatball,
   IconOverpack,
@@ -60,7 +63,7 @@ function RecoCarousel() {
       onPointerUp={onUp}
       onPointerCancel={onUp}
     >
-      {[0, 1, 2].map((i) => (
+      {[0, 1].map((i) => (
         <div className="reco" key={i}>
           <div>
             <div className="txt">여행자님이 좋아하실 상품을 준비하고 있어요.</div>
@@ -82,6 +85,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
     addPersonalItem,
     renamePersonalItem,
     removePersonalItem,
+    removePersonalCategory,
     restoreSnapshot,
   } = useStore();
   const trip = trips.find((t) => t.id === tripId);
@@ -103,9 +107,9 @@ export function ChecklistView({ tripId }: { tripId: string }) {
   const renameRef = useRef<HTMLInputElement>(null);
   const undoRef = useRef<{ trips: Trip[]; personalItems: { id: string; name: string }[] } | null>(null);
   const collapseRef = useRef<Record<string, boolean>>({});
-  const [confirmBulk, setConfirmBulk] = useState(false);
   const [info, setInfo] = useState<{ links: { text: string; url: string }[]; note?: string } | null>(null);
   const [counterOn, setCounterOn] = useState(true);
+  const [, catalogTick] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const selectedCount = useMemo(
@@ -130,6 +134,8 @@ export function ChecklistView({ tripId }: { tripId: string }) {
     el?.scrollIntoView({ behavior: "smooth", block: "start" });
     router.replace(`/trips/${trip.id}`, { scroll: false });
   }, [router, trip]);
+
+  useEffect(() => subscribeCatalog(() => catalogTick((n) => n + 1)), []);
 
   useEffect(() => {
     if (!trip) return;
@@ -247,7 +253,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
       },
     });
     items.push({
-      label: "찜한 상품 모아보기",
+      label: "찜한 아이템 모아보기",
       onClick: () => {
         setFilter("wished");
         expandAll();
@@ -298,12 +304,22 @@ export function ChecklistView({ tripId }: { tripId: string }) {
           items: c.items.filter((i) => i.id !== item.id),
         }))
       );
+      if (cat.kind === "activity" && item.masterId) {
+        import("@/lib/stats").then(({ recordItemDelete }) => {
+          recordItemDelete(cat.activityId ?? cat.kind, item.masterId!);
+        });
+      }
     }
     setToast({
       msg: "해당 항목을 지웠어요",
       place: "bottom",
       undo: () => {
         if (undoRef.current) restoreSnapshot(undoRef.current);
+        if (cat.kind === "activity" && item.masterId) {
+          import("@/lib/stats").then(({ undoItemDelete }) => {
+            undoItemDelete(cat.activityId ?? cat.kind, item.masterId!);
+          });
+        }
       },
     });
     track("item_removed", { is_bulk: false, item_id: item.id });
@@ -312,7 +328,10 @@ export function ChecklistView({ tripId }: { tripId: string }) {
   const commitRename = () => {
     if (!rename) return;
     const name = rename.name.trim();
-    if (!name || name.length > 30) return;
+    if (!name) {
+      setRename(null);
+      return;
+    }
     const cat = trip.categories.find((c) => c.id === rename.catId);
     const item = cat?.items.find((i) => i.id === rename.itemId);
     if (cat && item && isPersonalCat(cat)) {
@@ -326,7 +345,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
   const tryAdd = (catId: string, category: Category) => {
     const name = addText.trim();
     if (!name) return;
-    if (name.length > 30) {
+    if (addText.length > 30) {
       setToast({ msg: "최대 30자까지 입력할 수 있어요", place: "top" });
       return;
     }
@@ -342,8 +361,6 @@ export function ChecklistView({ tripId }: { tripId: string }) {
     setAdding(catId);
     requestAnimationFrame(() => addRef.current?.focus());
   };
-
-  const over = addText.length > 30;
 
   return (
     <PhoneShell>
@@ -362,11 +379,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
         kebabRef={kebabRef}
         right={
           editing ? (
-            <button
-              className="t-button"
-              style={{ color: "var(--primary)", background: "none", border: "none" }}
-              onClick={finishEdit}
-            >
+            <button className="topbar-done" onClick={finishEdit}>
               완료
             </button>
           ) : undefined
@@ -419,7 +432,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                   {cat.hint ? <span className="hint">{cat.hint}</span> : null}
                   {editing ? (
                     <button
-                      className="icon-btn"
+                      className="hit-icon"
                       aria-label="카테고리 메뉴"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -438,7 +451,10 @@ export function ChecklistView({ tripId }: { tripId: string }) {
               {cat.collapsed ? null : (
                 <>
                   {items.map((item) => {
-                    const pack = editing && cat.kind === "activity" ? overpackCopy(item.deleteRate) : null;
+                    const pack =
+                      editing && cat.kind === "activity"
+                        ? overpackCopy(deleteRateFor(cat.activityId, item.masterId) ?? item.deleteRate)
+                        : null;
                     const reason = pack ? null : item.reason;
                     const renaming = rename?.catId === cat.id && rename.itemId === item.id;
                     return (
@@ -475,8 +491,16 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                             <input
                               ref={renameRef}
                               value={rename.name}
-                              maxLength={30}
-                              onChange={(e) => setRename({ ...rename, name: e.target.value })}
+                              onChange={(e) => {
+                                const next = e.target.value;
+                                if (next.length > 30) {
+                                  setRename({ ...rename, name: next.slice(0, 30) });
+                                  setToast({ msg: "최대 30자까지 입력할 수 있어요", place: "top" });
+                                  return;
+                                }
+                                setRename({ ...rename, name: next });
+                              }}
+                              onFocus={(e) => e.currentTarget.select()}
                               onKeyDown={(e) => {
                                 if (e.key === "Enter") commitRename();
                                 if (e.key === "Escape") setRename(null);
@@ -497,35 +521,39 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                           ) : null}
                         </div>
                         {editing ? (
-                          <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+                          <div className="row-actions edit">
                             {item.custom ? (
                               <button
-                                className="icon-btn"
-                                aria-label="이름 변경"
+                                className="hit-icon"
+                                aria-label={renaming ? "이름 저장" : "이름 변경"}
+                                onMouseDown={(e) => e.preventDefault()}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setRename({ catId: cat.id, itemId: item.id, name: item.name });
+                                  if (renaming) commitRename();
+                                  else setRename({ catId: cat.id, itemId: item.id, name: item.name });
                                 }}
                               >
-                                <IconPencil />
+                                <IconPencil color={renaming ? "var(--primary)" : "var(--text-3)"} />
                               </button>
                             ) : null}
-                            <button
-                              className="icon-btn"
-                              aria-label="삭제"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteOne(cat, item);
-                              }}
-                            >
-                              <IconXSmall />
-                            </button>
+                            {renaming ? null : (
+                              <button
+                                className="hit-icon"
+                                aria-label="삭제"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteOne(cat, item);
+                                }}
+                              >
+                                <IconXSmall />
+                              </button>
+                            )}
                           </div>
                         ) : (
-                          <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+                          <div className="row-actions">
                             {hasInfoIcon(item.masterId, item.name, item.linkNote) ? (
                               <button
-                                className="icon-btn"
+                                className="hit-icon"
                                 aria-label="정보"
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -539,7 +567,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                               </button>
                             ) : null}
                             <button
-                              className="icon-btn"
+                              className="hit-icon"
                               aria-label="찜"
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -566,23 +594,20 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                         {adding === cat.id ? (
                           <input
                             ref={addRef}
+                            className="add-inline"
                             autoFocus
                             value={addText}
-                            maxLength={30}
                             placeholder="직접 아이템을 입력해주세요"
-                            onChange={(e) => setAddText(e.target.value)}
-                            onBeforeInput={(e) => {
-                              const ne = e.nativeEvent as InputEvent;
-                              if (!ne.inputType?.startsWith("insert")) return;
-                              if (ne.inputType === "insertCompositionText") return;
-                              const el = e.currentTarget;
-                              const insert = ne.data ?? "";
-                              if (!insert) return;
-                              const selected = (el.selectionEnd ?? 0) - (el.selectionStart ?? 0);
-                              if (addText.length - selected + insert.length > 30) {
-                                e.preventDefault();
+                            onChange={(e) => {
+                              const next = e.target.value;
+                              if (next.length > 30 && addText.length <= 30) {
                                 setToast({ msg: "최대 30자까지 입력할 수 있어요", place: "top" });
                               }
+                              setAddText(next);
+                              requestAnimationFrame(() => {
+                                const el = addRef.current;
+                                if (el) el.scrollLeft = el.scrollWidth;
+                              });
                             }}
                             onKeyDown={(e) => {
                               if (e.key === "Enter") tryAdd(cat.id, cat);
@@ -604,19 +629,13 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                       </div>
                       {adding === cat.id ? (
                         <button
-                          className="icon-btn"
+                          className="hit-icon"
                           aria-label="추가"
-                          disabled={!addText.trim() && !over}
+                          aria-disabled={!addText.trim() || addText.length > 30}
                           onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => {
-                            if (over) {
-                              setToast({ msg: "최대 30자까지 입력할 수 있어요", place: "top" });
-                              return;
-                            }
-                            tryAdd(cat.id, cat);
-                          }}
+                          onClick={() => tryAdd(cat.id, cat)}
                         >
-                          <IconPlus color={over ? "var(--text-3)" : "var(--primary)"} />
+                          <IconPlus color={addText.length > 30 ? "var(--text-3)" : "var(--primary)"} />
                         </button>
                       ) : null}
                     </div>
@@ -652,7 +671,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
           <button
             className={`act${selectedCount === 0 ? " off" : ""}`}
             disabled={selectedCount === 0}
-            onClick={() => setConfirmBulk(true)}
+            onClick={deleteSelected}
           >
             삭제
           </button>
@@ -660,11 +679,12 @@ export function ChecklistView({ tripId }: { tripId: string }) {
       ) : (
         <div className={`float-count${counterOn ? "" : " off"}`}>
           <span className="n">
-            <IconCheck />
-            {counts.checked} / {counts.total}
+            <IconCheckSm />
+            {counts.checked}/{counts.total}
           </span>
-          <span className="n heart">
-            <IconHeart on />
+          <span className="div" />
+          <span className="n">
+            <IconHeartSm />
             {counts.wished}
           </span>
         </div>
@@ -684,23 +704,14 @@ export function ChecklistView({ tripId }: { tripId: string }) {
         />
       ) : null}
 
-      {confirmBulk ? (
-        <ConfirmDialog
-          message={"선택한 전체 아이템이\n함께 삭제됩니다.\n아이템을 삭제하시겠습니까?"}
-          onCancel={() => setConfirmBulk(false)}
-          onConfirm={() => {
-            deleteSelected();
-            setConfirmBulk(false);
-          }}
-        />
-      ) : null}
-
       {confirmCat ? (
         <ConfirmDialog
           message={"카테고리에 속한 아이템이\n함께 삭제됩니다.\n카테고리를 삭제하시겠습니까?"}
           onCancel={() => setConfirmCat(null)}
           onConfirm={() => {
-            save((t) => ({ ...t, categories: t.categories.filter((c) => c.id !== confirmCat) }));
+            const cat = trip.categories.find((c) => c.id === confirmCat);
+            if (cat && isPersonalCat(cat)) removePersonalCategory();
+            else save((t) => ({ ...t, categories: t.categories.filter((c) => c.id !== confirmCat) }));
             setConfirmCat(null);
             setCatMenu(null);
           }}
@@ -740,15 +751,13 @@ export function addCategoryToTrip(
   const cat = categoryFromPreset(name, personalItems);
   if (name !== cat.name && cat.items.length === 0 && cat.kind === "custom") {
     const fallback = emptyCustomCategory(name);
-    fallback.hint = "직접 추가한 항목";
     return { ...trip, categories: [...trip.categories, fallback] };
   }
   if (name === "나만의 준비물") {
-    return { ...trip, categories: [cat, ...trip.categories] };
-  }
-  const presets = new Set(PRESET_CATEGORY_NAMES);
-  if (!presets.has(canon) && cat.kind === "custom") {
-    cat.hint = "직접 추가한 항목";
+    const empty = emptyCustomCategory("나만의 준비물");
+    empty.kind = "personal";
+    empty.hint = "모든 여행 일정에 담겨요";
+    return { ...trip, categories: [empty, ...trip.categories] };
   }
   return { ...trip, categories: [...trip.categories, cat] };
 }

@@ -1,0 +1,8 @@
+﻿country_id,country_name_kr,country_name_en,region,forecast_city_kr,latitude,longitude
+JP,일본,Japan,동아시아,도쿄,35.6762,139.6503
+VN,베트남,Vietnam,동남아시아,하노이,21.0278,105.8342
+CN,중국,China,동아시아,베이징,39.9042,116.4074
+US,미국,United States,북미,뉴욕,40.7128,-74.006
+TH,태국,Thailand,동남아시아,방콕,13.7563,100.5018
+PH,필리핀,Philippines,동남아시아,마닐라,14.5995,120.9842
+SG,싱가포르,Singapore,동남아시아,싱가포르,1.3521,103.8198

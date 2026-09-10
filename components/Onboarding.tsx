@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ACTIVITIES, COMPANIONS, COUNTRIES } from "@/lib/catalog";
+import { rangesOverlap } from "@/lib/dates";
 import { track } from "@/lib/analytics";
 import { useStore } from "@/lib/store";
 import type { ActivityId, CompanionId, CountryId } from "@/lib/types";
@@ -40,15 +41,9 @@ export function Onboarding({ step }: { step: 1 | 2 | 3 }) {
 
   const isDup = () =>
     Boolean(
-      draft.countryId &&
-        draft.startDate &&
+      draft.startDate &&
         draft.endDate &&
-        trips.some(
-          (t) =>
-            t.countryId === draft.countryId &&
-            t.startDate === draft.startDate &&
-            t.endDate === draft.endDate
-        )
+        trips.some((t) => rangesOverlap(t.startDate, t.endDate, draft.startDate!, draft.endDate!))
     );
 
   const generate = async () => {
@@ -89,7 +84,7 @@ export function Onboarding({ step }: { step: 1 | 2 | 3 }) {
         <ProgressBar step={1} total={3} />
         <div className="shell-scroll pad-a">
           <span className="badge lg">여행 준비 시작</span>
-          <h1 className="t-display" style={{ margin: "16px 0 12px" }}>
+          <h1 className="t-title1" style={{ margin: "16px 0 12px" }}>
             지금부터 여행 준비물
             <br />
             리스트를 뽑아볼게요
@@ -196,7 +191,7 @@ export function Onboarding({ step }: { step: 1 | 2 | 3 }) {
     });
   };
 
-  const ready = draft.companions.length > 0;
+  const ready = draft.companions.length > 0 && draft.activities.length > 0;
 
   return (
     <PhoneShell>
@@ -248,7 +243,7 @@ export function Onboarding({ step }: { step: 1 | 2 | 3 }) {
         </PrimaryButton>
       </div>
       {showLoad ? <LoadingOverlay /> : null}
-      {toast ? <Toast message={toast} onDone={() => setToast(null)} /> : null}
+      {toast ? <Toast message={toast} onDone={() => setToast(null)} place="bottom" /> : null}
     </PhoneShell>
   );
 }

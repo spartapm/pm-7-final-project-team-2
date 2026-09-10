@@ -33,6 +33,10 @@ export async function pullAccount(accountId: string): Promise<{
     .map((row) => row.payload as Trip)
     .filter((t) => t && typeof t.id === "string");
 
+  if (!accountRes.data && trips.length === 0) {
+    return { status: "ok" };
+  }
+
   return {
     status: "ok",
     data: {

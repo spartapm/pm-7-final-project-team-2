@@ -18,7 +18,6 @@ import type {
   Trip,
 } from "./types";
 import { generateCategories } from "./generate";
-import { PRESET_CATEGORY_NAMES } from "./catalog";
 import { tripStatus } from "./dates";
 import { deleteRateFor, linksFor, specOf } from "./itemMeta";
 import { climateBands, fetchClimate } from "./weather";
@@ -67,7 +66,6 @@ function personalHit(
 }
 
 function migrateTrips(trips: Trip[]): Trip[] {
-  const presets = new Set(PRESET_CATEGORY_NAMES);
   return trips.map((trip) => {
     let categories = trip.categories.map((c) => {
       const name = CAT_RENAME[c.name.trim()] ?? c.name;
@@ -76,31 +74,13 @@ function migrateTrips(trips: Trip[]): Trip[] {
         ...c,
         name,
         kind: personal ? "personal" as const : c.kind,
-        hint: personal
-          ? "모든 여행 일정에 담겨요"
-          : presets.has(name)
-            ? undefined
-            : (c.hint || "직접 추가한 항목"),
+        hint: personal ? "모든 여행 일정에 담겨요" : undefined,
         items: (c.items ?? []).map((i) => enrichItem(i, c.activityId)),
       };
     });
     const personal = categories.filter((c) => c.name === "나만의 준비물");
     const rest = categories.filter((c) => c.name !== "나만의 준비물");
-    if (personal.length === 0) {
-      categories = [
-        {
-          id: uid("cat"),
-          name: "나만의 준비물",
-          kind: "personal",
-          hint: "모든 여행 일정에 담겨요",
-          collapsed: false,
-          items: [],
-        },
-        ...rest,
-      ];
-    } else {
-      categories = [...personal, ...rest];
-    }
+    categories = personal.length ? [...personal, ...rest] : rest;
     return { ...trip, seen: trip.seen ?? true, categories };
   });
 }
@@ -142,6 +122,7 @@ type Store = AppState & {
   addPersonalItem: (name: string) => void;
   renamePersonalItem: (match: { personalId?: string; name: string }, nextName: string) => void;
   removePersonalItem: (match: { personalId?: string; name: string }) => void;
+  removePersonalCategory: () => void;
   restoreSnapshot: (snap: { trips: Trip[]; personalItems: { id: string; name: string }[] }) => void;
 };
 
@@ -168,18 +149,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     pullAccount(local.accountId).then((res) => {
       setCloudStatus(res.status);
       if (res.status !== "ok") return;
+      if (stateRef.current.accountId !== local.accountId) return;
       const remote = res.data;
       if (!remote) return;
       if (remote.trips.length || remote.personalItems.length) {
         skipPush.current = true;
-        setState((s) => ({
-          ...s,
-          trips: migrateTrips(remote.trips),
-          personalItems: remote.personalItems.length ? remote.personalItems : s.personalItems,
-        }));
+        setState((s) => {
+          if (s.accountId !== local.accountId) return s;
+          return {
+            ...s,
+            trips: migrateTrips(remote.trips),
+            personalItems: remote.personalItems.length ? remote.personalItems : s.personalItems,
+          };
+        });
         return;
       }
       if (local.trips.length || local.personalItems.length) {
+        if (stateRef.current.accountId !== local.accountId) return;
         pushAccount({
           id: local.accountId,
           trips: local.trips,
@@ -257,6 +243,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       trips: [trip, ...s.trips],
       draft: emptyDraft(),
     }));
+    import("./stats").then(({ recordItemExposure }) => {
+      for (const cat of trip.categories) {
+        if (cat.kind !== "activity" || !cat.activityId) continue;
+        for (const item of cat.items) {
+          if (item.masterId) recordItemExposure(cat.activityId, item.masterId);
+        }
+      }
+    });
     return trip;
   }, []);
 
@@ -272,19 +266,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const importTrips = useCallback((trips: Trip[], accountId?: string) => {
-    setState((s) => {
-      const byId = new Map(s.trips.map((t) => [t.id, t]));
-      for (const t of migrateTrips(trips)) byId.set(t.id, t);
-      return {
-        ...s,
-        accountId: accountId || s.accountId,
-        trips: [...byId.values()],
-      };
-    });
+    try {
+      localStorage.removeItem("chaeggyeo:lastHome");
+    } catch {
+      /* ignore */
+    }
+    setState((s) => ({
+      ...s,
+      accountId: accountId || s.accountId,
+      trips: migrateTrips(trips),
+    }));
   }, []);
 
   const adoptAccount = useCallback((account: CloudAccount) => {
     skipPush.current = true;
+    try {
+      localStorage.removeItem("chaeggyeo:lastHome");
+    } catch {
+      /* ignore */
+    }
     setState((s) => ({
       ...s,
       accountId: account.id,
@@ -376,6 +376,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const removePersonalCategory = useCallback(() => {
+    setState((s) => ({
+      ...s,
+      personalItems: [],
+      trips: s.trips.map((trip) =>
+        tripStatus(trip) === "done"
+          ? trip
+          : { ...trip, categories: trip.categories.filter((c) => !isPersonalCat(c)) }
+      ),
+    }));
+  }, []);
+
   const restoreSnapshot = useCallback(
     (snap: { trips: Trip[]; personalItems: { id: string; name: string }[] }) => {
       setState((s) => ({
@@ -402,6 +414,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       addPersonalItem,
       renamePersonalItem,
       removePersonalItem,
+      removePersonalCategory,
       restoreSnapshot,
     }),
     [
@@ -418,6 +431,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       addPersonalItem,
       renamePersonalItem,
       removePersonalItem,
+      removePersonalCategory,
       restoreSnapshot,
     ]
   );
