@@ -132,7 +132,7 @@ export function generateCategories(input: {
     return da - db;
   });
 
-  return sections.map(([key, items]) => {
+  const cats = sections.map(([key, items]) => {
     const meta = CATEGORY_META[key];
     return {
       id: uid("cat"),
@@ -144,6 +144,23 @@ export function generateCategories(input: {
       items,
     };
   });
+  if (!input.personalItems.length) return cats;
+  const personal: Category = {
+    id: uid("cat"),
+    name: "나만의 준비물",
+    kind: "personal",
+    hint: "모든 여행 일정에 담겨요",
+    collapsed: false,
+    items: input.personalItems.map((p) => ({
+      id: uid("it"),
+      personalId: p.id,
+      name: p.name,
+      checked: false,
+      wished: false,
+      custom: true,
+    })),
+  };
+  return [personal, ...cats];
 }
 
 export function emptyCustomCategory(name: string): Category {
