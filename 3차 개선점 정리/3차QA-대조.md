@@ -5,7 +5,7 @@
 
 반영 커밋: `4fab1a8`, `82686ff`  
 원격: https://github.com/spartapm/pm-7-final-project-team-2  
-라이브: https://pm-7-final-project-team-2.vercel.app
+라이브: https://chaeggyeo.vercel.app
 
 | 결과 | 의미 |
 |---|---|
