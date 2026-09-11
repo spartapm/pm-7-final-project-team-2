@@ -26,9 +26,11 @@ npm run dev
 
 앱을 꺼 둔 상태의 웹 푸시(D-7/D-3/D-1 19시)는 탭이 열려 있을 때만 동작합니다.
 
+라이브: https://chaenggyeoyo.vercel.app
+
 ## Vercel
 
-GitHub 저장소 루트가 이 앱입니다. Root Directory는 비워 두면 됩니다(Framework Preset: Next.js).
+GitHub 저장소 루트가 이 앱입니다. Root Directory는 비워 두면 됩니다(Framework Preset: Next.js). 배포 도메인은 `chaenggyeoyo.vercel.app` 입니다.
 
 Settings → Environment Variables에 아래 **두 개만** 넣습니다. Production / Preview / Development 모두 체크.
 

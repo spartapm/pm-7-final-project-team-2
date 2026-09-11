@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode, SVGProps } from "react";
+import { useRef, type ReactNode, SVGProps } from "react";
 
 function Svg(props: SVGProps<SVGSVGElement>) {
   return <svg fill="none" xmlns="http://www.w3.org/2000/svg" {...props} />;
@@ -33,12 +33,12 @@ export function IconKebab({ active }: { active?: boolean }) {
 }
 
 export function IconMeatball({ active }: { active?: boolean }) {
-  const fill = active ? "var(--primary)" : "var(--text-3)";
+  const fill = active ? "var(--primary)" : "#3A3A3A";
   return (
-    <Svg width="16" height="2" viewBox="0 0 16 2">
-      <circle cx="1" cy="1" r="1" fill={fill} />
-      <circle cx="8" cy="1" r="1" fill={fill} />
-      <circle cx="15" cy="1" r="1" fill={fill} />
+    <Svg width="18" height="18" viewBox="0 0 18 18">
+      <circle cx="1.2" cy="9" r="1.2" fill={fill} />
+      <circle cx="9" cy="9" r="1.2" fill={fill} />
+      <circle cx="16.8" cy="9" r="1.2" fill={fill} />
     </Svg>
   );
 }
@@ -166,5 +166,21 @@ export function IconOverpack() {
 }
 
 export function PhoneShell({ children }: { children: ReactNode }) {
-  return <div className="shell">{children}</div>;
+  const startY = useRef(0);
+  return (
+    <div
+      className="shell"
+      onTouchStart={(e) => {
+        startY.current = e.touches[0]?.clientY ?? 0;
+      }}
+      onTouchEnd={(e) => {
+        const scroller = e.currentTarget.querySelector(".shell-scroll") as HTMLElement | null;
+        if (scroller && scroller.scrollTop > 0) return;
+        const dy = (e.changedTouches[0]?.clientY ?? 0) - startY.current;
+        if (dy > 80) window.location.reload();
+      }}
+    >
+      {children}
+    </div>
+  );
 }

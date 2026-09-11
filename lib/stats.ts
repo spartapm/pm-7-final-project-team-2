@@ -10,8 +10,9 @@ export function liveDeleteRate(activityId?: string, itemId?: string) {
   if (!activityId || !itemId) return undefined;
   const row = getLiveCatalog().stats.find((r) => r.activityId === activityId && r.itemId === itemId);
   if (!row) return undefined;
-  if (row.shown) return rateOf(row);
-  if (rateOf(row) >= 0.7 && row.exposure >= 30) return rateOf(row);
+  const rate = rateOf(row);
+  if (rate < 0.7) return undefined;
+  if (row.shown || row.exposure >= 30) return rate;
   return undefined;
 }
 

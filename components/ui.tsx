@@ -153,7 +153,7 @@ export function ConfirmDialog({
 }
 
 export function InputDialog({
-  title = "직접 입력",
+  title = "직접입력",
   value,
   onChange,
   placeholder = "최대 30글자로\n카테고리/아이템 직접 입력하기",
@@ -181,6 +181,12 @@ export function InputDialog({
     }
     onChange(next);
   };
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.focus();
+    if (!value) el.setSelectionRange(0, 0);
+  }, []);
   return (
     <div className="dim" onClick={onCancel}>
       <div className="dialog" onClick={(e) => e.stopPropagation()}>
@@ -190,8 +196,8 @@ export function InputDialog({
             {!value ? <div className="ph">{placeholder}</div> : null}
             <textarea
               ref={inputRef}
-              autoFocus
               value={value}
+              rows={2}
               className={value ? "typed" : "empty"}
               onChange={(e) => {
                 if (composing.current) {
@@ -217,11 +223,6 @@ export function InputDialog({
                   e.preventDefault();
                   onLimit?.();
                 }
-              }}
-              onFocus={(e) => {
-                if (value) return;
-                const el = e.currentTarget;
-                requestAnimationFrame(() => el.setSelectionRange(0, 0));
               }}
             />
           </div>

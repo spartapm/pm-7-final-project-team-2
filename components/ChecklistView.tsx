@@ -95,6 +95,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
   const [catMenu, setCatMenu] = useState<{ id: string; anchor: HTMLElement } | null>(null);
   const kebabRef = useRef<HTMLButtonElement>(null);
   const [confirmCat, setConfirmCat] = useState<string | null>(null);
+  const [confirmBulk, setConfirmBulk] = useState(false);
   const [rename, setRename] = useState<{ catId: string; itemId: string; name: string } | null>(null);
   const [adding, setAdding] = useState<string | null>(null);
   const [addText, setAddText] = useState("");
@@ -431,6 +432,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                   </span>
                   {cat.hint ? <span className="hint">{cat.hint}</span> : null}
                   {editing ? (
+                    isPersonalCat(cat) ? null : (
                     <button
                       className="hit-icon"
                       aria-label="카테고리 메뉴"
@@ -443,6 +445,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                     >
                       <IconMeatball active={catMenu?.id === cat.id} />
                     </button>
+                    )
                   ) : (
                     <IconChevron up={!cat.collapsed} />
                   )}
@@ -598,19 +601,37 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                             autoFocus
                             value={addText}
                             placeholder="직접 아이템을 입력해주세요"
-                            onChange={(e) => {
-                              const next = e.target.value;
-                              if (next.length > 30 && addText.length <= 30) {
+                            maxLength={30}
+                            enterKeyHint="next"
+                            onBeforeInput={(e) => {
+                              const ne = e.nativeEvent as InputEvent;
+                              if (!ne.inputType?.startsWith("insert") || !ne.data) return;
+                              if (ne.inputType === "insertCompositionText") return;
+                              const el = e.currentTarget;
+                              const selected = (el.selectionEnd ?? 0) - (el.selectionStart ?? 0);
+                              if (addText.length - selected + ne.data.length > 30) {
+                                e.preventDefault();
                                 setToast({ msg: "최대 30자까지 입력할 수 있어요", place: "top" });
                               }
-                              setAddText(next);
+                            }}
+                            onChange={(e) => {
+                              const next = e.target.value;
+                              if (next.length > 30) {
+                                setAddText(next.slice(0, 30));
+                                setToast({ msg: "최대 30자까지 입력할 수 있어요", place: "top" });
+                              } else {
+                                setAddText(next);
+                              }
                               requestAnimationFrame(() => {
                                 const el = addRef.current;
                                 if (el) el.scrollLeft = el.scrollWidth;
                               });
                             }}
                             onKeyDown={(e) => {
-                              if (e.key === "Enter") tryAdd(cat.id, cat);
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                tryAdd(cat.id, cat);
+                              }
                             }}
                           />
                         ) : (
@@ -661,6 +682,11 @@ export function ChecklistView({ tripId }: { tripId: string }) {
               </a>{" "}
               (CC BY 4.0)
             </p>
+            <p className="legal2" style={{ marginTop: 10 }}>
+              아이템 추가·수정·삭제 등의 의견이 있으시다면 아래의 메일로 문의 부탁드립니다.
+              <br />
+              <a href="mailto:chaeggyeo@gmail.com">chaeggyeo@gmail.com</a>로 메일 보내기
+            </p>
           </div>
         </div>
       </div>
@@ -671,7 +697,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
           <button
             className={`act${selectedCount === 0 ? " off" : ""}`}
             disabled={selectedCount === 0}
-            onClick={deleteSelected}
+            onClick={() => setConfirmBulk(true)}
           >
             삭제
           </button>
@@ -701,6 +727,17 @@ export function ChecklistView({ tripId }: { tripId: string }) {
               onClick: () => setConfirmCat(catMenu.id),
             },
           ]}
+        />
+      ) : null}
+
+      {confirmBulk ? (
+        <ConfirmDialog
+          message={"선택한 전체 아이템이 함께 삭제됩니다.\n아이템을 삭제하시겠습니까?"}
+          onCancel={() => setConfirmBulk(false)}
+          onConfirm={() => {
+            deleteSelected();
+            setConfirmBulk(false);
+          }}
         />
       ) : null}
 

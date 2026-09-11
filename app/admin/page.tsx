@@ -1,14 +1,57 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { ACTIVITIES } from "@/lib/catalog";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { ACTIVITIES, COMPANIONS, COUNTRIES } from "@/lib/catalog";
 import { CATALOG_SQL } from "@/lib/catalogSchema";
 import { importCsvFiles } from "@/lib/csvImport";
 import { getLiveCatalog, loadCatalogFromCloud, seedCatalog, subscribeCatalog } from "@/lib/liveCatalog";
+import type { Rule } from "@/lib/rules";
 import { saveStat } from "@/lib/stats";
 import { getSupabase } from "@/lib/supabase";
 
 type Tab = "stats" | "items" | "rules";
+
+const TABLE_LABEL: Record<Rule["table"], string> = {
+  essential: "필수",
+  base: "기본",
+  country: "국가",
+  companion: "동행",
+  activity: "활동",
+  weather: "날씨",
+  temp: "기온",
+};
+
+const WEATHER_LABEL: Record<string, string> = {
+  sunny: "맑음",
+  cloudy: "흐림",
+  rain: "비",
+  snow: "눈",
+  windy: "바람",
+};
+
+const TEMP_LABEL: Record<string, string> = {
+  cold: "추움",
+  mild: "보통",
+  hot: "더움",
+  low: "추움",
+  mid: "보통",
+  high: "더움",
+};
+
+function ruleCondition(r: Rule) {
+  if (r.table === "activity" && r.activityId) {
+    return ACTIVITIES.find((a) => a.id === r.activityId)?.name ?? r.activityId;
+  }
+  if (r.table === "country" && r.countryId) {
+    return COUNTRIES.find((c) => c.id === r.countryId)?.name ?? r.countryId;
+  }
+  if (r.table === "companion" && r.companionId) {
+    return COMPANIONS.find((c) => c.id === r.companionId)?.name ?? r.companionId;
+  }
+  if (r.table === "weather" && r.weatherId) return WEATHER_LABEL[r.weatherId] ?? r.weatherId;
+  if (r.table === "temp" && r.tempBandId) return TEMP_LABEL[r.tempBandId] ?? r.tempBandId;
+  return "—";
+}
 
 export default function AdminPage() {
   const [, bump] = useState(0);
@@ -39,235 +82,205 @@ export default function AdminPage() {
   };
 
   return (
-    <div style={{ height: "100dvh", background: "#F2F2F2", overflow: "auto" }}>
-      <div style={{ maxWidth: 920, margin: "0 auto", padding: "24px 20px 80px", fontFamily: "Pretendard, sans-serif" }}>
-        <h1 style={{ fontSize: 24, margin: "0 0 8px" }}>챙겨요 어드민</h1>
-        <p style={{ color: "#666", margin: "0 0 16px", lineHeight: 1.6 }}>
-          제출한 CSV(아이템·규칙·링크·삭제율)를 Supabase에서 고치고, 체크리스트에 바로 반영하는 화면입니다.
-          로그인 가드는 없습니다. 주소 아는 사람이면 들어올 수 있습니다.
-        </p>
-
-        <section style={guide}>
-          <h2 style={h2}>여기서 할 수 있는 일</h2>
-          <ol style={ol}>
-            <li>
-              <b>테이블이 아직 없을 때</b> — 아래 <b>SQL 복사</b> → <b>SQL Editor</b> → 붙여넣고 Run.
-              계정·일정·카탈로그·삭제율 테이블이 만들어집니다. 이미 한 번 돌렸으면 다시 안 해도 됩니다.
-            </li>
-            <li>
-              <b>제출 CSV를 DB에 넣을 때</b> — <b>CSV 시드 올리기</b>는 앱에 들어 있는
-              <code style={code}>data/*.csv</code> 원본(아이템·링크·규칙)을 올립니다. 삭제율은 건드리지 않습니다.
-              이미 고친 아이템/규칙 이름을 덮어쓰니, 데모 초기화할 때만 누르세요.
-            </li>
-            <li>
-              <b>새 CSV를 직접 올릴 때</b> — <b>CSV 파일 올리기</b>로
-              <code style={code}>item_master.csv</code>, <code style={code}>item_link.csv</code>,
-              <code style={code}>item_delete_rate.csv</code>, <code style={code}>rule_*.csv</code>를
-              여러 개 한 번에 고를 수 있습니다. 제출안 <code style={code}>csv.zip</code>과 같은 컬럼이어야 합니다.
-            </li>
-            <li>
-              <b>한 줄만 고칠 때</b> — 아래 탭에서 숫자/문구를 고치고 <b>저장</b>. 새로고침한 체크리스트에 바로 반영됩니다.
-            </li>
-          </ol>
-        </section>
-
-        <section style={guide}>
-          <h2 style={h2}>버튼 세 개</h2>
-          <ul style={ul}>
-            <li>
-              <b>SQL 복사</b> — 테이블 생성 SQL이 클립보드에 들어갑니다. Supabase SQL Editor에 그대로 붙여넣으면 됩니다.
-              아이템 데이터는 들어 있지 않고, 빈 테이블만 만듭니다.
-            </li>
-            <li>
-              <b>SQL Editor</b> — 챙겨요 Supabase 프로젝트의 SQL 창이 새 탭으로 열립니다.
-              복사한 SQL을 붙인 뒤 우측 하단 Run(또는 ⌘/Ctrl+Enter)을 누르면 됩니다.
-              “Success. No rows returned”가 뜨면 성공입니다.
-            </li>
-            <li>
-              <b>CSV 시드 올리기</b> — 기능 명세서에 제출한 아이템·링크·규칙을 DB에 upsert합니다.
-              테이블이 없을 때 누르면 에러가 납니다. 그때는 위 1번부터 하세요.
-            </li>
-          </ul>
-          <p style={{ ...note, marginTop: 12 }}>
-            인식하는 CSV 파일명: item_master, item_link, item_delete_rate, rule_essential_item, rule_base_item,
-            rule_country_item, rule_companion_item, rule_activity_item, rule_weather_item, rule_temp_item.
-            링크 CSV를 올리면 기존 링크는 전부 지우고 새 파일로 갈아끼웁니다.
-          </p>
-        </section>
-
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-          <button
-            style={btn}
-            disabled={busy}
-            onClick={async () => {
-              await navigator.clipboard.writeText(CATALOG_SQL);
-              setCopied(true);
-              setMsg("테이블 생성 SQL을 복사했습니다. SQL Editor에 붙여넣고 Run 하세요.");
-              window.setTimeout(() => setCopied(false), 2000);
-            }}
-          >
-            {copied ? "복사됨" : "SQL 복사"}
-          </button>
-          <a
-            href="https://supabase.com/dashboard/project/vsvlniwtfnjhqonsbldc/sql/new"
-            target="_blank"
-            rel="noreferrer"
-            style={{ ...btn, textDecoration: "none", display: "inline-flex", alignItems: "center" }}
-          >
-            SQL Editor
-          </a>
-          <button
-            style={btnPrimary}
-            disabled={busy}
-            onClick={() => run(() => seedCatalog())}
-          >
-            {busy ? "올리는 중…" : "CSV 시드 올리기"}
-          </button>
-          <button style={btn} disabled={busy} onClick={() => fileRef.current?.click()}>
-            CSV 파일 올리기
-          </button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".csv,text/csv"
-            multiple
-            hidden
-            onChange={(e) => {
-              const list = [...(e.target.files ?? [])];
-              e.target.value = "";
-              if (!list.length) return;
-              run(async () => {
-                const files = await Promise.all(list.map(async (f) => ({ name: f.name, text: await f.text() })));
-                return importCsvFiles(files);
-              });
-            }}
-          />
+    <div style={shell}>
+      <header style={top}>
+        <div style={topRow}>
+          <div>
+            <h1 style={{ fontSize: 20, margin: 0 }}>챙겨요 어드민</h1>
+            <p style={{ margin: "4px 0 0", color: "#666", fontSize: 13 }}>
+              카탈로그를 Supabase에서 고칩니다. 로그인 없음 · {live.items ? Object.keys(live.items).length : 0}개 아이템 · {live.rules.length}개 규칙
+            </p>
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button
+              style={btn}
+              disabled={busy}
+              onClick={async () => {
+                await navigator.clipboard.writeText(CATALOG_SQL);
+                setCopied(true);
+                setMsg("테이블 생성 SQL을 복사했습니다. SQL Editor에 붙여넣고 Run 하세요.");
+                window.setTimeout(() => setCopied(false), 2000);
+              }}
+            >
+              {copied ? "복사됨" : "SQL 복사"}
+            </button>
+            <a
+              href="https://supabase.com/dashboard/project/vsvlniwtfnjhqonsbldc/sql/new"
+              target="_blank"
+              rel="noreferrer"
+              style={{ ...btn, textDecoration: "none", display: "inline-flex", alignItems: "center" }}
+            >
+              SQL Editor
+            </a>
+            <button style={btnPrimary} disabled={busy} onClick={() => run(() => seedCatalog())}>
+              {busy ? "올리는 중…" : "CSV 시드 올리기"}
+            </button>
+            <button style={btn} disabled={busy} onClick={() => fileRef.current?.click()}>
+              CSV 파일 올리기
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".csv,text/csv"
+              multiple
+              hidden
+              onChange={(e) => {
+                const list = [...(e.target.files ?? [])];
+                e.target.value = "";
+                if (!list.length) return;
+                run(async () => {
+                  const files = await Promise.all(list.map(async (f) => ({ name: f.name, text: await f.text() })));
+                  return importCsvFiles(files);
+                });
+              }}
+            />
+          </div>
         </div>
+
+        <details style={help}>
+          <summary style={{ cursor: "pointer", fontWeight: 600, fontSize: 13 }}>이용 방법</summary>
+          <div style={{ display: "grid", gap: 10, marginTop: 10, fontSize: 13, lineHeight: 1.65, color: "#444" }}>
+            <p style={{ margin: 0 }}>
+              <b>처음 한 번</b> — SQL 복사 → SQL Editor → 붙여넣고 Run → CSV 시드 올리기. 이미 돌렸으면 건너뛰세요.
+            </p>
+            <p style={{ margin: 0 }}>
+              <b>CSV 시드 올리기</b>는 앱에 들어 있는 제출 CSV로 아이템·링크·규칙을 덮어씁니다. 삭제율은 안 건드립니다.
+            </p>
+            <p style={{ margin: 0 }}>
+              <b>CSV 파일 올리기</b>는 <code style={code}>item_master</code>, <code style={code}>item_link</code>,{" "}
+              <code style={code}>item_delete_rate</code>, <code style={code}>rule_*</code>를 여러 개 고를 수 있습니다.
+              링크 파일은 기존 링크를 지우고 갈아끼웁니다.
+            </p>
+            <p style={{ margin: 0 }}>
+              아래 표에서 검색·필터 후 칸을 고치고 저장하세요. 체크리스트는 새로고침해야 보입니다. 규칙 문구는 새로 만든 일정부터 반영됩니다.
+            </p>
+          </div>
+        </details>
+
         {msg ? <div style={banner}>{msg}</div> : null}
 
-        <div style={{ display: "flex", gap: 8, margin: "20px 0 12px" }}>
-          {(["stats", "items", "rules"] as Tab[]).map((t) => (
-            <button key={t} onClick={() => setTab(t)} style={tab === t ? tabOn : tabOff}>
-              {t === "stats" ? "삭제율" : t === "items" ? "아이템" : "규칙"}
+        <nav style={tabs}>
+          {([
+            ["stats", "삭제율"],
+            ["items", "아이템"],
+            ["rules", "규칙"],
+          ] as const).map(([id, label]) => (
+            <button key={id} onClick={() => setTab(id)} style={tab === id ? tabOn : tabOff}>
+              {label}
             </button>
           ))}
-        </div>
+        </nav>
+      </header>
 
-        {tab === "stats" ? (
-          <section style={{ ...guide, marginBottom: 12 }}>
-            <h2 style={h2}>삭제율 탭</h2>
-            <p style={p}>
-              편집 모드에서 「10명 중 N명이 챙겼어요」가 뜨는 조건입니다. <b>활동 아이템만</b> 해당하고,
-              노출 30건 이상 + 삭제율 70% 이상일 때 나옵니다.
-            </p>
-            <ul style={ul}>
-              <li>70–79% → 10명 중 3명 / 80–89% → 2명 / 90%+ → 1명</li>
-              <li>
-                <b>노출</b>은 그 아이템이 체크리스트에 담긴 횟수, <b>삭제</b>는 편집에서 지운 횟수입니다.
-                삭제율 = 삭제 ÷ 노출.
-              </li>
-              <li>
-                <b>70% 데모</b>는 노출 30 · 삭제 21을 넣습니다. QA할 때 이 버튼을 누르면 됩니다.
-              </li>
-              <li>
-                <b>코멘트 강제</b>를 켜면 노출/삭제율과 상관없이 코멘트를 띄웁니다.
-              </li>
-              <li>숫자를 바꿔도 <b>저장</b>을 눌러야 DB에 들어갑니다. 그다음 체크리스트를 새로고침하세요.</li>
-            </ul>
-          </section>
-        ) : null}
-        {tab === "items" ? (
-          <section style={{ ...guide, marginBottom: 12 }}>
-            <h2 style={h2}>아이템 탭</h2>
-            <p style={p}>
-              <code style={code}>item_master.csv</code>에 해당하는 준비물 사전입니다. 새 일정 생성·정보 아이콘에 쓰입니다.
-            </p>
-            <ul style={ul}>
-              <li>첫 칸: 아이템 이름 (체크리스트에 보이는 이름)</li>
-              <li>둘째 칸: 상시 설명. 규칙 사유가 없을 때 아이템 아래 회색 문구로 나갑니다.</li>
-              <li>
-                셋째 칸: <code style={code}>link_note</code>. 정보 시트(C-05) 맨 아래 회색 박스입니다.
-                비우면 박스가 안 나옵니다.
-              </li>
-              <li>아이템을 새로 만들려면 CSV에 행을 추가해 올리거나, SQL Editor에서 catalog_items에 insert 하세요.</li>
-            </ul>
-          </section>
-        ) : null}
-        {tab === "rules" ? (
-          <section style={{ ...guide, marginBottom: 12 }}>
-            <h2 style={h2}>규칙 탭</h2>
-            <p style={p}>
-              「이 조건이면 이 아이템을 왜 담는지」입니다. 국가·동행·활동·날씨·기온·필수·기본 테이블이 섞여 있습니다.
-            </p>
-            <ul style={ul}>
-              <li>텍스트는 체크리스트 아이템 아래 추천 사유입니다. 고치고 저장하면 새 생성분부터 반영됩니다.</li>
-              <li>
-                이미 만들어진 일정은 생성 당시 문구를 들고 있습니다. 기존 일정을 바꾸려면 일정을 다시 만들거나
-                SQL에서 trips payload를 고쳐야 합니다.
-              </li>
-              <li>규칙 행을 통째로 넣거나 빼려면 <code style={code}>rule_*.csv</code>를 올리세요.</li>
-            </ul>
-          </section>
-        ) : null}
-
+      <main style={main}>
         {tab === "stats" ? <StatsPanel /> : null}
-        {tab === "items" ? <ItemsPanel items={live.items} onSaved={(m) => setMsg(m)} /> : null}
-        {tab === "rules" ? <RulesPanel onSaved={(m) => setMsg(m)} /> : null}
-      </div>
+        {tab === "items" ? <ItemsPanel items={live.items} onSaved={setMsg} /> : null}
+        {tab === "rules" ? <RulesPanel onSaved={setMsg} /> : null}
+      </main>
+    </div>
+  );
+}
+
+function Toolbar({
+  q,
+  onQ,
+  placeholder,
+  extra,
+  count,
+}: {
+  q: string;
+  onQ: (v: string) => void;
+  placeholder: string;
+  extra?: ReactNode;
+  count: string;
+}) {
+  return (
+    <div style={toolbar}>
+      <input
+        style={search}
+        value={q}
+        onChange={(e) => onQ(e.target.value)}
+        placeholder={placeholder}
+      />
+      {extra}
+      <span style={{ marginLeft: "auto", fontSize: 12, color: "#888", whiteSpace: "nowrap" }}>{count}</span>
     </div>
   );
 }
 
 function StatsPanel() {
   const live = getLiveCatalog();
-  const activityItems = useMemo(() => {
-    const rows: { activityId: string; itemId: string; name: string }[] = [];
+  const [activityId, setActivityId] = useState(ACTIVITIES[0]?.id ?? "photo");
+  const [q, setQ] = useState("");
+  const rows = useMemo(() => {
+    const list: { activityId: string; itemId: string; name: string }[] = [];
     for (const r of live.rules) {
       if (r.table !== "activity" || !r.activityId) continue;
-      rows.push({ activityId: r.activityId, itemId: r.itemId, name: r.name });
+      if (activityId !== "all" && r.activityId !== activityId) continue;
+      list.push({ activityId: r.activityId, itemId: r.itemId, name: r.name });
     }
-    return rows;
-  }, [live.rules]);
-
-  const [activityId, setActivityId] = useState(ACTIVITIES[0]?.id ?? "photo");
-  const filtered = activityItems.filter((r) => r.activityId === activityId);
+    const needle = q.trim().toLowerCase();
+    return needle
+      ? list.filter((r) => `${r.name} ${r.itemId}`.toLowerCase().includes(needle))
+      : list;
+  }, [live.rules, activityId, q]);
 
   return (
-    <div>
-      <label style={{ display: "block", margin: "0 0 12px" }}>
-        활동{" "}
-        <select value={activityId} onChange={(e) => setActivityId(e.target.value as typeof activityId)} style={input}>
-          {ACTIVITIES.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {filtered.length ? (
-          filtered.map((row) => {
-            const stat = live.stats.find((s) => s.activityId === row.activityId && s.itemId === row.itemId);
-            const exposure = stat?.exposure ?? 0;
-            const deletes = stat?.deletes ?? 0;
-            const rate = exposure ? deletes / exposure : 0;
-            return (
-              <StatRow
-                key={row.activityId + row.itemId}
-                name={row.name}
-                activityId={row.activityId}
-                itemId={row.itemId}
-                exposure={exposure}
-                deletes={deletes}
-                shown={stat?.shown ?? false}
-                rate={rate}
-              />
-            );
-          })
-        ) : (
-          <p style={p}>이 활동에 연결된 규칙이 없습니다. CSV 시드를 먼저 올리거나 규칙 탭을 확인하세요.</p>
-        )}
-      </div>
+    <div style={panel}>
+      <p style={hint}>
+        활동 아이템만, 노출 30 + 삭제율 70% 이상일 때만 「10명 중 N명이 챙겼어요」. 70% 미만이면 강제 표시도 숨김. 70% 데모는 노출 30·삭제 21.
+      </p>
+      <Toolbar
+        q={q}
+        onQ={setQ}
+        placeholder="아이템 이름 또는 ID"
+        count={`${rows.length}건`}
+        extra={
+          <select value={activityId} onChange={(e) => setActivityId(e.target.value)} style={select}>
+            <option value="all">모든 활동</option>
+            {ACTIVITIES.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+              </option>
+            ))}
+          </select>
+        }
+      />
+      {rows.length ? (
+        <div style={tableWrap}>
+          <table style={table}>
+            <thead>
+              <tr>
+                <th style={th}>아이템</th>
+                <th style={th}>활동</th>
+                <th style={{ ...th, width: 88 }}>노출</th>
+                <th style={{ ...th, width: 88 }}>삭제</th>
+                <th style={{ ...th, width: 72 }}>삭제율</th>
+                <th style={{ ...th, width: 72 }}>강제</th>
+                <th style={{ ...th, width: 168 }} />
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => {
+                const stat = live.stats.find((s) => s.activityId === row.activityId && s.itemId === row.itemId);
+                return (
+                  <StatRow
+                    key={row.activityId + row.itemId}
+                    name={row.name}
+                    activityId={row.activityId}
+                    itemId={row.itemId}
+                    exposure={stat?.exposure ?? 0}
+                    deletes={stat?.deletes ?? 0}
+                    shown={stat?.shown ?? false}
+                  />
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p style={empty}>맞는 항목이 없습니다.</p>
+      )}
     </div>
   );
 }
@@ -279,7 +292,6 @@ function StatRow({
   exposure,
   deletes,
   shown,
-  rate,
 }: {
   name: string;
   activityId: string;
@@ -287,67 +299,69 @@ function StatRow({
   exposure: number;
   deletes: number;
   shown: boolean;
-  rate: number;
 }) {
   const [ex, setEx] = useState(String(exposure));
   const [del, setDel] = useState(String(deletes));
   const [force, setForce] = useState(shown);
-  const [local, setLocal] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   useEffect(() => {
     setEx(String(exposure));
     setDel(String(deletes));
     setForce(shown);
   }, [exposure, deletes, shown]);
+  const rate = (Number(ex) || 0) ? (Number(del) || 0) / (Number(ex) || 1) : 0;
+  const ready = rate >= 0.7 && (Number(ex) || 0) >= 30;
+  const persist = async (next: { exposure: number; deletes: number; shown: boolean }) => {
+    setBusy(true);
+    await saveStat({ activityId, itemId, ...next });
+    setBusy(false);
+  };
 
   return (
-    <div style={card}>
-      <div style={{ fontWeight: 600 }}>{name}</div>
-      <div style={{ fontSize: 12, color: "#888" }}>
-        {itemId} · 현재 삭제율 {(rate * 100).toFixed(0)}%
-        {rate >= 0.7 && exposure >= 30 ? " · 코멘트 조건 충족" : ""}
-      </div>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginTop: 8 }}>
-        <label>
-          노출{" "}
-          <input style={input} value={ex} onChange={(e) => setEx(e.target.value)} />
-        </label>
-        <label>
-          삭제{" "}
-          <input style={input} value={del} onChange={(e) => setDel(e.target.value)} />
-        </label>
-        <label>
-          <input type="checkbox" checked={force} onChange={(e) => setForce(e.target.checked)} /> 코멘트 강제
-        </label>
-        <button
-          style={btnPrimary}
-          onClick={async () => {
-            const res = await saveStat({
-              activityId,
-              itemId,
-              exposure: Number(ex) || 0,
-              deletes: Number(del) || 0,
-              shown: force,
-            });
-            setLocal(res.ok ? "저장했습니다. 체크리스트를 새로고침하세요." : res.message ?? "실패");
-          }}
-        >
-          저장
-        </button>
-        <button
-          style={btn}
-          onClick={async () => {
-            setEx("30");
-            setDel("21");
-            setForce(false);
-            const res = await saveStat({ activityId, itemId, exposure: 30, deletes: 21, shown: false });
-            setLocal(res.ok ? "70% 데모를 넣었습니다. 편집 모드에서 코멘트를 확인하세요." : res.message ?? "실패");
-          }}
-        >
-          70% 데모
-        </button>
-      </div>
-      {local ? <div style={{ marginTop: 8, fontSize: 13, color: "#1F3D88" }}>{local}</div> : null}
-    </div>
+    <tr style={tr}>
+      <td style={td}>
+        <div style={{ fontWeight: 600 }}>{name}</div>
+        <div style={{ fontSize: 11, color: "#999" }}>{itemId}</div>
+      </td>
+      <td style={td}>{ACTIVITIES.find((a) => a.id === activityId)?.name ?? activityId}</td>
+      <td style={td}>
+        <input style={cellInput} value={ex} onChange={(e) => setEx(e.target.value)} />
+      </td>
+      <td style={td}>
+        <input style={cellInput} value={del} onChange={(e) => setDel(e.target.value)} />
+      </td>
+      <td style={td}>
+        <span style={{ color: ready ? "#1F3D88" : "#888", fontWeight: ready ? 700 : 500 }}>
+          {(rate * 100).toFixed(0)}%
+        </span>
+      </td>
+      <td style={{ ...td, textAlign: "center" }}>
+        <input type="checkbox" checked={force} onChange={(e) => setForce(e.target.checked)} />
+      </td>
+      <td style={td}>
+        <div style={{ display: "flex", gap: 6 }}>
+          <button
+            style={btnSm}
+            disabled={busy}
+            onClick={() => persist({ exposure: Number(ex) || 0, deletes: Number(del) || 0, shown: force })}
+          >
+            저장
+          </button>
+          <button
+            style={btnGhost}
+            disabled={busy}
+            onClick={() => {
+              setEx("30");
+              setDel("21");
+              setForce(false);
+              persist({ exposure: 30, deletes: 21, shown: false });
+            }}
+          >
+            70%
+          </button>
+        </div>
+      </td>
+    </tr>
   );
 }
 
@@ -358,20 +372,47 @@ function ItemsPanel({
   items: ReturnType<typeof getLiveCatalog>["items"];
   onSaved: (m: string) => void;
 }) {
-  const list = Object.values(items);
-  if (!list.length) return <p style={p}>아이템이 없습니다. 위에서 CSV 시드 올리기를 먼저 하세요.</p>;
+  const [q, setQ] = useState("");
+  const list = useMemo(() => {
+    const all = Object.values(items);
+    const needle = q.trim().toLowerCase();
+    if (!needle) return all;
+    return all.filter((i) =>
+      `${i.id} ${i.name} ${i.desc ?? ""} ${i.linkNote ?? ""}`.toLowerCase().includes(needle)
+    );
+  }, [items, q]);
+
+  if (!Object.keys(items).length) return <p style={empty}>아이템이 없습니다. CSV 시드를 먼저 올리세요.</p>;
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      {list.map((item) => (
-        <ItemRow
-          key={item.id}
-          id={item.id}
-          name={item.name}
-          note={item.linkNote ?? ""}
-          desc={item.desc ?? ""}
-          onSaved={onSaved}
-        />
-      ))}
+    <div style={panel}>
+      <p style={hint}>이름 · 상시 설명 · link_note(정보 시트 회색 박스). 새 아이템은 CSV에 행을 넣어 올리세요.</p>
+      <Toolbar q={q} onQ={setQ} placeholder="이름, ID, 설명 검색" count={`${list.length} / ${Object.keys(items).length}`} />
+      <div style={tableWrap}>
+        <table style={table}>
+          <thead>
+            <tr>
+              <th style={{ ...th, width: 72 }}>ID</th>
+              <th style={{ ...th, width: 200 }}>이름</th>
+              <th style={th}>설명</th>
+              <th style={th}>link_note</th>
+              <th style={{ ...th, width: 72 }} />
+            </tr>
+          </thead>
+          <tbody>
+            {list.map((item) => (
+              <ItemRow
+                key={item.id}
+                id={item.id}
+                name={item.name}
+                note={item.linkNote ?? ""}
+                desc={item.desc ?? ""}
+                onSaved={onSaved}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -392,153 +433,315 @@ function ItemRow({
   const [n, setN] = useState(name);
   const [d, setD] = useState(desc);
   const [noteV, setNoteV] = useState(note);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    setN(name);
+    setD(desc);
+    setNoteV(note);
+  }, [name, desc, note]);
+  const dirty = n !== name || d !== desc || noteV !== note;
+
   return (
-    <div style={card}>
-      <div style={{ fontSize: 12, color: "#888" }}>{id}</div>
-      <input
-        style={{ ...input, width: "100%", marginTop: 6 }}
-        value={n}
-        onChange={(e) => setN(e.target.value)}
-        placeholder="아이템 이름"
-      />
-      <textarea
-        style={{ ...input, width: "100%", marginTop: 6, height: 52 }}
-        value={d}
-        onChange={(e) => setD(e.target.value)}
-        placeholder="상시 설명 (규칙 사유가 없을 때)"
-      />
-      <textarea
-        style={{ ...input, width: "100%", marginTop: 6, height: 52 }}
-        value={noteV}
-        onChange={(e) => setNoteV(e.target.value)}
-        placeholder="link_note — 정보 시트 회색 박스. 없으면 박스 숨김"
-      />
-      <button
-        style={{ ...btnPrimary, marginTop: 8 }}
-        onClick={async () => {
-          const sb = getSupabase();
-          if (!sb) {
-            onSaved("Supabase 키가 없습니다");
-            return;
-          }
-          const res = await sb
-            .from("catalog_items")
-            .update({ name: n, item_desc: d || null, link_note: noteV || null })
-            .eq("id", id);
-          if (res.error) {
-            onSaved(res.error.message);
-            return;
-          }
-          await loadCatalogFromCloud();
-          onSaved(`${n} 저장했습니다.`);
-        }}
-      >
-        저장
-      </button>
-    </div>
+    <tr style={tr}>
+      <td style={{ ...td, color: "#999", fontSize: 12 }}>{id}</td>
+      <td style={td}>
+        <input style={cellInputWide} value={n} onChange={(e) => setN(e.target.value)} />
+      </td>
+      <td style={td}>
+        <textarea style={cellArea} value={d} onChange={(e) => setD(e.target.value)} rows={2} />
+      </td>
+      <td style={td}>
+        <textarea style={cellArea} value={noteV} onChange={(e) => setNoteV(e.target.value)} rows={2} />
+      </td>
+      <td style={td}>
+        <button
+          style={dirty ? btnSm : btnGhost}
+          disabled={busy || !dirty}
+          onClick={async () => {
+            const sb = getSupabase();
+            if (!sb) {
+              onSaved("Supabase 키가 없습니다");
+              return;
+            }
+            setBusy(true);
+            const res = await sb
+              .from("catalog_items")
+              .update({ name: n, item_desc: d || null, link_note: noteV || null })
+              .eq("id", id);
+            setBusy(false);
+            if (res.error) {
+              onSaved(res.error.message);
+              return;
+            }
+            await loadCatalogFromCloud();
+            onSaved(`${n} 저장했습니다.`);
+          }}
+        >
+          저장
+        </button>
+      </td>
+    </tr>
   );
 }
 
 function RulesPanel({ onSaved }: { onSaved: (m: string) => void }) {
   const live = getLiveCatalog();
-  if (!live.rules.length) return <p style={p}>규칙이 없습니다. 위에서 CSV 시드 올리기를 먼저 하세요.</p>;
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      {live.rules.map((r, idx) => (
-        <RuleRow key={`${r.table}-${r.itemId}-${idx}`} idx={idx} onSaved={onSaved} />
-      ))}
-    </div>
-  );
-}
+  const [q, setQ] = useState("");
+  const [kind, setKind] = useState<Rule["table"] | "all">("all");
 
-function RuleRow({ idx, onSaved }: { idx: number; onSaved: (m: string) => void }) {
-  const r = getLiveCatalog().rules[idx];
-  const [reason, setReason] = useState(r?.reason ?? "");
-  if (!r) return null;
+  const list = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    return live.rules
+      .map((r, idx) => ({ r, idx }))
+      .filter(({ r }) => (kind === "all" ? true : r.table === kind))
+      .filter(({ r }) => {
+        if (!needle) return true;
+        return `${r.name} ${r.itemId} ${r.reason ?? ""} ${TABLE_LABEL[r.table]} ${ruleCondition(r)}`
+          .toLowerCase()
+          .includes(needle);
+      });
+  }, [live.rules, q, kind]);
+
+  if (!live.rules.length) return <p style={empty}>규칙이 없습니다. CSV 시드를 먼저 올리세요.</p>;
+
   return (
-    <div style={card}>
-      <div style={{ fontWeight: 600 }}>
-        {r.name} · {r.table}
-        {r.activityId ? ` · ${r.activityId}` : ""}
-        {r.countryId ? ` · ${r.countryId}` : ""}
-      </div>
-      <textarea
-        style={{ ...input, width: "100%", marginTop: 6, height: 56 }}
-        value={reason}
-        onChange={(e) => setReason(e.target.value)}
-        placeholder="추천 사유"
+    <div style={panel}>
+      <p style={hint}>추천 사유는 새로 만든 일정부터 반영됩니다. 행을 통째로 넣거나 빼려면 rule_*.csv를 올리세요.</p>
+      <Toolbar
+        q={q}
+        onQ={setQ}
+        placeholder="아이템, 사유, 조건 검색"
+        count={`${list.length} / ${live.rules.length}`}
+        extra={
+          <select value={kind} onChange={(e) => setKind(e.target.value as typeof kind)} style={select}>
+            <option value="all">모든 종류</option>
+            {(Object.keys(TABLE_LABEL) as Rule["table"][]).map((k) => (
+              <option key={k} value={k}>
+                {TABLE_LABEL[k]}
+              </option>
+            ))}
+          </select>
+        }
       />
-      <button
-        style={{ ...btnPrimary, marginTop: 8 }}
-        onClick={async () => {
-          const sb = getSupabase();
-          if (!sb) {
-            onSaved("Supabase 키가 없습니다");
-            return;
-          }
-          const id = r.id ?? `R${String(idx + 1).padStart(4, "0")}`;
-          const res = await sb.from("catalog_rules").update({ reason }).eq("id", id);
-          if (res.error) {
-            onSaved(res.error.message);
-            return;
-          }
-          await loadCatalogFromCloud();
-          onSaved(`${r.name} 사유를 저장했습니다.`);
-        }}
-      >
-        저장
-      </button>
+      <div style={tableWrap}>
+        <table style={table}>
+          <thead>
+            <tr>
+              <th style={{ ...th, width: 200 }}>아이템</th>
+              <th style={{ ...th, width: 72 }}>종류</th>
+              <th style={{ ...th, width: 120 }}>조건</th>
+              <th style={th}>추천 사유</th>
+              <th style={{ ...th, width: 72 }} />
+            </tr>
+          </thead>
+          <tbody>
+            {list.map(({ r, idx }) => (
+              <RuleRow key={`${r.id ?? idx}-${r.itemId}-${r.table}`} rule={r} fallbackIdx={idx} onSaved={onSaved} />
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
 
-const btn: CSSProperties = {
-  border: "1px solid #ccc",
+function RuleRow({
+  rule,
+  fallbackIdx,
+  onSaved,
+}: {
+  rule: Rule;
+  fallbackIdx: number;
+  onSaved: (m: string) => void;
+}) {
+  const [reason, setReason] = useState(rule.reason ?? "");
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    setReason(rule.reason ?? "");
+  }, [rule.reason]);
+  const dirty = reason !== (rule.reason ?? "");
+
+  return (
+    <tr style={tr}>
+      <td style={td}>
+        <div style={{ fontWeight: 600 }}>{rule.name}</div>
+        <div style={{ fontSize: 11, color: "#999" }}>{rule.itemId}</div>
+      </td>
+      <td style={td}>{TABLE_LABEL[rule.table]}</td>
+      <td style={td}>{ruleCondition(rule)}</td>
+      <td style={td}>
+        <textarea style={cellArea} value={reason} onChange={(e) => setReason(e.target.value)} rows={2} placeholder="추천 사유" />
+      </td>
+      <td style={td}>
+        <button
+          style={dirty ? btnSm : btnGhost}
+          disabled={busy || !dirty}
+          onClick={async () => {
+            const sb = getSupabase();
+            if (!sb) {
+              onSaved("Supabase 키가 없습니다");
+              return;
+            }
+            const id = rule.id ?? `R${String(fallbackIdx + 1).padStart(4, "0")}`;
+            setBusy(true);
+            const res = await sb.from("catalog_rules").update({ reason }).eq("id", id);
+            setBusy(false);
+            if (res.error) {
+              onSaved(res.error.message);
+              return;
+            }
+            await loadCatalogFromCloud();
+            onSaved(`${rule.name} 사유를 저장했습니다.`);
+          }}
+        >
+          저장
+        </button>
+      </td>
+    </tr>
+  );
+}
+
+const shell: CSSProperties = {
+  height: "100dvh",
+  background: "#F4F6F8",
+  display: "flex",
+  flexDirection: "column",
+  fontFamily: "Pretendard, sans-serif",
+  color: "#222",
+};
+const top: CSSProperties = {
   background: "#fff",
+  borderBottom: "1px solid #E6E8EC",
+  padding: "16px 24px 0",
+  flex: "none",
+};
+const topRow: CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  gap: 16,
+  flexWrap: "wrap",
+};
+const help: CSSProperties = {
+  margin: "12px 0 0",
+  padding: "10px 12px",
+  background: "#F7F8FA",
+  borderRadius: 8,
+  fontSize: 13,
+};
+const tabs: CSSProperties = { display: "flex", gap: 4, marginTop: 14 };
+const tabOn: CSSProperties = {
+  border: "none",
+  borderBottom: "2px solid #368FFF",
+  background: "transparent",
+  color: "#368FFF",
   height: 36,
+  padding: "0 14px",
+  fontWeight: 700,
+  fontSize: 14,
+};
+const tabOff: CSSProperties = {
+  border: "none",
+  borderBottom: "2px solid transparent",
+  background: "transparent",
+  color: "#666",
+  height: 36,
+  padding: "0 14px",
+  fontWeight: 600,
+  fontSize: 14,
+};
+const main: CSSProperties = { flex: 1, minHeight: 0, overflow: "hidden", padding: 16 };
+const panel: CSSProperties = { height: "100%", display: "flex", flexDirection: "column", minHeight: 0 };
+const toolbar: CSSProperties = {
+  display: "flex",
+  gap: 8,
+  alignItems: "center",
+  marginBottom: 10,
+  flexWrap: "wrap",
+};
+const search: CSSProperties = {
+  flex: "1 1 240px",
+  minWidth: 200,
+  height: 36,
+  border: "1px solid #D8DCE3",
+  borderRadius: 8,
+  padding: "0 12px",
+  fontSize: 14,
+  background: "#fff",
+};
+const select: CSSProperties = {
+  height: 36,
+  border: "1px solid #D8DCE3",
+  borderRadius: 8,
+  padding: "0 10px",
+  fontSize: 13,
+  background: "#fff",
+};
+const tableWrap: CSSProperties = {
+  flex: 1,
+  minHeight: 0,
+  overflow: "auto",
+  background: "#fff",
+  border: "1px solid #E6E8EC",
+  borderRadius: 12,
+};
+const table: CSSProperties = { width: "100%", borderCollapse: "collapse", fontSize: 13 };
+const th: CSSProperties = {
+  position: "sticky",
+  top: 0,
+  zIndex: 1,
+  background: "#F7F8FA",
+  textAlign: "left",
+  padding: "10px 12px",
+  fontWeight: 600,
+  color: "#666",
+  borderBottom: "1px solid #E6E8EC",
+};
+const td: CSSProperties = {
+  padding: "8px 12px",
+  borderBottom: "1px solid #F0F1F3",
+  verticalAlign: "top",
+};
+const tr: CSSProperties = { background: "#fff" };
+const cellInput: CSSProperties = {
+  width: 72,
+  height: 32,
+  border: "1px solid #E0E3E8",
+  borderRadius: 6,
+  padding: "0 8px",
+  fontSize: 13,
+};
+const cellInputWide: CSSProperties = { ...cellInput, width: "100%" };
+const cellArea: CSSProperties = {
+  width: "100%",
+  minHeight: 44,
+  border: "1px solid #E0E3E8",
+  borderRadius: 6,
+  padding: "6px 8px",
+  fontSize: 13,
+  resize: "vertical",
+  lineHeight: 1.4,
+};
+const btn: CSSProperties = {
+  border: "1px solid #D8DCE3",
+  background: "#fff",
+  height: 34,
   padding: "0 12px",
   borderRadius: 8,
   fontWeight: 600,
   fontSize: 13,
 };
 const btnPrimary: CSSProperties = { ...btn, background: "#368FFF", color: "#fff", border: "none" };
-const tabOn: CSSProperties = { ...btnPrimary };
-const tabOff: CSSProperties = btn;
-const input: CSSProperties = {
-  border: "1px solid #ddd",
-  borderRadius: 6,
-  padding: "6px 8px",
-  fontSize: 14,
-  width: 88,
-};
-const card: CSSProperties = {
-  background: "#fff",
-  borderRadius: 12,
-  padding: 12,
-};
-const guide: CSSProperties = {
-  background: "#fff",
-  borderRadius: 12,
-  padding: "16px 18px",
-  marginBottom: 12,
-};
-const h2: CSSProperties = { fontSize: 16, margin: "0 0 10px" };
-const p: CSSProperties = { margin: "0 0 8px", color: "#444", fontSize: 14, lineHeight: 1.65 };
-const ol: CSSProperties = { margin: 0, paddingLeft: 20, color: "#444", fontSize: 14, lineHeight: 1.7 };
-const ul: CSSProperties = { margin: 0, paddingLeft: 18, color: "#444", fontSize: 14, lineHeight: 1.7 };
-const note: CSSProperties = { margin: 0, color: "#666", fontSize: 13, lineHeight: 1.6 };
-const code: CSSProperties = {
-  background: "#F2F2F2",
-  padding: "1px 6px",
-  borderRadius: 4,
-  fontSize: 12,
-};
+const btnSm: CSSProperties = { ...btnPrimary, height: 30, padding: "0 10px", fontSize: 12 };
+const btnGhost: CSSProperties = { ...btn, height: 30, padding: "0 10px", fontSize: 12, color: "#666" };
 const banner: CSSProperties = {
-  marginBottom: 8,
-  padding: "10px 12px",
+  marginTop: 10,
+  padding: "8px 12px",
   borderRadius: 8,
   background: "#E8F2FF",
   color: "#1F3D88",
-  fontSize: 14,
-  lineHeight: 1.5,
+  fontSize: 13,
 };
+const hint: CSSProperties = { margin: "0 0 10px", color: "#666", fontSize: 13, lineHeight: 1.5 };
+const empty: CSSProperties = { margin: 24, color: "#888", fontSize: 14, textAlign: "center" };
+const code: CSSProperties = { background: "#ECEFF3", padding: "1px 5px", borderRadius: 4, fontSize: 12 };
