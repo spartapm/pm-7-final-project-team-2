@@ -84,6 +84,7 @@ export async function loadCatalogFromCloud() {
       url: r.link_url ?? "",
     })),
     rules: (rulesRes.data ?? []).map((r) => ({
+      id: r.id,
       itemId: r.item_id,
       name: items[r.item_id]?.name ?? r.item_id,
       reason: r.reason ?? undefined,

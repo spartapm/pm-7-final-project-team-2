@@ -8,6 +8,7 @@ import type {
 import { SPEC_RULES, SPEC_WMO_MAP } from "./specData";
 
 export type Rule = {
+  id?: string;
   itemId: string;
   name: string;
   reason?: string;
