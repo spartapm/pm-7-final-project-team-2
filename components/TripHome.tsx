@@ -7,7 +7,7 @@ import { sortTrips, statusChip, tripPeriodLabel } from "@/lib/dates";
 import { setLastHome } from "@/lib/lastHome";
 import { pushAccount } from "@/lib/cloud";
 import { useStore } from "@/lib/store";
-import { IconMeatball, IconPlus, PhoneShell } from "./icons";
+import { IconMeatball, IconPlusFab, PhoneShell } from "./icons";
 import { ConfirmDialog, Menu, Toast } from "./ui";
 
 export function TripHome() {
@@ -90,7 +90,7 @@ export function TripHome() {
                           setMenu(menu?.tripId === trip.id ? null : { tripId: trip.id, anchor: el });
                         }}
                       >
-                        <IconMeatball active={menu?.tripId === trip.id} />
+                        <IconMeatball />
                       </button>
                     </div>
                   );
@@ -105,7 +105,7 @@ export function TripHome() {
                 </div>
               </div>
               <div className="fab">
-                <IconPlus color="#fff" size={10} stroke={2.2} />
+                <IconPlusFab />
               </div>
             </button>
             <div style={{ display: "flex", justifyContent: "center", padding: "28px 0 40px" }}>

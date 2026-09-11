@@ -33,6 +33,7 @@ export function IconKebab({ active }: { active?: boolean }) {
 }
 
 export function IconMeatball({ active }: { active?: boolean }) {
+  // B-01_icon_guide: always #3A3A3A. `active` is C-01 only — that screen is not in the B-01 guide.
   const fill = active ? "var(--primary)" : "#3A3A3A";
   return (
     <Svg width="18" height="18" viewBox="0 0 18 18">
@@ -71,6 +72,15 @@ export function IconPlus({
         strokeWidth={stroke}
         strokeLinecap="round"
       />
+    </Svg>
+  );
+}
+
+/** B-01_icon_guide + glyph: 10×10 bbox, stroke 2, inside the 28 circle. */
+export function IconPlusFab() {
+  return (
+    <Svg width="10" height="10" viewBox="0 0 10 10">
+      <path d="M5 0v10M0 5h10" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" />
     </Svg>
   );
 }
