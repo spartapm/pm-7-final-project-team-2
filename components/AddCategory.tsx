@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
+import { track } from "@/lib/analytics";
 import { addCategoryToTrip, unusedPresetNames } from "./ChecklistView";
 import { IconPlus, PhoneShell } from "./icons";
 import { InputDialog, Toast, TopBar } from "./ui";
@@ -31,9 +32,16 @@ export function AddCategory({ tripId }: { tripId: string }) {
     );
   }
 
-  const add = (label: string) => {
-    updateTrip(trip.id, (t) => addCategoryToTrip(t, label, personalItems));
-    router.push(`/trips/${trip.id}?added=${encodeURIComponent(label)}`);
+  const add = (label: string, add_method: "preset" | "custom") => {
+    const next = addCategoryToTrip(trip, label, personalItems);
+    const added = next.categories.find((c) => !trip.categories.some((old) => old.id === c.id));
+    updateTrip(trip.id, () => next);
+    track("category_add_complete", {
+      add_method,
+      category_name: added?.name ?? label.trim(),
+      added_item_count: added?.items.length ?? 0,
+    });
+    router.push(`/trips/${trip.id}?added=${encodeURIComponent(added?.name ?? label)}`);
   };
 
   return (
@@ -51,7 +59,7 @@ export function AddCategory({ tripId }: { tripId: string }) {
         </div>
         <div style={{ height: 12 }} />
         {unused.map((label) => (
-          <button key={label} className="listrow" onClick={() => add(label)}>
+          <button key={label} className="listrow" onClick={() => add(label, "preset")}>
             <span className="lab">{label}</span>
             <span className="hit">
               <IconPlus />
@@ -68,7 +76,7 @@ export function AddCategory({ tripId }: { tripId: string }) {
           confirmDisabled={invalid}
           onLimit={() => setToast("최대 30자까지 입력할 수 있어요")}
           onCancel={() => setDialog(false)}
-          onConfirm={() => add(name.trim())}
+          onConfirm={() => add(name.trim(), "custom")}
         />
       ) : null}
       {toast ? <Toast message={toast} onDone={() => setToast(null)} /> : null}

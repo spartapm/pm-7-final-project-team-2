@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { dueReminders, reminderTitle, uncheckedCount, REMINDER_COPY } from "@/lib/reminders";
+import { track } from "@/lib/analytics";
 import { useStore } from "@/lib/store";
 
 const fired = new Set<string>();
@@ -28,7 +29,13 @@ export function ReminderListener() {
           const body = REMINDER_COPY[r.kind].body(n);
           if ("Notification" in window && Notification.permission === "granted") {
             const ntf = new Notification(title, { body });
+            track("push_delivered", { push_day: r.kind, trip_id: trip.id });
             ntf.onclick = () => {
+              track("push_notification_click", {
+                push_day: r.kind,
+                trip_id: trip.id,
+                unchecked_count: n,
+              });
               window.focus();
               router.push(`/trips/${trip.id}`);
             };

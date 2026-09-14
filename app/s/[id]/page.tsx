@@ -6,6 +6,7 @@ import { PhoneShell } from "@/components/icons";
 import { Toast, TopBar } from "@/components/ui";
 import { pullAccount } from "@/lib/cloud";
 import { setLastHome } from "@/lib/lastHome";
+import { setEntry, track } from "@/lib/analytics";
 import { useStore } from "@/lib/store";
 import type { Trip } from "@/lib/types";
 
@@ -25,6 +26,8 @@ export default function SharePage() {
     const failTimer = window.setTimeout(() => {
       if (cancelled || done) return;
       done = true;
+      track("load_delay_toast", { screen_id: "I-01", elapsed_ms: 5000 });
+      track("checklist_load_fail", { fail_reason: "not_found", entry_type: "shared_link" });
       setToast(LOAD_ERROR);
       setMissing(true);
     }, 5000);
@@ -38,6 +41,7 @@ export default function SharePage() {
         window.clearTimeout(failTimer);
         adoptAccount(remote.data);
         setLastHome("/trips");
+        setEntry("shared_link");
         router.replace("/trips");
         return;
       }
@@ -60,6 +64,7 @@ export default function SharePage() {
             personalItems: parsed.personalItems ?? [],
           });
           setLastHome("/trips");
+          setEntry("shared_link");
           router.replace("/trips");
           return;
         } catch {
@@ -69,6 +74,8 @@ export default function SharePage() {
 
       done = true;
       window.clearTimeout(failTimer);
+      const fail_reason = remote.status === "error" ? "no_permission" : "not_found";
+      track("checklist_load_fail", { fail_reason, entry_type: "shared_link" });
       setMissing(true);
     })();
 

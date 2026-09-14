@@ -4,7 +4,13 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { countryName, PRESET_CATEGORY_NAMES } from "@/lib/catalog";
 import { checklistSubtitle } from "@/lib/dates";
-import { track } from "@/lib/analytics";
+import {
+  itemParams,
+  noteOverpackImpression,
+  setEntry,
+  track,
+  trackItemDelete,
+} from "@/lib/analytics";
 import { categoryFromPreset, emptyCustomCategory } from "@/lib/generate";
 import { deleteRateFor, hasInfoIcon, overpackCopy } from "@/lib/itemMeta";
 import { subscribeCatalog } from "@/lib/liveCatalog";
@@ -108,7 +114,13 @@ export function ChecklistView({ tripId }: { tripId: string }) {
   const renameRef = useRef<HTMLInputElement>(null);
   const undoRef = useRef<{ trips: Trip[]; personalItems: { id: string; name: string }[] } | null>(null);
   const collapseRef = useRef<Record<string, boolean>>({});
-  const [info, setInfo] = useState<{ links: { text: string; url: string }[]; note?: string } | null>(null);
+  const editEnteredAt = useRef(0);
+  const renamedCount = useRef(0);
+  const [info, setInfo] = useState<{
+    links: { text: string; url: string }[];
+    note?: string;
+    itemId?: string;
+  } | null>(null);
   const [counterOn, setCounterOn] = useState(true);
   const [, catalogTick] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -142,7 +154,25 @@ export function ChecklistView({ tripId }: { tripId: string }) {
     if (!trip) return;
     setLastHome(`/trips/${trip.id}`);
     if (!trip.seen) updateTrip(trip.id, (t) => (t.seen ? t : { ...t, seen: true }));
+    const items = trip.categories.flatMap((c) => c.items);
+    track("checklist_view", {
+      item_count_total: items.length,
+      checked_count: items.filter((i) => i.checked).length,
+      wished_count: items.filter((i) => i.wished).length,
+    });
   }, [trip?.id]);
+
+  useEffect(() => {
+    if (!editing || !trip) return;
+    for (const cat of trip.categories) {
+      if (cat.kind !== "activity") continue;
+      for (const item of cat.items) {
+        const rate = deleteRateFor(cat.activityId, item.masterId) ?? item.deleteRate;
+        const copy = overpackCopy(rate);
+        if (copy && rate != null) noteOverpackImpression(item.id, copy, rate);
+      }
+    }
+  }, [editing, trip]);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -208,11 +238,22 @@ export function ChecklistView({ tripId }: { tripId: string }) {
     return true;
   };
 
-  const toggleChecked = (catId: string, item: ChecklistItem) => {
-    save((t) => patchItem(t, catId, item.id, (i) => ({ ...i, checked: !i.checked })));
-    track("item_status_changed", {
-      item_id: item.id,
-      status: item.checked ? "skip" : "has",
+  const toggleCat = (cat: Category) => {
+    const next = !cat.collapsed;
+    track("category_toggle", {
+      category_name: cat.name,
+      toggle_state: next ? "collapse" : "expand",
+      item_count: cat.items.length,
+    });
+    save((t) => patchCategory(t, cat.id, (c) => ({ ...c, collapsed: !c.collapsed })));
+  };
+
+  const toggleChecked = (cat: Category, item: ChecklistItem) => {
+    const next = !item.checked;
+    save((t) => patchItem(t, cat.id, item.id, (i) => ({ ...i, checked: !i.checked })));
+    track("item_check_toggle", {
+      ...itemParams(cat, item),
+      check_state: next ? "on" : "off",
     });
   };
 
@@ -226,6 +267,12 @@ export function ChecklistView({ tripId }: { tripId: string }) {
         label: "편집",
         onClick: () => {
           collapseRef.current = Object.fromEntries(trip.categories.map((c) => [c.id, c.collapsed]));
+          editEnteredAt.current = Date.now();
+          renamedCount.current = 0;
+          track("edit_mode_enter", {
+            item_count_total: counts.total,
+            activity_count: trip.activities.length,
+          });
           setEditing(true);
           save((t) => ({
             ...t,
@@ -237,7 +284,10 @@ export function ChecklistView({ tripId }: { tripId: string }) {
     if (filter !== "all") {
       items.push({
         label: "전체 아이템 보기",
-        onClick: () => setFilter("all"),
+        onClick: () => {
+          track("filter_reset", { filter_type: filter });
+          setFilter("all");
+        },
       });
       return items;
     }
@@ -249,6 +299,10 @@ export function ChecklistView({ tripId }: { tripId: string }) {
     items.push({
       label: "미체크 아이템 모아보기",
       onClick: () => {
+        track("filter_apply", {
+          filter_type: "unchecked",
+          result_count: trip.categories.reduce((n, c) => n + c.items.filter((i) => !i.checked).length, 0),
+        });
         setFilter("unchecked");
         expandAll();
       },
@@ -256,6 +310,10 @@ export function ChecklistView({ tripId }: { tripId: string }) {
     items.push({
       label: "찜한 아이템 모아보기",
       onClick: () => {
+        track("filter_apply", {
+          filter_type: "wished",
+          result_count: trip.categories.reduce((n, c) => n + c.items.filter((i) => i.wished).length, 0),
+        });
         setFilter("wished");
         expandAll();
       },
@@ -265,6 +323,10 @@ export function ChecklistView({ tripId }: { tripId: string }) {
 
   const finishEdit = () => {
     const snap = collapseRef.current;
+    track("edit_mode_exit", {
+      renamed_count: renamedCount.current,
+      duration_ms: Date.now() - editEnteredAt.current,
+    });
     setEditing(false);
     setRename(null);
     save((t) => ({
@@ -285,13 +347,13 @@ export function ChecklistView({ tripId }: { tripId: string }) {
     selected
       .filter(({ cat }) => isPersonalCat(cat))
       .forEach(({ item }) => removePersonalItem({ personalId: item.personalId, name: item.name }));
+    selected.forEach(({ cat, item }) => trackItemDelete(cat, item, true));
     save((t) => ({
       ...t,
       categories: t.categories.map((c) =>
         isPersonalCat(c) ? c : { ...c, items: c.items.filter((i) => !i.selected) }
       ),
     }));
-    track("item_removed", { is_bulk: true });
   };
 
   const deleteOne = (cat: Category, item: ChecklistItem) => {
@@ -315,6 +377,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
       msg: "해당 항목을 지웠어요",
       place: "bottom",
       undo: () => {
+        track("item_delete_undo", { item_id: item.id });
         if (undoRef.current) restoreSnapshot(undoRef.current);
         if (cat.kind === "activity" && item.masterId) {
           import("@/lib/stats").then(({ undoItemDelete }) => {
@@ -323,7 +386,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
         }
       },
     });
-    track("item_removed", { is_bulk: false, item_id: item.id });
+    trackItemDelete(cat, item, false);
   };
 
   const commitRename = () => {
@@ -335,6 +398,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
     }
     const cat = trip.categories.find((c) => c.id === rename.catId);
     const item = cat?.items.find((i) => i.id === rename.itemId);
+    if (cat && item && name !== item.name) renamedCount.current += 1;
     if (cat && item && isPersonalCat(cat)) {
       renamePersonalItem({ personalId: item.personalId, name: item.name }, name);
     } else {
@@ -357,7 +421,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
         patchCategory(t, catId, (c) => ({ ...c, items: [...c.items, newItem(name)] }))
       );
     }
-    track("item_added", { is_bulk: false });
+    track("item_add_complete", { item_name_text: name, category_name: category.name });
     setAddText("");
     setAdding(catId);
     requestAnimationFrame(() => addRef.current?.focus());
@@ -367,12 +431,22 @@ export function ChecklistView({ tripId }: { tripId: string }) {
     <PhoneShell>
       <TopBar
         float
-        back={editing ? undefined : () => router.push("/trips")}
+        back={
+          editing
+            ? undefined
+            : () => {
+                setEntry("back");
+                router.push("/trips");
+              }
+        }
         kebab={
           !editing
             ? () => {
                 setCatMenu(null);
-                setKebabOpen((v) => !v);
+                setKebabOpen((v) => {
+                  if (!v) track("menu_open");
+                  return !v;
+                });
               }
             : undefined
         }
@@ -416,13 +490,13 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                   tabIndex={0}
                   onClick={() => {
                     if (editing) return;
-                    save((t) => patchCategory(t, cat.id, (c) => ({ ...c, collapsed: !c.collapsed })));
+                    toggleCat(cat);
                   }}
                   onKeyDown={(e) => {
                     if (editing) return;
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      save((t) => patchCategory(t, cat.id, (c) => ({ ...c, collapsed: !c.collapsed })));
+                      toggleCat(cat);
                     }
                   }}
                 >
@@ -472,7 +546,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                             toggleSelect(cat.id, item.id);
                             return;
                           }
-                          toggleChecked(cat.id, item);
+                          toggleChecked(cat, item);
                         }}
                       >
                         <button
@@ -484,7 +558,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                               toggleSelect(cat.id, item.id);
                               return;
                             }
-                            toggleChecked(cat.id, item);
+                            toggleChecked(cat, item);
                           }}
                         >
                           {(editing && item.selected) || (!editing && item.checked) ? <IconCheck /> : null}
@@ -563,6 +637,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                                   setInfo({
                                     links: item.links ?? [],
                                     note: item.linkNote,
+                                    itemId: item.id,
                                   });
                                 }}
                               >
@@ -577,9 +652,9 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                                 save((t) =>
                                   patchItem(t, cat.id, item.id, (i) => ({ ...i, wished: !i.wished }))
                                 );
-                                track("item_status_changed", {
-                                  item_id: item.id,
-                                  status: item.wished ? "has" : "need",
+                                track("item_wish_toggle", {
+                                  ...itemParams(cat, item),
+                                  wish_state: item.wished ? "off" : "on",
                                 });
                               }}
                             >
@@ -668,7 +743,13 @@ export function ChecklistView({ tripId }: { tripId: string }) {
         })}
 
         <div className="footer-legal">
-          <button className="addcat" onClick={() => router.push(`/trips/${trip.id}/categories`)}>
+          <button
+            className="addcat"
+            onClick={() => {
+              track("category_add_click", { current_category_count: trip.categories.length });
+              router.push(`/trips/${trip.id}/categories`);
+            }}
+          >
             카테고리 추가
           </button>
           <div className="legalwrap">
@@ -747,6 +828,12 @@ export function ChecklistView({ tripId }: { tripId: string }) {
           onCancel={() => setConfirmCat(null)}
           onConfirm={() => {
             const cat = trip.categories.find((c) => c.id === confirmCat);
+            if (cat) {
+              track("category_delete_complete", {
+                category_name: cat.name,
+                deleted_item_count: cat.items.length,
+              });
+            }
             if (cat && isPersonalCat(cat)) removePersonalCategory();
             else save((t) => ({ ...t, categories: t.categories.filter((c) => c.id !== confirmCat) }));
             setConfirmCat(null);
@@ -755,7 +842,14 @@ export function ChecklistView({ tripId }: { tripId: string }) {
         />
       ) : null}
 
-      {info ? <InfoSheet links={info.links} note={info.note} onClose={() => setInfo(null)} /> : null}
+      {info ? (
+        <InfoSheet
+          links={info.links}
+          note={info.note}
+          itemId={info.itemId}
+          onClose={() => setInfo(null)}
+        />
+      ) : null}
 
       {toast ? (
         <Toast

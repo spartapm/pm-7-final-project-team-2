@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type Ref } from "react";
 import { createPortal } from "react-dom";
 import { IconBack, IconCalChevron, IconClose, IconKebab, IconSheetChevron } from "./icons";
+import { track } from "@/lib/analytics";
 
 export function TopBar({
   back,
@@ -181,11 +182,22 @@ export function InputDialog({
     }
     onChange(next);
   };
+  const pinCaret = () => {
+    const el = inputRef.current;
+    if (!el || el.value) return;
+    el.setSelectionRange(0, 0);
+  };
+  useLayoutEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "24px";
+    if (value) el.style.height = `${Math.min(el.scrollHeight, 184)}px`;
+  }, [value]);
   useEffect(() => {
     const el = inputRef.current;
     if (!el) return;
     el.focus();
-    if (!value) el.setSelectionRange(0, 0);
+    pinCaret();
   }, []);
   return (
     <div className="dim" onClick={onCancel}>
@@ -194,10 +206,12 @@ export function InputDialog({
           <div className="tt">{title}</div>
           <div className="ds" onClick={() => inputRef.current?.focus()}>
             {!value ? <div className="ph">{placeholder}</div> : null}
+            {!value ? <span className="caret" aria-hidden /> : null}
             <textarea
               ref={inputRef}
               value={value}
-              rows={2}
+              rows={1}
+              dir="ltr"
               className={value ? "typed" : "empty"}
               onChange={(e) => {
                 if (composing.current) {
@@ -224,6 +238,9 @@ export function InputDialog({
                   onLimit?.();
                 }
               }}
+              onFocus={pinCaret}
+              onClick={pinCaret}
+              onSelect={pinCaret}
             />
           </div>
         </div>
@@ -241,10 +258,12 @@ export function InputDialog({
 export function InfoSheet({
   links,
   note,
+  itemId,
   onClose,
 }: {
   links: { text: string; url: string }[];
   note?: string;
+  itemId?: string;
   onClose: () => void;
 }) {
   return (
@@ -252,8 +271,22 @@ export function InfoSheet({
       <div className="sheet" onClick={(e) => e.stopPropagation()}>
         {links.length ? (
           <div className="sheet-list">
-            {links.map((l) => (
-              <a key={l.url + l.text} className="sheet-row" href={l.url} target="_blank" rel="noreferrer">
+            {links.map((l, i) => (
+              <a
+                key={l.url + l.text}
+                className="sheet-row"
+                href={l.url}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() =>
+                  track("info_modal_link_click", {
+                    item_id: itemId,
+                    link_text: l.text,
+                    link_url: l.url,
+                    display_order: i + 1,
+                  })
+                }
+              >
                 <span>{l.text}</span>
                 <IconSheetChevron />
               </a>

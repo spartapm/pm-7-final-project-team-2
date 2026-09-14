@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { activityName, countryName } from "@/lib/catalog";
-import { sortTrips, statusChip, tripPeriodLabel } from "@/lib/dates";
+import { daysUntil, sortTrips, statusChip, tripPeriodLabel, tripStatus } from "@/lib/dates";
+import { consumeEntry, track } from "@/lib/analytics";
 import { setLastHome } from "@/lib/lastHome";
 import { pushAccount } from "@/lib/cloud";
 import { useStore } from "@/lib/store";
@@ -21,6 +22,11 @@ export function TripHome() {
   useEffect(() => {
     setLastHome("/trips");
   }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    track("trip_home_view", { entry_type: consumeEntry() });
+  }, [hydrated]);
 
   const share = async () => {
     const url = `${window.location.origin}/s/${accountId}`;
@@ -66,7 +72,18 @@ export function TripHome() {
                   const chip = statusChip(trip);
                   return (
                     <div className="trip-wrap" key={trip.id}>
-                      <button className="trip" onClick={() => router.push(`/trips/${trip.id}`)}>
+                      <button
+                        className="trip"
+                        onClick={() => {
+                          track("trip_card_click", {
+                            trip_id: trip.id,
+                            trip_status: tripStatus(trip),
+                            days_until_departure: daysUntil(trip.startDate),
+                            is_new: !trip.seen,
+                          });
+                          router.push(`/trips/${trip.id}`);
+                        }}
+                      >
                         <div className="head">
                           <span className="place">{countryName(trip.countryId)}</span>
                           <span className={`badge${chip.kind === "off" ? " off" : ""}`}>{chip.label}</span>

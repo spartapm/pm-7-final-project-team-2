@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ACTIVITIES, COMPANIONS, COUNTRIES } from "@/lib/catalog";
 import { rangesOverlap } from "@/lib/dates";
-import { track } from "@/lib/analytics";
+import { setEntry, track } from "@/lib/analytics";
 import { useStore } from "@/lib/store";
 import type { ActivityId, CompanionId, CountryId } from "@/lib/types";
 import { PhoneShell } from "./icons";
@@ -51,17 +51,18 @@ export function Onboarding({ step }: { step: 1 | 2 | 3 }) {
     const ac = new AbortController();
     const timer = window.setTimeout(() => ac.abort(), 8000);
     try {
-      track("onboarding_step_complete", { step_name: "a03" });
+      const started = performance.now();
       const trip = await createTrip(ac.signal);
-      track("checklist_created", {
-        destination: trip.countryId,
-        companion: trip.companions.join(","),
-        activity: trip.activities.join(","),
-        item_count: trip.categories.reduce((n, c) => n + c.items.length, 0),
+      track("checklist_generate_complete", {
+        activity_count: trip.activities.length,
+        generation_time_ms: Math.round(performance.now() - started),
       });
       if ("Notification" in window && Notification.permission === "default") {
-        Notification.requestPermission().catch(() => undefined);
+        Notification.requestPermission()
+          .then((result) => track("push_permission_result", { result }))
+          .catch(() => undefined);
       }
+      setEntry("after_create");
       router.replace("/trips");
     } catch {
       setToast(GEN_ERROR);
@@ -104,7 +105,7 @@ export function Onboarding({ step }: { step: 1 | 2 | 3 }) {
         <div className="shell-footer">
           <PrimaryButton
             onClick={() => {
-              track("checklist_start", { entry_point: "a01" });
+              track("onboarding_start");
               go(2);
             }}
           >
@@ -119,11 +120,11 @@ export function Onboarding({ step }: { step: 1 | 2 | 3 }) {
     const ready = Boolean(draft.countryId && draft.startDate && draft.endDate);
     const toggleCountry = (id: CountryId) => setDraft({ countryId: id });
     const goNext = () => {
-      track("onboarding_step_complete", { step_name: "a02" });
       if (isDup()) {
         setDupOpen(true);
         return;
       }
+      track("trip_step2_next");
       go(3);
     };
     return (
@@ -170,6 +171,7 @@ export function Onboarding({ step }: { step: 1 | 2 | 3 }) {
             onCancel={() => setDupOpen(false)}
             onConfirm={() => {
               setDupOpen(false);
+              track("trip_step2_next");
               go(3);
             }}
           />

@@ -451,25 +451,46 @@ a { color: inherit; text-decoration: none; }
   flex: 1;
   min-height: 0;
   font-weight: 400; font-size: 16px; line-height: 24px; color: var(--text-3);
+  text-align: left;
 }
 .dialog .ds .typed { color: var(--text-1); }
 .dialog .ds .ph {
   position: absolute; top: 0; left: 0; right: 0;
   pointer-events: none; white-space: pre-line;
   font-size: 16px; line-height: 24px; color: var(--text-3);
+  text-align: left;
+}
+.dialog .ds .caret {
+  position: absolute;
+  left: 0;
+  top: 4px;
+  width: 2px;
+  height: 16px;
+  background: var(--primary);
+  pointer-events: none;
+  z-index: 2;
+  animation: dialog-caret 1.06s step-end infinite;
+}
+@keyframes dialog-caret {
+  50% { opacity: 0; }
 }
 .dialog input, .dialog textarea {
   position: relative;
   z-index: 1;
-  width: 100%; height: auto; min-height: 24px; max-height: 184px;
+  width: 100%; height: 24px; min-height: 24px; max-height: 184px;
   border: none; outline: none;
   font-size: 16px; line-height: 24px;
   color: var(--text-1); background: transparent; padding: 0; margin: 0;
   caret-color: var(--primary);
-  resize: none; overflow: auto; white-space: pre-wrap; word-break: break-word;
+  resize: none; overflow: hidden; white-space: pre-wrap; word-break: break-word;
   display: block;
+  text-align: left;
+  text-align-last: left;
 }
-.dialog input.empty, .dialog textarea.empty { color: transparent; }
+.dialog input.empty, .dialog textarea.empty {
+  color: transparent;
+  caret-color: transparent;
+}
 
 .menu-back {
   position: fixed;
