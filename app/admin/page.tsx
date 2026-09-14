@@ -8,6 +8,9 @@ import { getLiveCatalog, loadCatalogFromCloud, seedCatalog, subscribeCatalog } f
 import type { Rule } from "@/lib/rules";
 import { saveStat } from "@/lib/stats";
 import { getSupabase } from "@/lib/supabase";
+import type { ActivityId } from "@/lib/types";
+
+type ActivityFilter = ActivityId | "all";
 
 type Tab = "stats" | "items" | "rules";
 
@@ -210,7 +213,7 @@ function Toolbar({
 
 function StatsPanel() {
   const live = getLiveCatalog();
-  const [activityId, setActivityId] = useState(ACTIVITIES[0]?.id ?? "photo");
+  const [activityId, setActivityId] = useState<ActivityFilter>(ACTIVITIES[0]?.id ?? "photo");
   const [q, setQ] = useState("");
   const rows = useMemo(() => {
     const list: { activityId: string; itemId: string; name: string }[] = [];
@@ -236,7 +239,11 @@ function StatsPanel() {
         placeholder="아이템 이름 또는 ID"
         count={`${rows.length}건`}
         extra={
-          <select value={activityId} onChange={(e) => setActivityId(e.target.value)} style={select}>
+          <select
+            value={activityId}
+            onChange={(e) => setActivityId(e.target.value as ActivityFilter)}
+            style={select}
+          >
             <option value="all">모든 활동</option>
             {ACTIVITIES.map((a) => (
               <option key={a.id} value={a.id}>
