@@ -142,7 +142,7 @@ export function TripHome() {
                 <IconPlusFab />
               </div>
             </button>
-            <div style={{ display: "flex", justifyContent: "center", padding: "28px 0 40px" }}>
+            <div style={{ display: "flex", justifyContent: "center", padding: "28px 0 100px" }}>
               <div className="share-wrap">
                 {shareTip ? (
                   <button type="button" className="share-tip" onClick={dismissShareTip}>
