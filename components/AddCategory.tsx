@@ -51,7 +51,13 @@ export function AddCategory({ tripId }: { tripId: string }) {
         <div style={{ padding: "16px 32px 0" }}>
           <button
             className="t-button"
-            style={{ color: "var(--primary)", background: "none", border: "none", padding: 0 }}
+            style={{
+              color: "var(--primary)",
+              WebkitTextFillColor: "var(--primary)",
+              background: "none",
+              border: "none",
+              padding: 0,
+            }}
             onClick={() => setDialog(true)}
           >
             직접 입력

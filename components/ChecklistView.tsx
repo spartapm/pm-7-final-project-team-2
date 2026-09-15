@@ -12,8 +12,8 @@ import {
   trackItemDelete,
 } from "@/lib/analytics";
 import { categoryFromPreset, emptyCustomCategory } from "@/lib/generate";
-import { deleteRateFor, hasInfoIcon, overpackCopy } from "@/lib/itemMeta";
-import { subscribeCatalog } from "@/lib/liveCatalog";
+import { commentRateFor, hasInfoIcon, overpackCopy } from "@/lib/itemMeta";
+import { loadCatalogFromCloud, subscribeCatalog } from "@/lib/liveCatalog";
 import { setLastHome } from "@/lib/lastHome";
 import { newItem, patchCategory, patchItem, useStore } from "@/lib/store";
 import type { Category, ChecklistItem, FilterMode, Trip } from "@/lib/types";
@@ -278,15 +278,22 @@ export function ChecklistView({ tripId }: { tripId: string }) {
           collapseRef.current = Object.fromEntries(trip.categories.map((c) => [c.id, c.collapsed]));
           editEnteredAt.current = Date.now();
           renamedCount.current = 0;
-          const rates: Record<string, number> = {};
-          for (const cat of trip.categories) {
-            if (cat.kind !== "activity") continue;
-            for (const item of cat.items) {
-              const rate = deleteRateFor(cat.activityId, item.masterId) ?? item.deleteRate;
-              if (rate != null) rates[item.id] = rate;
+          const snapshot = (cats: Category[]) => {
+            const rates: Record<string, number> = {};
+            for (const cat of cats) {
+              if (cat.kind !== "activity") continue;
+              for (const item of cat.items) {
+                const rate = commentRateFor(cat.activityId, item.masterId, item.deleteRate);
+                if (rate != null) rates[item.id] = rate;
+              }
             }
-          }
-          overpackRates.current = rates;
+            overpackRates.current = rates;
+          };
+          snapshot(trip.categories);
+          void loadCatalogFromCloud().then(() => {
+            snapshot(trip.categories);
+            catalogTick((n) => n + 1);
+          });
           track("edit_mode_enter", {
             item_count_total: counts.total,
             activity_count: trip.activities.length,

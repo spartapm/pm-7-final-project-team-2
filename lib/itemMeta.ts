@@ -1,5 +1,5 @@
 import { getLiveCatalog } from "./liveCatalog";
-import { liveDeleteRate } from "./stats";
+import { currentDeleteRate, liveDeleteRate } from "./stats";
 import type { SpecLink } from "./specData";
 
 export function specByName(name: string) {
@@ -30,6 +30,11 @@ export function hasInfoIcon(masterId?: string, name?: string, linkNote?: string)
 
 export function deleteRateFor(activityId?: string, masterId?: string) {
   return liveDeleteRate(activityId, masterId);
+}
+
+export function commentRateFor(activityId?: string, masterId?: string, baked?: number) {
+  const live = currentDeleteRate(activityId, masterId);
+  return live != null ? live : baked;
 }
 
 export function overpackCopy(rate?: number) {

@@ -11,6 +11,8 @@ import { useStore } from "@/lib/store";
 import { IconMeatball, IconPlusFab, PhoneShell } from "./icons";
 import { ConfirmDialog, Menu, Toast } from "./ui";
 
+const SHARE_TIP_KEY = "chaeggyeo:shareTip";
+
 export function TripHome() {
   const router = useRouter();
   const { trips, deleteTrip, accountId, hydrated, personalItems } = useStore();
@@ -18,6 +20,7 @@ export function TripHome() {
   const [menu, setMenu] = useState<{ tripId: string; anchor: HTMLElement } | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [shareTip, setShareTip] = useState(false);
 
   useEffect(() => {
     setLastHome("/trips");
@@ -26,7 +29,21 @@ export function TripHome() {
   useEffect(() => {
     if (!hydrated) return;
     track("trip_home_view", { entry_type: consumeEntry() });
+    try {
+      setShareTip(localStorage.getItem(SHARE_TIP_KEY) !== "1");
+    } catch {
+      setShareTip(true);
+    }
   }, [hydrated]);
+
+  const dismissShareTip = () => {
+    setShareTip(false);
+    try {
+      localStorage.setItem(SHARE_TIP_KEY, "1");
+    } catch {
+      /* ignore */
+    }
+  };
 
   const share = async () => {
     const url = `${window.location.origin}/s/${accountId}`;
@@ -58,7 +75,7 @@ export function TripHome() {
   return (
     <PhoneShell>
       <div className="shell-scroll pad-b">
-        <h1 className="t-subtitle" style={{ margin: 0, lineHeight: "28px" }}>내 여행 준비</h1>
+        <h1 className="t-title2" style={{ margin: 0 }}>내 여행 준비</h1>
         <p className="t-caption" style={{ color: "var(--text-3)", margin: "8px 0 20px" }}>
           알려주신 일정 기반으로 준비물을 정리해드렸어요
         </p>
@@ -126,9 +143,16 @@ export function TripHome() {
               </div>
             </button>
             <div style={{ display: "flex", justifyContent: "center", padding: "28px 0 40px" }}>
-              <button className="share-btn" onClick={share}>
-                일정 공유하기
-              </button>
+              <div className="share-wrap">
+                {shareTip ? (
+                  <button type="button" className="share-tip" onClick={dismissShareTip}>
+                    다른 기기에서 이어보고, 일행과 함께 체크할 수 있어요
+                  </button>
+                ) : null}
+                <button className="share-btn" onClick={share}>
+                  일정 공유하기
+                </button>
+              </div>
             </div>
           </>
         )}

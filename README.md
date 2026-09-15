@@ -26,11 +26,19 @@ npm run dev
 
 앱을 꺼 둔 상태의 웹 푸시(D-7/D-3/D-1 19시)는 탭이 열려 있을 때만 동작합니다.
 
-라이브: https://chaenggyeoyo.vercel.app
+라이브: https://chaenggyeoyo.vercel.app  
+커스텀 도메인: https://chaenggyeoyo.me (가비아 DNS 반영 후)
 
 ## Vercel
 
-GitHub 저장소 루트가 이 앱입니다. Root Directory는 비워 두면 됩니다(Framework Preset: Next.js). 배포 도메인은 `chaenggyeoyo.vercel.app` 입니다.
+GitHub 저장소 루트가 이 앱입니다. Root Directory는 비워 두면 됩니다(Framework Preset: Next.js). 배포 주소는 `chaenggyeoyo.vercel.app` 이고, 커스텀 도메인은 `chaenggyeoyo.me` 입니다.
+
+가비아 DNS는 아래 중 하나만 넣으면 됩니다.
+
+- 네임서버: `ns1.vercel-dns.com`, `ns2.vercel-dns.com`
+- 또는 레코드: A `@` → `76.76.21.21`, CNAME `www` → `cname.vercel-dns.com`
+
+Vercel 프로젝트 Settings → Domains에 `chaenggyeoyo.me`를 추가한 뒤에 위 값을 가비아에 넣어야 인증·SSL이 붙습니다.
 
 Settings → Environment Variables에 아래 **두 개만** 넣습니다. Production / Preview / Development 모두 체크.
 

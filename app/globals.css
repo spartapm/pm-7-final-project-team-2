@@ -37,7 +37,10 @@ body {
   body { background: var(--bg); }
 }
 button, input, textarea { font-family: inherit; }
-button { cursor: pointer; }
+button {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
 a { color: inherit; text-decoration: none; }
 
 .t-display { font-weight: 600; font-size: 28px; line-height: 34px; }
@@ -137,9 +140,16 @@ a { color: inherit; text-decoration: none; }
   justify-content: center;
   color: inherit;
   flex: none;
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
 }
 .hit-icon:disabled {
   cursor: default;
+}
+.hit-icon:active {
+  background: transparent;
+  filter: none;
 }
 .hit-icon::after {
   content: "";
@@ -347,7 +357,28 @@ a { color: inherit; text-decoration: none; }
   color: var(--text-1);
   -webkit-text-fill-color: var(--text-1);
 }
-.trip .when { font-weight: 500; font-size: 12px; line-height: 16px; color: var(--text-3); margin: 4px 0 8px; }
+.trip .badge {
+  color: var(--primary);
+  -webkit-text-fill-color: var(--primary);
+}
+.trip .badge.off {
+  color: var(--text-3);
+  -webkit-text-fill-color: var(--text-3);
+}
+.trip .badge.new {
+  color: var(--accent);
+  -webkit-text-fill-color: var(--accent);
+}
+.trip .when {
+  font-weight: 500; font-size: 12px; line-height: 16px;
+  color: var(--text-3);
+  -webkit-text-fill-color: var(--text-3);
+  margin: 4px 0 8px;
+}
+.trip .tag {
+  color: var(--text-2);
+  -webkit-text-fill-color: var(--text-2);
+}
 /* CHG-066: 28 hit, right 20. Vertical center with the 24px country title
    (card padding-top 16 → title center 28 → control top 14). */
 .kb {
@@ -413,9 +444,41 @@ a { color: inherit; text-decoration: none; }
   background: var(--bg-sub); color: var(--text-2);
   font-weight: 500; font-size: 12px; line-height: 16px;
 }
+.share-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+.share-tip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: min(280px, calc(100vw - 48px));
+  padding: 10px 14px;
+  background: var(--text-1);
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 16px;
+  border: none;
+  border-radius: var(--r-sm);
+  text-align: center;
+  z-index: 3;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.share-tip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--text-1);
+}
 .share-btn {
   height: 32px; padding: 0 20px; border-radius: 999px;
   background: var(--primary); color: #fff;
+  -webkit-text-fill-color: #fff;
   font-weight: 500; font-size: 14px; line-height: 21px;
   border: none;
   display: inline-flex; align-items: center; justify-content: center;
@@ -623,12 +686,20 @@ a { color: inherit; text-decoration: none; }
   display: flex; align-items: center;
   padding: 0 32px; background: var(--bg);
   width: 100%; border: none; text-align: left;
+  color: var(--text-1);
+  -webkit-text-fill-color: var(--text-1);
+  -webkit-appearance: none;
+  appearance: none;
 }
 .listrow::before {
   content: ""; position: absolute; top: 0; left: 28px; right: 28px;
   height: 1px; background: var(--bg-sub);
 }
-.listrow .lab { flex: 1; font-weight: 400; font-size: 16px; line-height: 24px; }
+.listrow .lab {
+  flex: 1; font-weight: 400; font-size: 16px; line-height: 24px;
+  color: var(--text-1);
+  -webkit-text-fill-color: var(--text-1);
+}
 .listrow .hit {
   position: relative;
   width: 24px; height: 24px; flex: none; margin: 0;
