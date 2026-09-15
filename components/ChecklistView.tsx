@@ -36,6 +36,14 @@ import { ConfirmDialog, InfoSheet, Menu, Toast, TopBar } from "./ui";
 const LEGAL =
   "챙겨요(가칭)가 제공하는 국가별 반입 주의·금지 품목 및 관련 법적·규정 정보는 각 항목에 표시된 작성·갱신 기준일 시점에 확인된 내용을 바탕으로 한 참고용 정보입니다. 관련 법령 및 규정은 국가와 시기에 따라 사전 예고 없이 변경될 수 있으며, 본 서비스가 제공하는 정보가 실제 세관·출입국 규정과 다를 수 있습니다. 챙겨요(가칭)는 해당 정보의 최신성·정확성·완전성을 보장하지 않으며, 이를 신뢰하여 발생한 불이익이나 손해에 대해 책임을 지지 않습니다. 정확한 반입 규정은 반드시 이용 항공사, 목적지 국가의 대사관·영사관, 관세청 등 공식 기관을 통해 여행 전 별도로 확인하시기 바랍니다.";
 
+const MAILTO =
+  "mailto:chaeggyeo@gmail.com?subject=" +
+  encodeURIComponent("준비물 관련 문의") +
+  "&body=" +
+  encodeURIComponent(
+    "• 요청 종류(추가/수정/삭제): \n• 준비물 이름: \n• 어떤 상황에 해당하나요? (국가, 활동 등):\n• 이유를 간단히 적어주세요:"
+  );
+
 function isPersonalCat(c: Category) {
   return c.kind === "personal" || c.name === "나만의 준비물";
 }
@@ -116,6 +124,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
   const collapseRef = useRef<Record<string, boolean>>({});
   const editEnteredAt = useRef(0);
   const renamedCount = useRef(0);
+  const overpackRates = useRef<Record<string, number>>({});
   const [info, setInfo] = useState<{
     links: { text: string; url: string }[];
     note?: string;
@@ -167,7 +176,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
     for (const cat of trip.categories) {
       if (cat.kind !== "activity") continue;
       for (const item of cat.items) {
-        const rate = deleteRateFor(cat.activityId, item.masterId) ?? item.deleteRate;
+        const rate = overpackRates.current[item.id];
         const copy = overpackCopy(rate);
         if (copy && rate != null) noteOverpackImpression(item.id, copy, rate);
       }
@@ -269,6 +278,15 @@ export function ChecklistView({ tripId }: { tripId: string }) {
           collapseRef.current = Object.fromEntries(trip.categories.map((c) => [c.id, c.collapsed]));
           editEnteredAt.current = Date.now();
           renamedCount.current = 0;
+          const rates: Record<string, number> = {};
+          for (const cat of trip.categories) {
+            if (cat.kind !== "activity") continue;
+            for (const item of cat.items) {
+              const rate = deleteRateFor(cat.activityId, item.masterId) ?? item.deleteRate;
+              if (rate != null) rates[item.id] = rate;
+            }
+          }
+          overpackRates.current = rates;
           track("edit_mode_enter", {
             item_count_total: counts.total,
             activity_count: trip.activities.length,
@@ -530,7 +548,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                   {items.map((item) => {
                     const pack =
                       editing && cat.kind === "activity"
-                        ? overpackCopy(deleteRateFor(cat.activityId, item.masterId) ?? item.deleteRate)
+                        ? overpackCopy(overpackRates.current[item.id])
                         : null;
                     const reason = pack ? null : item.reason;
                     const renaming = rename?.catId === cat.id && rename.itemId === item.id;
@@ -727,11 +745,17 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                         <button
                           className="hit-icon"
                           aria-label="추가"
-                          aria-disabled={!addText.trim() || addText.length > 30}
+                          disabled={!addText.trim() || addText.length > 30}
                           onMouseDown={(e) => e.preventDefault()}
                           onClick={() => tryAdd(cat.id, cat)}
                         >
-                          <IconPlus color={addText.length > 30 ? "var(--text-3)" : "var(--primary)"} />
+                          <IconPlus
+                            color={
+                              addText.trim() && addText.length <= 30
+                                ? "var(--primary)"
+                                : "var(--text-3)"
+                            }
+                          />
                         </button>
                       ) : null}
                     </div>
@@ -766,7 +790,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
             <p className="legal2" style={{ marginTop: 10 }}>
               아이템 추가·수정·삭제 등의 의견이 있으시다면 아래의 메일로 문의 부탁드립니다.
               <br />
-              <a href="mailto:chaeggyeo@gmail.com">chaeggyeo@gmail.com</a>로 메일 보내기
+              <a href={MAILTO}>chaeggyeo@gmail.com</a>로 메일 보내기
             </p>
           </div>
         </div>
@@ -784,7 +808,11 @@ export function ChecklistView({ tripId }: { tripId: string }) {
           </button>
         </div>
       ) : (
-        <div className={`float-count${counterOn ? "" : " off"}`}>
+        <div
+          className={`float-count${counterOn ? "" : " off"}`}
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
           <span className="n">
             <IconCheckSm />
             {counts.checked}/{counts.total}
@@ -868,7 +896,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
 export function unusedPresetNames(trip: Trip) {
   const alias: Record<string, string> = { 필수: "필수 준비물", 기본: "기본 짐싸기" };
   const used = new Set(trip.categories.map((c) => alias[c.name.trim()] ?? c.name.trim()));
-  return PRESET_CATEGORY_NAMES.filter((n) => !used.has(n));
+  return PRESET_CATEGORY_NAMES.filter((n) => n !== "나만의 준비물" && !used.has(n));
 }
 
 export function addCategoryToTrip(
@@ -885,6 +913,7 @@ export function addCategoryToTrip(
     return { ...trip, categories: [...trip.categories, fallback] };
   }
   if (name === "나만의 준비물") {
+    if (trip.categories.some(isPersonalCat)) return trip;
     const empty = emptyCustomCategory("나만의 준비물");
     empty.kind = "personal";
     empty.hint = "모든 여행 일정에 담겨요";

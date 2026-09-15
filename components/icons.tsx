@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, type ReactNode, SVGProps } from "react";
+import { useRef, useState, type ReactNode, SVGProps } from "react";
 
 function Svg(props: SVGProps<SVGSVGElement>) {
   return <svg fill="none" xmlns="http://www.w3.org/2000/svg" {...props} />;
@@ -177,6 +177,7 @@ export function IconOverpack() {
 
 export function PhoneShell({ children }: { children: ReactNode }) {
   const startY = useRef(0);
+  const [pulling, setPulling] = useState(false);
   return (
     <div
       className="shell"
@@ -187,10 +188,18 @@ export function PhoneShell({ children }: { children: ReactNode }) {
         const scroller = e.currentTarget.querySelector(".shell-scroll") as HTMLElement | null;
         if (scroller && scroller.scrollTop > 0) return;
         const dy = (e.changedTouches[0]?.clientY ?? 0) - startY.current;
-        if (dy > 80) window.location.reload();
+        if (dy > 80) {
+          setPulling(true);
+          window.location.reload();
+        }
       }}
     >
       {children}
+      {pulling ? (
+        <div className="loading-dim">
+          <img src="/loading.gif" alt="" width={72} height={72} />
+        </div>
+      ) : null}
     </div>
   );
 }

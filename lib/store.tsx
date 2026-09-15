@@ -17,7 +17,7 @@ import type {
   OnboardingDraft,
   Trip,
 } from "./types";
-import { generateCategories } from "./generate";
+import { emptyCustomCategory, generateCategories } from "./generate";
 import { tripStatus } from "./dates";
 import { deleteRateFor, linksFor, specOf } from "./itemMeta";
 import { climateBands, fetchClimate } from "./weather";
@@ -67,7 +67,7 @@ function personalHit(
 
 function migrateTrips(trips: Trip[]): Trip[] {
   return trips.map((trip) => {
-    let categories = trip.categories.map((c) => {
+    let categories: Category[] = trip.categories.map((c) => {
       const name = CAT_RENAME[c.name.trim()] ?? c.name;
       const personal = name === "나만의 준비물";
       return {
@@ -80,7 +80,14 @@ function migrateTrips(trips: Trip[]): Trip[] {
     });
     const personal = categories.filter((c) => c.name === "나만의 준비물");
     const rest = categories.filter((c) => c.name !== "나만의 준비물");
-    categories = personal.length ? [...personal, ...rest] : rest;
+    if (personal.length) {
+      categories = [...personal, ...rest];
+    } else {
+      const empty = emptyCustomCategory("나만의 준비물");
+      empty.kind = "personal";
+      empty.hint = "모든 여행 일정에 담겨요";
+      categories = [empty, ...rest];
+    }
     return { ...trip, seen: trip.seen ?? true, categories };
   });
 }

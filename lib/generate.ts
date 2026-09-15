@@ -144,7 +144,6 @@ export function generateCategories(input: {
       items,
     };
   });
-  if (!input.personalItems.length) return cats;
   const personal: Category = {
     id: uid("cat"),
     name: "나만의 준비물",
