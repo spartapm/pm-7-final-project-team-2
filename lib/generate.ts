@@ -8,9 +8,9 @@ import type {
   TempBandId,
   WeatherId,
 } from "./types";
-import { CATEGORY_META } from "./catalog";
 import { deleteRateFor, linksFor, specOf } from "./itemMeta";
-import { getLiveCatalog } from "./liveCatalog";
+import { sortItems } from "./itemSort";
+import { getLiveCatalog, liveCategoryMeta } from "./liveCatalog";
 import { SOURCE_RANK, type Rule } from "./rules";
 
 function uid(prefix: string) {
@@ -102,8 +102,8 @@ export function generateCategories(input: {
   for (const rule of matched) {
     const section = categoryForRule(rule);
     const existing = picked.get(rule.itemId);
-    const newPri = CATEGORY_META[section]?.matchPriority ?? 99;
-    const oldPri = existing ? CATEGORY_META[existing.section]?.matchPriority ?? 99 : 99;
+    const newPri = liveCategoryMeta()[section]?.matchPriority ?? 99;
+    const oldPri = existing ? liveCategoryMeta()[existing.section]?.matchPriority ?? 99 : 99;
     if (!existing || newPri < oldPri) {
       picked.set(rule.itemId, { rule, section });
     }
@@ -126,23 +126,42 @@ export function generateCategories(input: {
     bySection.set(section, list);
   }
 
+  const meta = liveCategoryMeta();
   const sections = [...bySection.entries()].sort((a, b) => {
-    const da = CATEGORY_META[a[0]]?.displayOrder ?? 50;
-    const db = CATEGORY_META[b[0]]?.displayOrder ?? 50;
+    const da = meta[a[0]]?.displayOrder ?? 50;
+    const db = meta[b[0]]?.displayOrder ?? 50;
     return da - db;
   });
 
   const cats = sections.map(([key, items]) => {
-    const meta = CATEGORY_META[key];
+    const m = meta[key];
     return {
       id: uid("cat"),
-      name: meta?.name ?? key,
-      kind: meta?.kind ?? "custom",
-      activityId: meta?.kind === "activity" ? (key as ActivityId) : undefined,
-      hint: meta?.hint,
+      name: m?.name ?? key,
+      kind: m?.kind ?? "custom",
+      activityId: m?.kind === "activity" ? key : undefined,
+      hint: m?.hint,
       collapsed: false,
-      items,
+      items: sortItems(items),
     };
+  });
+  for (const id of input.activities) {
+    if (cats.some((c) => c.activityId === id)) continue;
+    const m = meta[id];
+    cats.push({
+      id: uid("cat"),
+      name: m?.name ?? id,
+      kind: "activity",
+      activityId: id,
+      hint: m?.hint,
+      collapsed: false,
+      items: [],
+    });
+  }
+  cats.sort((a, b) => {
+    const ka = a.activityId ?? (a.kind === "custom" ? a.name : a.kind);
+    const kb = b.activityId ?? (b.kind === "custom" ? b.name : b.kind);
+    return (meta[ka]?.displayOrder ?? 50) - (meta[kb]?.displayOrder ?? 50);
   });
   const personal: Category = {
     id: uid("cat"),
@@ -177,11 +196,12 @@ export function categoryFromPreset(
   name: string,
   personalItems: { id: string; name: string }[] = []
 ): Category {
-  const found = Object.entries(CATEGORY_META).find(([, m]) => m.name === name);
+  const meta = liveCategoryMeta();
+  const found = Object.entries(meta).find(([, m]) => m.name === name);
   if (!found) return emptyCustomCategory(name);
-  const [key, meta] = found;
+  const [key, m] = found;
   let items: ChecklistItem[] = [];
-  if (meta.kind === "activity") {
+  if (m.kind === "activity") {
     items = getLiveCatalog()
       .rules.filter((r) => r.table === "activity" && r.activityId === key)
       .map(itemFromRule);
@@ -194,12 +214,12 @@ export function categoryFromPreset(
   }
   return {
     id: uid("cat"),
-    name: meta.name,
-    kind: meta.kind,
-    activityId: meta.kind === "activity" ? (key as ActivityId) : undefined,
-    hint: meta.hint,
+    name: m.name,
+    kind: m.kind,
+    activityId: m.kind === "activity" ? key : undefined,
+    hint: m.hint,
     collapsed: false,
-    items,
+    items: sortItems(items),
   };
 }
 

@@ -16,12 +16,7 @@
 
 ## CHG-085 가비아에 전달할 값
 
-네임서버(추천)
+Vercel이 이 프로젝트에 실제로 요구하는 값입니다. apex는 `www.chaenggyeoyo.me`로 308입니다.
 
-- `ns1.vercel-dns.com`
-- `ns2.vercel-dns.com`
-
-또는 레코드를 직접 넣을 때
-
-- A / 호스트 `@` / `76.76.21.21`
-- CNAME / 호스트 `www` / `cname.vercel-dns.com`
+- A / 호스트 `@` / `216.198.79.1`
+- CNAME / 호스트 `www` / `3ff2e8483112c4f4.vercel-dns-017.com`

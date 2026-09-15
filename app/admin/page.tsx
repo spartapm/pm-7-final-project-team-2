@@ -1,10 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { ACTIVITIES, COMPANIONS, COUNTRIES } from "@/lib/catalog";
+import { COMPANIONS, COUNTRIES } from "@/lib/catalog";
 import { CATALOG_SQL } from "@/lib/catalogSchema";
 import { importCsvFiles } from "@/lib/csvImport";
-import { getLiveCatalog, loadCatalogFromCloud, seedCatalog, subscribeCatalog } from "@/lib/liveCatalog";
+import {
+  getLiveCatalog,
+  liveActivities,
+  liveActivityName,
+  loadCatalogFromCloud,
+  seedCatalog,
+  subscribeCatalog,
+} from "@/lib/liveCatalog";
 import type { Rule } from "@/lib/rules";
 import { saveStat } from "@/lib/stats";
 import { getSupabase } from "@/lib/supabase";
@@ -12,7 +19,7 @@ import type { ActivityId } from "@/lib/types";
 
 type ActivityFilter = ActivityId | "all";
 
-type Tab = "stats" | "items" | "rules";
+type Tab = "stats" | "items" | "rules" | "activities" | "groups";
 
 const TABLE_LABEL: Record<Rule["table"], string> = {
   essential: "필수",
@@ -43,7 +50,7 @@ const TEMP_LABEL: Record<string, string> = {
 
 function ruleCondition(r: Rule) {
   if (r.table === "activity" && r.activityId) {
-    return ACTIVITIES.find((a) => a.id === r.activityId)?.name ?? r.activityId;
+    return liveActivityName(r.activityId);
   }
   if (r.table === "country" && r.countryId) {
     return COUNTRIES.find((c) => c.id === r.countryId)?.name ?? r.countryId;
@@ -155,7 +162,7 @@ export default function AdminPage() {
               링크 파일은 기존 링크를 지우고 갈아끼웁니다.
             </p>
             <p style={{ margin: 0 }}>
-              아래 표에서 검색·필터 후 칸을 고치고 저장하세요. 체크리스트는 새로고침해야 보입니다. 규칙 문구는 새로 만든 일정부터 반영됩니다.
+              아래 표에서 검색·필터 후 칸을 고치고 저장하세요. 7차부터 활동·그룹 탭이 있습니다. 체크리스트는 새로고침해야 보입니다.
             </p>
           </div>
         </details>
@@ -167,6 +174,8 @@ export default function AdminPage() {
             ["stats", "삭제율"],
             ["items", "아이템"],
             ["rules", "규칙"],
+            ["activities", "활동"],
+            ["groups", "그룹"],
           ] as const).map(([id, label]) => (
             <button key={id} onClick={() => setTab(id)} style={tab === id ? tabOn : tabOff}>
               {label}
@@ -179,6 +188,8 @@ export default function AdminPage() {
         {tab === "stats" ? <StatsPanel /> : null}
         {tab === "items" ? <ItemsPanel items={live.items} onSaved={setMsg} /> : null}
         {tab === "rules" ? <RulesPanel onSaved={setMsg} /> : null}
+        {tab === "activities" ? <ActivitiesPanel onSaved={setMsg} /> : null}
+        {tab === "groups" ? <GroupsPanel onSaved={setMsg} /> : null}
       </main>
     </div>
   );
@@ -213,7 +224,7 @@ function Toolbar({
 
 function StatsPanel() {
   const live = getLiveCatalog();
-  const [activityId, setActivityId] = useState<ActivityFilter>(ACTIVITIES[0]?.id ?? "photo");
+  const [activityId, setActivityId] = useState<ActivityFilter>(liveActivities()[0]?.id ?? "photo");
   const [q, setQ] = useState("");
   const rows = useMemo(() => {
     const list: { activityId: string; itemId: string; name: string }[] = [];
@@ -245,7 +256,7 @@ function StatsPanel() {
             style={select}
           >
             <option value="all">모든 활동</option>
-            {ACTIVITIES.map((a) => (
+            {liveActivities().map((a) => (
               <option key={a.id} value={a.id}>
                 {a.name}
               </option>
@@ -330,7 +341,7 @@ function StatRow({
         <div style={{ fontWeight: 600 }}>{name}</div>
         <div style={{ fontSize: 11, color: "#999" }}>{itemId}</div>
       </td>
-      <td style={td}>{ACTIVITIES.find((a) => a.id === activityId)?.name ?? activityId}</td>
+      <td style={td}>{liveActivityName(activityId)}</td>
       <td style={td}>
         <input style={cellInput} value={ex} onChange={(e) => setEx(e.target.value)} />
       </td>
@@ -393,9 +404,14 @@ function ItemsPanel({
 
   return (
     <div style={panel}>
-      <p style={hint}>이름 · 상시 설명 · link_note(정보 시트 회색 박스). 새 아이템은 CSV에 행을 넣어 올리세요.</p>
+      <p style={hint}>이름 · 상시 설명 · link_note(정보 시트 회색 박스). group/order는 같은 카테고리 안 정렬입니다. 새 아이템은 CSV에 행을 넣어 올리세요.</p>
       <Toolbar q={q} onQ={setQ} placeholder="이름, ID, 설명 검색" count={`${list.length} / ${Object.keys(items).length}`} />
       <div style={tableWrap}>
+        <datalist id="item-groups">
+          {getLiveCatalog().groups.map((g) => (
+            <option key={g.id} value={g.name} />
+          ))}
+        </datalist>
         <table style={table}>
           <thead>
             <tr>
@@ -403,6 +419,8 @@ function ItemsPanel({
               <th style={{ ...th, width: 200 }}>이름</th>
               <th style={th}>설명</th>
               <th style={th}>link_note</th>
+              <th style={{ ...th, width: 100 }}>group</th>
+              <th style={{ ...th, width: 72 }}>order</th>
               <th style={{ ...th, width: 72 }} />
             </tr>
           </thead>
@@ -414,6 +432,8 @@ function ItemsPanel({
                 name={item.name}
                 note={item.linkNote ?? ""}
                 desc={item.desc ?? ""}
+                group={item.itemGroup ?? ""}
+                order={item.itemOrder ?? ""}
                 onSaved={onSaved}
               />
             ))}
@@ -429,24 +449,32 @@ function ItemRow({
   name,
   note,
   desc,
+  group,
+  order,
   onSaved,
 }: {
   id: string;
   name: string;
   note: string;
   desc: string;
+  group: string;
+  order: string | number;
   onSaved: (m: string) => void;
 }) {
   const [n, setN] = useState(name);
   const [d, setD] = useState(desc);
   const [noteV, setNoteV] = useState(note);
+  const [g, setG] = useState(group);
+  const [ord, setOrd] = useState(String(order));
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     setN(name);
     setD(desc);
     setNoteV(note);
-  }, [name, desc, note]);
-  const dirty = n !== name || d !== desc || noteV !== note;
+    setG(group);
+    setOrd(String(order));
+  }, [name, desc, note, group, order]);
+  const dirty = n !== name || d !== desc || noteV !== note || g !== group || ord !== String(order);
 
   return (
     <tr style={tr}>
@@ -461,6 +489,17 @@ function ItemRow({
         <textarea style={cellArea} value={noteV} onChange={(e) => setNoteV(e.target.value)} rows={2} />
       </td>
       <td style={td}>
+        <input
+          style={cellInputWide}
+          value={g}
+          onChange={(e) => setG(e.target.value)}
+          list="item-groups"
+        />
+      </td>
+      <td style={td}>
+        <input style={cellInput} value={ord} onChange={(e) => setOrd(e.target.value)} />
+      </td>
+      <td style={td}>
         <button
           style={dirty ? btnSm : btnGhost}
           disabled={busy || !dirty}
@@ -473,7 +512,13 @@ function ItemRow({
             setBusy(true);
             const res = await sb
               .from("catalog_items")
-              .update({ name: n, item_desc: d || null, link_note: noteV || null })
+              .update({
+                name: n,
+                item_desc: d || null,
+                link_note: noteV || null,
+                item_group: g || null,
+                item_order: ord === "" || !Number.isFinite(Number(ord)) ? null : Number(ord),
+              })
               .eq("id", id);
             setBusy(false);
             if (res.error) {
@@ -602,6 +647,377 @@ function RuleRow({
           }}
         >
           저장
+        </button>
+      </td>
+    </tr>
+  );
+}
+
+function ActivitiesPanel({ onSaved }: { onSaved: (m: string) => void }) {
+  const live = getLiveCatalog();
+  const [q, setQ] = useState("");
+  const [draft, setDraft] = useState({ id: "", name: "", categoryName: "" });
+  const [busy, setBusy] = useState(false);
+
+  const list = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    const rows = live.activities;
+    if (!needle) return rows;
+    return rows.filter((a) =>
+      `${a.id} ${a.name} ${a.categoryName}`.toLowerCase().includes(needle)
+    );
+  }, [live.activities, q]);
+
+  const add = async () => {
+    const id = draft.id.trim();
+    const name = draft.name.trim();
+    const categoryName = draft.categoryName.trim() || name;
+    if (!id || !name) {
+      onSaved("activity_id와 activity_name을 넣어 주세요.");
+      return;
+    }
+    const sb = getSupabase();
+    if (!sb) {
+      onSaved("Supabase 키가 없습니다");
+      return;
+    }
+    setBusy(true);
+    const res = await sb.from("catalog_activities").upsert({
+      activity_id: id,
+      activity_name: name,
+      activity_category_name: categoryName,
+    });
+    setBusy(false);
+    if (res.error) {
+      onSaved(`${res.error.message} (활동 테이블 SQL을 먼저 실행하세요)`);
+      return;
+    }
+    setDraft({ id: "", name: "", categoryName: "" });
+    await loadCatalogFromCloud();
+    onSaved(`${name} 활동을 저장했습니다.`);
+  };
+
+  return (
+    <div style={panel}>
+      <p style={hint}>
+        A-03 칩은 activity_name, 체크리스트·카테고리 추가는 activity_category_name입니다. 새 행을 넣으면 활동 칩과
+        카테고리 목록에 바로 뜹니다. 아이템이 없는 활동도 카테고리 칸은 만들어집니다.
+      </p>
+      <Toolbar q={q} onQ={setQ} placeholder="id, 이름 검색" count={`${list.length} / ${live.activities.length}`} />
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          flexWrap: "wrap",
+          marginBottom: 10,
+          alignItems: "center",
+        }}
+      >
+        <input
+          style={{ ...cellInput, width: 140 }}
+          value={draft.id}
+          onChange={(e) => setDraft({ ...draft, id: e.target.value })}
+          placeholder="activity_id"
+        />
+        <input
+          style={{ ...cellInput, width: 160 }}
+          value={draft.name}
+          onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+          placeholder="activity_name"
+        />
+        <input
+          style={{ ...cellInput, width: 200 }}
+          value={draft.categoryName}
+          onChange={(e) => setDraft({ ...draft, categoryName: e.target.value })}
+          placeholder="activity_category_name"
+        />
+        <button style={btnSm} disabled={busy} onClick={() => void add()}>
+          추가
+        </button>
+      </div>
+      <div style={tableWrap}>
+        <table style={table}>
+          <thead>
+            <tr>
+              <th style={{ ...th, width: 140 }}>activity_id</th>
+              <th style={th}>activity_name</th>
+              <th style={th}>activity_category_name</th>
+              <th style={{ ...th, width: 120 }} />
+            </tr>
+          </thead>
+          <tbody>
+            {list.map((a) => (
+              <ActivityRow key={a.id} id={a.id} name={a.name} categoryName={a.categoryName} onSaved={onSaved} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function ActivityRow({
+  id,
+  name,
+  categoryName,
+  onSaved,
+}: {
+  id: string;
+  name: string;
+  categoryName: string;
+  onSaved: (m: string) => void;
+}) {
+  const [n, setN] = useState(name);
+  const [c, setC] = useState(categoryName);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    setN(name);
+    setC(categoryName);
+  }, [name, categoryName]);
+  const dirty = n !== name || c !== categoryName;
+
+  return (
+    <tr style={tr}>
+      <td style={{ ...td, color: "#999", fontSize: 12 }}>{id}</td>
+      <td style={td}>
+        <input style={cellInputWide} value={n} onChange={(e) => setN(e.target.value)} />
+      </td>
+      <td style={td}>
+        <input style={cellInputWide} value={c} onChange={(e) => setC(e.target.value)} />
+      </td>
+      <td style={td}>
+        <button
+          style={dirty ? btnSm : btnGhost}
+          disabled={busy || !dirty || !n.trim()}
+          onClick={async () => {
+            const sb = getSupabase();
+            if (!sb) {
+              onSaved("Supabase 키가 없습니다");
+              return;
+            }
+            setBusy(true);
+            const res = await sb
+              .from("catalog_activities")
+              .update({
+                activity_name: n.trim(),
+                activity_category_name: c.trim() || n.trim(),
+              })
+              .eq("activity_id", id);
+            setBusy(false);
+            if (res.error) {
+              onSaved(res.error.message);
+              return;
+            }
+            await loadCatalogFromCloud();
+            onSaved(`${n} 저장했습니다.`);
+          }}
+        >
+          저장
+        </button>
+        <button
+          style={{ ...btnGhost, marginLeft: 6 }}
+          disabled={busy}
+          onClick={async () => {
+            const sb = getSupabase();
+            if (!sb) {
+              onSaved("Supabase 키가 없습니다");
+              return;
+            }
+            setBusy(true);
+            const res = await sb.from("catalog_activities").delete().eq("activity_id", id);
+            setBusy(false);
+            if (res.error) {
+              onSaved(res.error.message);
+              return;
+            }
+            await loadCatalogFromCloud();
+            onSaved(`${name} 활동을 지웠습니다.`);
+          }}
+        >
+          삭제
+        </button>
+      </td>
+    </tr>
+  );
+}
+
+function GroupsPanel({ onSaved }: { onSaved: (m: string) => void }) {
+  const live = getLiveCatalog();
+  const [q, setQ] = useState("");
+  const [draft, setDraft] = useState({ id: "", name: "", order: "" });
+  const [busy, setBusy] = useState(false);
+
+  const list = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    const rows = [...live.groups].sort((a, b) => a.order - b.order);
+    if (!needle) return rows;
+    return rows.filter((g) => `${g.id} ${g.name} ${g.order}`.toLowerCase().includes(needle));
+  }, [live.groups, q]);
+
+  const add = async () => {
+    const name = draft.name.trim();
+    const id = draft.id.trim() ? Number(draft.id) : Math.max(0, ...live.groups.map((g) => g.id)) + 1;
+    const order = draft.order.trim() ? Number(draft.order) : live.groups.length + 1;
+    if (!name || !Number.isFinite(id) || !Number.isFinite(order)) {
+      onSaved("group_name과 숫자를 확인해 주세요.");
+      return;
+    }
+    const sb = getSupabase();
+    if (!sb) {
+      onSaved("Supabase 키가 없습니다");
+      return;
+    }
+    setBusy(true);
+    const res = await sb.from("catalog_group").upsert({
+      group_id: id,
+      group_name: name,
+      group_order: order,
+    });
+    setBusy(false);
+    if (res.error) {
+      onSaved(`${res.error.message} (그룹 테이블 SQL을 먼저 실행하세요)`);
+      return;
+    }
+    setDraft({ id: "", name: "", order: "" });
+    await loadCatalogFromCloud();
+    onSaved(`${name} 그룹을 저장했습니다.`);
+  };
+
+  return (
+    <div style={panel}>
+      <p style={hint}>
+        catalog_items.item_group 값이 여기 group_name과 같으면 그 순서대로 묶입니다. group이 비어 있으면 맨 아래, item_order는
+        작을수록 위입니다.
+      </p>
+      <Toolbar q={q} onQ={setQ} placeholder="이름, id 검색" count={`${list.length} / ${live.groups.length}`} />
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          flexWrap: "wrap",
+          marginBottom: 10,
+          alignItems: "center",
+        }}
+      >
+        <input
+          style={{ ...cellInput, width: 80 }}
+          value={draft.id}
+          onChange={(e) => setDraft({ ...draft, id: e.target.value })}
+          placeholder="group_id"
+        />
+        <input
+          style={{ ...cellInput, width: 160 }}
+          value={draft.name}
+          onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+          placeholder="group_name"
+        />
+        <input
+          style={{ ...cellInput, width: 80 }}
+          value={draft.order}
+          onChange={(e) => setDraft({ ...draft, order: e.target.value })}
+          placeholder="order"
+        />
+        <button style={btnSm} disabled={busy} onClick={() => void add()}>
+          추가
+        </button>
+      </div>
+      <div style={tableWrap}>
+        <table style={table}>
+          <thead>
+            <tr>
+              <th style={{ ...th, width: 80 }}>group_id</th>
+              <th style={th}>group_name</th>
+              <th style={{ ...th, width: 88 }}>group_order</th>
+              <th style={{ ...th, width: 120 }} />
+            </tr>
+          </thead>
+          <tbody>
+            {list.map((g) => (
+              <GroupRow key={g.id} id={g.id} name={g.name} order={g.order} onSaved={onSaved} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function GroupRow({
+  id,
+  name,
+  order,
+  onSaved,
+}: {
+  id: number;
+  name: string;
+  order: number;
+  onSaved: (m: string) => void;
+}) {
+  const [n, setN] = useState(name);
+  const [ord, setOrd] = useState(String(order));
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    setN(name);
+    setOrd(String(order));
+  }, [name, order]);
+  const dirty = n !== name || ord !== String(order);
+
+  return (
+    <tr style={tr}>
+      <td style={{ ...td, color: "#999", fontSize: 12 }}>{id}</td>
+      <td style={td}>
+        <input style={cellInputWide} value={n} onChange={(e) => setN(e.target.value)} />
+      </td>
+      <td style={td}>
+        <input style={cellInput} value={ord} onChange={(e) => setOrd(e.target.value)} />
+      </td>
+      <td style={td}>
+        <button
+          style={dirty ? btnSm : btnGhost}
+          disabled={busy || !dirty || !n.trim() || !Number.isFinite(Number(ord))}
+          onClick={async () => {
+            const sb = getSupabase();
+            if (!sb) {
+              onSaved("Supabase 키가 없습니다");
+              return;
+            }
+            setBusy(true);
+            const res = await sb
+              .from("catalog_group")
+              .update({ group_name: n.trim(), group_order: Number(ord) })
+              .eq("group_id", id);
+            setBusy(false);
+            if (res.error) {
+              onSaved(res.error.message);
+              return;
+            }
+            await loadCatalogFromCloud();
+            onSaved(`${n} 저장했습니다.`);
+          }}
+        >
+          저장
+        </button>
+        <button
+          style={{ ...btnGhost, marginLeft: 6 }}
+          disabled={busy}
+          onClick={async () => {
+            const sb = getSupabase();
+            if (!sb) {
+              onSaved("Supabase 키가 없습니다");
+              return;
+            }
+            setBusy(true);
+            const res = await sb.from("catalog_group").delete().eq("group_id", id);
+            setBusy(false);
+            if (res.error) {
+              onSaved(res.error.message);
+              return;
+            }
+            await loadCatalogFromCloud();
+            onSaved(`${name} 그룹을 지웠습니다.`);
+          }}
+        >
+          삭제
         </button>
       </td>
     </tr>

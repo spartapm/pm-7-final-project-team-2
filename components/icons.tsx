@@ -149,6 +149,34 @@ export function IconPencil({ color = "var(--text-3)" }: { color?: string }) {
   );
 }
 
+export function IconFilter({ active }: { active?: boolean }) {
+  const stroke = active ? "var(--primary)" : "var(--text-1)";
+  return (
+    <Svg width="20" height="20" viewBox="0 0 20 20">
+      <path
+        d="M3.5 4.5h13l-4.6 5.6v3.6L8.1 16V10.1Z"
+        stroke={stroke}
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+export function IconEdit() {
+  return (
+    <Svg width="20" height="20" viewBox="0 0 20 20">
+      <path
+        d="M13.2 3.4a1.7 1.7 0 0 1 2.4 2.4L7.2 14.2l-3.3 1 1-3.3Z"
+        stroke="var(--text-1)"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
 export function IconXSmall() {
   return (
     <Svg width="13" height="13" viewBox="0 0 13 13">

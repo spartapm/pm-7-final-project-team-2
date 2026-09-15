@@ -2,10 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { activityName, countryName } from "@/lib/catalog";
+import { countryName } from "@/lib/catalog";
 import { daysUntil, sortTrips, statusChip, tripPeriodLabel, tripStatus } from "@/lib/dates";
 import { consumeEntry, track } from "@/lib/analytics";
 import { setLastHome } from "@/lib/lastHome";
+import { liveActivityName } from "@/lib/liveCatalog";
 import { pushAccount } from "@/lib/cloud";
 import { useStore } from "@/lib/store";
 import { IconMeatball, IconPlusFab, PhoneShell } from "./icons";
@@ -110,7 +111,7 @@ export function TripHome() {
                         <div className="tags">
                           {trip.activities.map((a) => (
                             <span className="tag" key={a}>
-                              {activityName(a)}
+                              {liveActivityName(a)}
                             </span>
                           ))}
                         </div>

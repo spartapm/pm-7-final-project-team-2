@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { countryName, PRESET_CATEGORY_NAMES } from "@/lib/catalog";
+import { countryName } from "@/lib/catalog";
 import { checklistSubtitle } from "@/lib/dates";
 import {
   itemParams,
@@ -13,7 +13,8 @@ import {
 } from "@/lib/analytics";
 import { categoryFromPreset, emptyCustomCategory } from "@/lib/generate";
 import { commentRateFor, hasInfoIcon, overpackCopy } from "@/lib/itemMeta";
-import { loadCatalogFromCloud, subscribeCatalog } from "@/lib/liveCatalog";
+import { sortChecklistItems } from "@/lib/itemSort";
+import { loadCatalogFromCloud, livePresetCategoryNames, subscribeCatalog } from "@/lib/liveCatalog";
 import { setLastHome } from "@/lib/lastHome";
 import { newItem, patchCategory, patchItem, useStore } from "@/lib/store";
 import type { Category, ChecklistItem, FilterMode, Trip } from "@/lib/types";
@@ -21,6 +22,8 @@ import {
   IconCheck,
   IconCheckSm,
   IconChevron,
+  IconEdit,
+  IconFilter,
   IconHeart,
   IconHeartSm,
   IconInfo,
@@ -31,7 +34,7 @@ import {
   IconXSmall,
   PhoneShell,
 } from "./icons";
-import { ConfirmDialog, InfoSheet, Menu, Toast, TopBar } from "./ui";
+import { ConfirmDialog, InfoSheet, Menu, PackGuideSheet, Toast, TopBar } from "./ui";
 
 const LEGAL =
   "챙겨요(가칭)가 제공하는 국가별 반입 주의·금지 품목 및 관련 법적·규정 정보는 각 항목에 표시된 작성·갱신 기준일 시점에 확인된 내용을 바탕으로 한 참고용 정보입니다. 관련 법령 및 규정은 국가와 시기에 따라 사전 예고 없이 변경될 수 있으며, 본 서비스가 제공하는 정보가 실제 세관·출입국 규정과 다를 수 있습니다. 챙겨요(가칭)는 해당 정보의 최신성·정확성·완전성을 보장하지 않으며, 이를 신뢰하여 발생한 불이익이나 손해에 대해 책임을 지지 않습니다. 정확한 반입 규정은 반드시 이용 항공사, 목적지 국가의 대사관·영사관, 관세청 등 공식 기관을 통해 여행 전 별도로 확인하시기 바랍니다.";
@@ -105,9 +108,9 @@ export function ChecklistView({ tripId }: { tripId: string }) {
   const trip = trips.find((t) => t.id === tripId);
   const [editing, setEditing] = useState(false);
   const [filter, setFilter] = useState<FilterMode>("all");
-  const [kebabOpen, setKebabOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [catMenu, setCatMenu] = useState<{ id: string; anchor: HTMLElement } | null>(null);
-  const kebabRef = useRef<HTMLButtonElement>(null);
+  const filterRef = useRef<HTMLButtonElement>(null);
   const [confirmCat, setConfirmCat] = useState<string | null>(null);
   const [confirmBulk, setConfirmBulk] = useState(false);
   const [rename, setRename] = useState<{ catId: string; itemId: string; name: string } | null>(null);
@@ -125,6 +128,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
   const editEnteredAt = useRef(0);
   const renamedCount = useRef(0);
   const overpackRates = useRef<Record<string, number>>({});
+  const lockedIds = useRef<Set<string>>(new Set());
   const [info, setInfo] = useState<{
     links: { text: string; url: string }[];
     note?: string;
@@ -218,16 +222,11 @@ export function ChecklistView({ tripId }: { tripId: string }) {
   const orderedCats = useMemo(() => {
     const cats = trip?.categories ?? [];
     if (filter === "all") return cats;
-    const vis = (item: ChecklistItem) => {
-      if (filter === "unchecked") return !item.checked;
-      if (filter === "wished") return item.wished;
-      return true;
-    };
-    return [...cats].sort((a, b) => {
-      const am = a.items.some(vis) ? 0 : 1;
-      const bm = b.items.some(vis) ? 0 : 1;
-      return am - bm;
-    });
+    const pin = (c: Category) =>
+      filter === "unchecked"
+        ? c.items.some((i) => i.checked)
+        : c.items.some((i) => i.wished);
+    return [...cats].sort((a, b) => Number(pin(b)) - Number(pin(a)));
   }, [trip?.categories, filter]);
 
   if (!trip) {
@@ -267,83 +266,86 @@ export function ChecklistView({ tripId }: { tripId: string }) {
   };
 
   const toggleSelect = (catId: string, itemId: string) => {
+    if (lockedIds.current.has(itemId)) return;
     save((t) => patchItem(t, catId, itemId, (i) => ({ ...i, selected: !i.selected })));
   };
 
-  const kebabItems = () => {
-    const items = [
-      {
-        label: "편집",
-        onClick: () => {
-          collapseRef.current = Object.fromEntries(trip.categories.map((c) => [c.id, c.collapsed]));
-          editEnteredAt.current = Date.now();
-          renamedCount.current = 0;
-          const snapshot = (cats: Category[]) => {
-            const rates: Record<string, number> = {};
-            for (const cat of cats) {
-              if (cat.kind !== "activity") continue;
-              for (const item of cat.items) {
-                const rate = commentRateFor(cat.activityId, item.masterId, item.deleteRate);
-                if (rate != null) rates[item.id] = rate;
-              }
-            }
-            overpackRates.current = rates;
-          };
-          snapshot(trip.categories);
-          void loadCatalogFromCloud().then(() => {
-            snapshot(trip.categories);
-            catalogTick((n) => n + 1);
-          });
-          track("edit_mode_enter", {
-            item_count_total: counts.total,
-            activity_count: trip.activities.length,
-          });
-          setEditing(true);
-          save((t) => ({
-            ...t,
-            categories: t.categories.map((c) => ({ ...c, collapsed: false })),
-          }));
-        },
-      },
-    ];
+  const enterEdit = () => {
+    collapseRef.current = Object.fromEntries(trip.categories.map((c) => [c.id, c.collapsed]));
+    editEnteredAt.current = Date.now();
+    renamedCount.current = 0;
+    lockedIds.current = new Set(
+      trip.categories.flatMap((c) => c.items.filter((i) => i.checked).map((i) => i.id))
+    );
+    const snapshot = (cats: Category[]) => {
+      const rates: Record<string, number> = {};
+      for (const cat of cats) {
+        if (cat.kind !== "activity") continue;
+        for (const item of cat.items) {
+          const rate = commentRateFor(cat.activityId, item.masterId, item.deleteRate);
+          if (rate != null) rates[item.id] = rate;
+        }
+      }
+      overpackRates.current = rates;
+    };
+    snapshot(trip.categories);
+    void loadCatalogFromCloud().then(() => {
+      snapshot(trip.categories);
+      catalogTick((n) => n + 1);
+    });
+    track("edit_mode_enter", {
+      item_count_total: counts.total,
+      activity_count: trip.activities.length,
+    });
+    setEditing(true);
+    setFilterOpen(false);
+    save((t) => ({
+      ...t,
+      categories: t.categories.map((c) => ({ ...c, collapsed: false })),
+    }));
+  };
+
+  const filterMenu = () => {
     if (filter !== "all") {
-      items.push({
-        label: "전체 아이템 보기",
-        onClick: () => {
-          track("filter_reset", { filter_type: filter });
-          setFilter("all");
+      return [
+        {
+          label: "전체 아이템 보기",
+          onClick: () => {
+            track("filter_reset", { filter_type: filter });
+            setFilter("all");
+          },
         },
-      });
-      return items;
+      ];
     }
     const expandAll = () =>
       save((t) => ({
         ...t,
         categories: t.categories.map((c) => ({ ...c, collapsed: false })),
       }));
-    items.push({
-      label: "미체크 아이템 모아보기",
-      onClick: () => {
-        track("filter_apply", {
-          filter_type: "unchecked",
-          result_count: trip.categories.reduce((n, c) => n + c.items.filter((i) => !i.checked).length, 0),
-        });
-        setFilter("unchecked");
-        expandAll();
+    return [
+      {
+        label: "미체크 아이템 모아보기",
+        onClick: () => {
+          track("filter_apply", {
+            filter_type: "unchecked",
+            result_count: trip.categories.reduce((n, c) => n + c.items.filter((i) => !i.checked).length, 0),
+          });
+          setFilter("unchecked");
+          expandAll();
+        },
       },
-    });
-    items.push({
-      label: "찜한 아이템 모아보기",
-      onClick: () => {
-        track("filter_apply", {
-          filter_type: "wished",
-          result_count: trip.categories.reduce((n, c) => n + c.items.filter((i) => i.wished).length, 0),
-        });
-        setFilter("wished");
-        expandAll();
+      {
+        label: "찜한 아이템 모아보기",
+        onClick: () => {
+          track("filter_apply", {
+            filter_type: "wished",
+            result_count: trip.categories.reduce((n, c) => n + c.items.filter((i) => i.wished).length, 0),
+          });
+          setFilter("wished");
+          expandAll();
+        },
       },
-    });
-    return items;
+    ];
   };
 
   const finishEdit = () => {
@@ -354,6 +356,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
     });
     setEditing(false);
     setRename(null);
+    lockedIds.current = new Set();
     save((t) => ({
       ...t,
       categories: t.categories.map((c) => ({
@@ -464,29 +467,41 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                 router.push("/trips");
               }
         }
-        kebab={
-          !editing
-            ? () => {
+        right={
+          <div className="topbar-actions">
+            <button
+              ref={filterRef}
+              className="icon-btn"
+              aria-label="필터"
+              onClick={() => {
                 setCatMenu(null);
-                setKebabOpen((v) => {
+                setFilterOpen((v) => {
                   if (!v) track("menu_open");
                   return !v;
                 });
-              }
-            : undefined
-        }
-        kebabActive={kebabOpen}
-        kebabRef={kebabRef}
-        right={
-          editing ? (
-            <button className="topbar-done" onClick={finishEdit}>
-              완료
+              }}
+            >
+              <IconFilter active={filter !== "all" || filterOpen} />
             </button>
-          ) : undefined
+            {editing ? (
+              <button className="topbar-done" onClick={finishEdit}>
+                완료
+              </button>
+            ) : (
+              <button className="icon-btn icon-btn--kebab" aria-label="편집" onClick={enterEdit}>
+                <IconEdit />
+              </button>
+            )}
+          </div>
         }
       />
-      {kebabOpen && kebabRef.current ? (
-        <Menu anchor={kebabRef.current} items={kebabItems()} onClose={() => setKebabOpen(false)} />
+      {filterOpen && filterRef.current ? (
+        <Menu
+          anchor={filterRef.current}
+          items={filterMenu()}
+          onClose={() => setFilterOpen(false)}
+          width={200}
+        />
       ) : null}
 
       <div className="shell-scroll" ref={scrollRef}>
@@ -505,7 +520,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
         <div className="reco-more">추천 아이템 모두 보기</div>
 
         {orderedCats.map((cat) => {
-          const items = cat.items.filter(visible);
+          const items = sortChecklistItems(cat.items.filter(visible));
           return (
             <section key={cat.id} data-cat-name={cat.name}>
               <div style={{ position: "relative" }}>
@@ -538,7 +553,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                       onClick={(e) => {
                         e.stopPropagation();
                         const el = e.currentTarget;
-                        setKebabOpen(false);
+                        setFilterOpen(false);
                         setCatMenu(catMenu?.id === cat.id ? null : { id: cat.id, anchor: el });
                       }}
                     >
@@ -559,6 +574,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                         : null;
                     const reason = pack ? null : item.reason;
                     const renaming = rename?.catId === cat.id && rename.itemId === item.id;
+                    const locked = editing && lockedIds.current.has(item.id);
                     return (
                       <div
                         className={`row${reason || pack ? " sub" : ""}`}
@@ -575,8 +591,19 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                         }}
                       >
                         <button
-                          className={`cbx${editing ? (item.selected ? " del" : "") : item.checked ? " on" : ""}`}
-                          aria-label={editing ? "삭제 선택" : "준비 완료"}
+                          className={`cbx${
+                            editing
+                              ? locked
+                                ? " locked"
+                                : item.selected
+                                  ? " del"
+                                  : ""
+                              : item.checked
+                                ? " on"
+                                : ""
+                          }`}
+                          aria-label={editing ? (locked ? "이미 챙긴 항목" : "삭제 선택") : "준비 완료"}
+                          disabled={locked}
                           onClick={(e) => {
                             e.stopPropagation();
                             if (editing) {
@@ -586,7 +613,9 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                             toggleChecked(cat, item);
                           }}
                         >
-                          {(editing && item.selected) || (!editing && item.checked) ? <IconCheck /> : null}
+                          {(editing && (item.selected || locked)) || (!editing && item.checked) ? (
+                            <IconCheck />
+                          ) : null}
                         </button>
                         <div className="body">
                           {renaming ? (
@@ -690,7 +719,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                       </div>
                     );
                   })}
-                  {editing ? null : (
+                  {editing || (filter !== "all" && items.length === 0) ? null : (
                     <div className="row" data-add-row>
                       <span className="cbx add" />
                       <div className="body">
@@ -886,6 +915,12 @@ export function ChecklistView({ tripId }: { tripId: string }) {
         />
       ) : null}
 
+      {!editing && !trip.packGuideSeen ? (
+        <PackGuideSheet
+          onClose={() => updateTrip(trip.id, (t) => ({ ...t, packGuideSeen: true }))}
+        />
+      ) : null}
+
       {toast ? (
         <Toast
           message={toast.msg}
@@ -903,7 +938,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
 export function unusedPresetNames(trip: Trip) {
   const alias: Record<string, string> = { 필수: "필수 준비물", 기본: "기본 짐싸기" };
   const used = new Set(trip.categories.map((c) => alias[c.name.trim()] ?? c.name.trim()));
-  return PRESET_CATEGORY_NAMES.filter((n) => n !== "나만의 준비물" && !used.has(n));
+  return livePresetCategoryNames().filter((n) => n !== "나만의 준비물" && !used.has(n));
 }
 
 export function addCategoryToTrip(

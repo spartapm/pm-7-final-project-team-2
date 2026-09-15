@@ -7,17 +7,7 @@ export type CompanionId =
   | "child"
   | "parent"
   | "pet";
-export type ActivityId =
-  | "photo"
-  | "camping"
-  | "hiking"
-  | "golf"
-  | "swim"
-  | "spa"
-  | "winter"
-  | "themepark"
-  | "festival"
-  | "temple";
+export type ActivityId = string;
 export type WeatherId = "sunny" | "cloudy" | "windy" | "rain" | "snow";
 export type TempBandId = "cold" | "mild" | "hot";
 export type CategoryKind = "essential" | "base" | "activity" | "personal" | "custom";
@@ -69,6 +59,7 @@ export type Trip = {
   categories: Category[];
   remindersShown: string[];
   seen?: boolean;
+  packGuideSeen?: boolean;
 };
 
 export type OnboardingDraft = {

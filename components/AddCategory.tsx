@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { subscribeCatalog } from "@/lib/liveCatalog";
 import { useStore } from "@/lib/store";
 import { track } from "@/lib/analytics";
 import { addCategoryToTrip, unusedPresetNames } from "./ChecklistView";
@@ -15,10 +16,12 @@ export function AddCategory({ tripId }: { tripId: string }) {
   const [dialog, setDialog] = useState(false);
   const [name, setName] = useState("");
   const [toast, setToast] = useState<string | null>(null);
+  const [catalogTick, setCatalogTick] = useState(0);
+  useEffect(() => subscribeCatalog(() => setCatalogTick((n) => n + 1)), []);
 
   const unused = useMemo(
     () => (trip ? unusedPresetNames(trip) : []),
-    [trip]
+    [trip, catalogTick]
   );
   const dup = Boolean(trip && name.trim() && trip.categories.some((c) => c.name === name.trim()));
   const invalid = !name.trim() || name.length > 30 || dup;

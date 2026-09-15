@@ -7,6 +7,8 @@ export type SpecItem = {
   purchasable: boolean;
   linkCount: number;
   linkNote?: string;
+  itemGroup?: string;
+  itemOrder?: number;
 };
 
 export type SpecLink = {

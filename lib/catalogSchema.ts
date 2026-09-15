@@ -55,12 +55,29 @@ create table if not exists public.item_stats (
   primary key (activity_id, item_id)
 );
 
+alter table public.catalog_items add column if not exists item_group text;
+alter table public.catalog_items add column if not exists item_order int;
+
+create table if not exists public.catalog_activities (
+  activity_id text primary key,
+  activity_name text not null,
+  activity_category_name text not null
+);
+
+create table if not exists public.catalog_group (
+  group_id int primary key,
+  group_name text not null unique,
+  group_order int not null default 0
+);
+
 alter table public.accounts enable row level security;
 alter table public.trips enable row level security;
 alter table public.catalog_items enable row level security;
 alter table public.catalog_links enable row level security;
 alter table public.catalog_rules enable row level security;
 alter table public.item_stats enable row level security;
+alter table public.catalog_activities enable row level security;
+alter table public.catalog_group enable row level security;
 
 drop policy if exists "accounts open" on public.accounts;
 create policy "accounts open" on public.accounts for all using (true) with check (true);
@@ -74,6 +91,10 @@ drop policy if exists "catalog_rules open" on public.catalog_rules;
 create policy "catalog_rules open" on public.catalog_rules for all using (true) with check (true);
 drop policy if exists "item_stats open" on public.item_stats;
 create policy "item_stats open" on public.item_stats for all using (true) with check (true);
+drop policy if exists "catalog_activities open" on public.catalog_activities;
+create policy "catalog_activities open" on public.catalog_activities for all using (true) with check (true);
+drop policy if exists "catalog_group open" on public.catalog_group;
+create policy "catalog_group open" on public.catalog_group for all using (true) with check (true);
 
 grant all on public.accounts to anon, authenticated, service_role;
 grant all on public.trips to anon, authenticated, service_role;
@@ -81,5 +102,7 @@ grant all on public.catalog_items to anon, authenticated, service_role;
 grant all on public.catalog_links to anon, authenticated, service_role;
 grant all on public.catalog_rules to anon, authenticated, service_role;
 grant all on public.item_stats to anon, authenticated, service_role;
+grant all on public.catalog_activities to anon, authenticated, service_role;
+grant all on public.catalog_group to anon, authenticated, service_role;
 grant usage, select on all sequences in schema public to anon, authenticated, service_role;
 `;

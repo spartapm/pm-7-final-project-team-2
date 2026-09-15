@@ -2,9 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ACTIVITIES, COMPANIONS, COUNTRIES } from "@/lib/catalog";
+import { COMPANIONS, COUNTRIES } from "@/lib/catalog";
 import { rangesOverlap } from "@/lib/dates";
 import { setEntry, track } from "@/lib/analytics";
+import { liveActivities, subscribeCatalog } from "@/lib/liveCatalog";
 import { useStore } from "@/lib/store";
 import type { ActivityId, CompanionId, CountryId } from "@/lib/types";
 import { PhoneShell } from "./icons";
@@ -20,6 +21,8 @@ export function Onboarding({ step }: { step: 1 | 2 | 3 }) {
   const [showLoad, setShowLoad] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [dupOpen, setDupOpen] = useState(false);
+  const [, catalogTick] = useState(0);
+  useEffect(() => subscribeCatalog(() => catalogTick((n) => n + 1)), []);
 
   useEffect(() => {
     if (!busy) {
@@ -193,7 +196,7 @@ export function Onboarding({ step }: { step: 1 | 2 | 3 }) {
     });
   };
 
-  const ready = draft.companions.length > 0 && draft.activities.length > 0;
+  const ready = draft.companions.length > 0;
 
   return (
     <PhoneShell>
@@ -228,7 +231,7 @@ export function Onboarding({ step }: { step: 1 | 2 | 3 }) {
             해당하는 활동을 여러 개 선택할 수 있어요. 선택한 활동에 맞는 준비물이 체크리스트에 함께 담겨요.
           </p>
           <div className="chips">
-            {ACTIVITIES.map((a) => (
+            {liveActivities().map((a) => (
               <Chip
                 key={a.id}
                 label={a.name}
