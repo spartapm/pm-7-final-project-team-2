@@ -64,6 +64,8 @@ create table if not exists public.catalog_activities (
   activity_category_name text not null
 );
 
+alter table public.catalog_activities add column if not exists activity_order int not null default 0;
+
 create table if not exists public.catalog_group (
   group_id int primary key,
   group_name text not null unique,

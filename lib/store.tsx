@@ -306,31 +306,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return {
         ...s,
         personalItems: [...s.personalItems, { id: catalogId, name }],
-        trips: s.trips.map((trip) =>
-          tripStatus(trip) === "done"
-            ? trip
-            : {
-                ...trip,
-                categories: trip.categories.map((c) =>
-                  isPersonalCat(c)
-                    ? {
-                        ...c,
-                        items: [
-                          ...c.items,
-                          {
-                            id: uid("it"),
-                            personalId: catalogId,
-                            name,
-                            checked: false,
-                            wished: false,
-                            custom: true,
-                          },
-                        ],
-                      }
-                    : c
-                ),
-              }
-        ),
+        trips: s.trips.map((trip) => ({
+          ...trip,
+          categories: trip.categories.map((c) =>
+            isPersonalCat(c)
+              ? {
+                  ...c,
+                  items: [
+                    ...c.items,
+                    {
+                      id: uid("it"),
+                      personalId: catalogId,
+                      name,
+                      checked: false,
+                      wished: false,
+                      custom: true,
+                    },
+                  ],
+                }
+              : c
+          ),
+        })),
       };
     });
   }, []);

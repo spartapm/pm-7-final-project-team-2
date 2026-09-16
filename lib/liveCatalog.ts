@@ -16,6 +16,7 @@ export type CatalogActivity = {
   id: string;
   name: string;
   categoryName: string;
+  order: number;
 };
 
 export type CatalogGroup = {
@@ -33,10 +34,11 @@ type Live = {
   groups: CatalogGroup[];
 };
 
-export const DEFAULT_ACTIVITIES: CatalogActivity[] = ACTIVITIES.map((a) => ({
+export const DEFAULT_ACTIVITIES: CatalogActivity[] = ACTIVITIES.map((a, i) => ({
   id: a.id,
   name: a.name,
   categoryName: CATEGORY_META[a.id]?.name ?? a.name,
+  order: i + 1,
 }));
 
 export const DEFAULT_GROUPS: CatalogGroup[] = [
@@ -81,7 +83,12 @@ export function setLiveStats(stats: StatRow[]) {
 
 export function liveActivities() {
   const list = getLiveCatalog().activities;
-  return list.length ? list : DEFAULT_ACTIVITIES;
+  const src = list.length ? list : DEFAULT_ACTIVITIES;
+  return [...src].sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.id.localeCompare(b.id));
+}
+
+export function activityOrder(id: string) {
+  return liveActivities().find((a) => a.id === id)?.order ?? 99;
 }
 
 export function liveGroups() {
@@ -103,12 +110,12 @@ export function liveCategoryMeta(): Record<
   { name: string; kind: CategoryKind; hint?: string; matchPriority: number; displayOrder: number }
 > {
   const meta = { ...CATEGORY_META };
-  liveActivities().forEach((a, i) => {
+  liveActivities().forEach((a) => {
     meta[a.id] = {
       name: a.categoryName || a.name,
       kind: "activity",
-      matchPriority: CATEGORY_META[a.id]?.matchPriority ?? 20 + i,
-      displayOrder: CATEGORY_META[a.id]?.displayOrder ?? 20 + i,
+      matchPriority: CATEGORY_META[a.id]?.matchPriority ?? 20,
+      displayOrder: 20 + (a.order ?? 0),
     };
   });
   return meta;
@@ -166,7 +173,7 @@ export async function loadCatalogFromCloud() {
       "id, table_name, item_id, reason, country_id, companion_id, activity_id, weather_id, temp_band_id"
     ),
     sb.from("item_stats").select("activity_id, item_id, exposure_count, delete_count, comment_shown"),
-    sb.from("catalog_activities").select("activity_id, activity_name, activity_category_name"),
+    sb.from("catalog_activities").select("activity_id, activity_name, activity_category_name, activity_order"),
     sb.from("catalog_group").select("group_id, group_name, group_order"),
   ]);
 
@@ -179,6 +186,13 @@ export async function loadCatalogFromCloud() {
     itemRows = retry.data;
   }
   if (!itemRows?.length) return getLiveCatalog();
+
+  let actRows: { activity_id: string; activity_name: string; activity_category_name: string; activity_order?: number }[] | null =
+    actRes.data;
+  if (actRes.error) {
+    const retry = await sb.from("catalog_activities").select("activity_id, activity_name, activity_category_name");
+    actRows = retry.error || !retry.data ? null : retry.data;
+  }
 
   const items = mapItems(itemRows);
   live = {
@@ -209,12 +223,13 @@ export async function loadCatalogFromCloud() {
       deletes: r.delete_count ?? 0,
       shown: Boolean(r.comment_shown),
     })),
-    activities: actRes.error || !actRes.data?.length
+    activities: !actRows?.length
       ? DEFAULT_ACTIVITIES
-      : actRes.data.map((r) => ({
+      : actRows.map((r, i) => ({
           id: r.activity_id,
           name: r.activity_name,
           categoryName: r.activity_category_name || r.activity_name,
+          order: r.activity_order ?? DEFAULT_ACTIVITIES.find((a) => a.id === r.activity_id)?.order ?? i + 1,
         })),
     groups: groupRes.error || !groupRes.data?.length
       ? DEFAULT_GROUPS
@@ -264,6 +279,7 @@ export async function seedCatalog() {
     activity_id: a.id,
     activity_name: a.name,
     activity_category_name: a.categoryName,
+    activity_order: a.order,
   }));
   const groups = DEFAULT_GROUPS.map((g) => ({
     group_id: g.id,

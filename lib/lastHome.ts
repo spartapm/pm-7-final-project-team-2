@@ -27,3 +27,21 @@ export function getLastHome() {
     return null;
   }
 }
+
+const PACK_GUIDE_KEY = "chaeggyeo:packGuideSeen";
+
+export function hasSeenPackGuide() {
+  try {
+    return localStorage.getItem(PACK_GUIDE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function markPackGuideSeen() {
+  try {
+    localStorage.setItem(PACK_GUIDE_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+}

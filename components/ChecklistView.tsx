@@ -15,7 +15,7 @@ import { categoryFromPreset, emptyCustomCategory } from "@/lib/generate";
 import { commentRateFor, hasInfoIcon, overpackCopy } from "@/lib/itemMeta";
 import { sortChecklistItems } from "@/lib/itemSort";
 import { loadCatalogFromCloud, livePresetCategoryNames, subscribeCatalog } from "@/lib/liveCatalog";
-import { setLastHome } from "@/lib/lastHome";
+import { hasSeenPackGuide, markPackGuideSeen, setLastHome } from "@/lib/lastHome";
 import { newItem, patchCategory, patchItem, useStore } from "@/lib/store";
 import type { Category, ChecklistItem, FilterMode, Trip } from "@/lib/types";
 import {
@@ -137,6 +137,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
   const [counterOn, setCounterOn] = useState(true);
   const [, catalogTick] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [packGuide, setPackGuide] = useState(false);
 
   const selectedCount = useMemo(
     () => trip?.categories.reduce((n, c) => n + c.items.filter((i) => i.selected).length, 0) ?? 0,
@@ -218,6 +219,14 @@ export function ChecklistView({ tripId }: { tripId: string }) {
   useEffect(() => {
     if (rename) requestAnimationFrame(() => renameRef.current?.focus());
   }, [rename]);
+
+  useEffect(() => {
+    if (!trip || editing) {
+      setPackGuide(false);
+      return;
+    }
+    setPackGuide(!hasSeenPackGuide());
+  }, [trip?.id, editing, trip]);
 
   const orderedCats = useMemo(() => {
     const cats = trip?.categories ?? [];
@@ -483,15 +492,17 @@ export function ChecklistView({ tripId }: { tripId: string }) {
             >
               <IconFilter active={filter !== "all" || filterOpen} />
             </button>
-            {editing ? (
-              <button className="topbar-done" onClick={finishEdit}>
-                완료
-              </button>
-            ) : (
-              <button className="icon-btn icon-btn--kebab" aria-label="편집" onClick={enterEdit}>
-                <IconEdit />
-              </button>
-            )}
+            <div className="topbar-end">
+              {editing ? (
+                <button className="topbar-done" onClick={finishEdit}>
+                  완료
+                </button>
+              ) : (
+                <button className="icon-btn" aria-label="편집" onClick={enterEdit}>
+                  <IconEdit />
+                </button>
+              )}
+            </div>
           </div>
         }
       />
@@ -719,7 +730,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                       </div>
                     );
                   })}
-                  {editing || (filter !== "all" && items.length === 0) ? null : (
+                  {editing ? null : (
                     <div className="row" data-add-row>
                       <span className="cbx add" />
                       <div className="body">
@@ -730,7 +741,6 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                             autoFocus
                             value={addText}
                             placeholder="직접 아이템을 입력해주세요"
-                            maxLength={30}
                             enterKeyHint="next"
                             onBeforeInput={(e) => {
                               const ne = e.nativeEvent as InputEvent;
@@ -915,9 +925,12 @@ export function ChecklistView({ tripId }: { tripId: string }) {
         />
       ) : null}
 
-      {!editing && !trip.packGuideSeen ? (
+      {!editing && packGuide ? (
         <PackGuideSheet
-          onClose={() => updateTrip(trip.id, (t) => ({ ...t, packGuideSeen: true }))}
+          onClose={() => {
+            markPackGuideSeen();
+            setPackGuide(false);
+          }}
         />
       ) : null}
 

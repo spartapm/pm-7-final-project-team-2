@@ -311,10 +311,12 @@ export function PackGuideSheet({ onClose }: { onClose: () => void }) {
   return (
     <div className="dim" onClick={onClose}>
       <div className="sheet pack-sheet" onClick={(e) => e.stopPropagation()}>
-        <img src="/bottom_sheet_img.svg" alt="" />
+        <div className="pack-sheet-art">
+          <img src="/bottom_sheet_img.svg" alt="" width={247} height={124} />
+        </div>
         <h2>준비물은 필요한 것보다 더 넉넉하게 담아드렸어요</h2>
         <p>필요없는 건 지워서 나만의 체크리스트를 완성해요</p>
-        <button className="btn btn-primary" onClick={onClose}>
+        <button className="pack-sheet-btn" onClick={onClose}>
           확인
         </button>
       </div>

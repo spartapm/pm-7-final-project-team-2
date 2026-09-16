@@ -162,7 +162,7 @@ export default function AdminPage() {
               링크 파일은 기존 링크를 지우고 갈아끼웁니다.
             </p>
             <p style={{ margin: 0 }}>
-              아래 표에서 검색·필터 후 칸을 고치고 저장하세요. 7차부터 활동·그룹 탭이 있습니다. 체크리스트는 새로고침해야 보입니다.
+              아래 표에서 검색·필터 후 칸을 고치고 저장하세요. 활동 탭의 order가 A-03·B-01·체크리스트 카테고리 순서입니다.
             </p>
           </div>
         </details>
@@ -656,12 +656,12 @@ function RuleRow({
 function ActivitiesPanel({ onSaved }: { onSaved: (m: string) => void }) {
   const live = getLiveCatalog();
   const [q, setQ] = useState("");
-  const [draft, setDraft] = useState({ id: "", name: "", categoryName: "" });
+  const [draft, setDraft] = useState({ id: "", name: "", categoryName: "", order: "" });
   const [busy, setBusy] = useState(false);
 
   const list = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    const rows = live.activities;
+    const rows = liveActivities();
     if (!needle) return rows;
     return rows.filter((a) =>
       `${a.id} ${a.name} ${a.categoryName}`.toLowerCase().includes(needle)
@@ -672,6 +672,7 @@ function ActivitiesPanel({ onSaved }: { onSaved: (m: string) => void }) {
     const id = draft.id.trim();
     const name = draft.name.trim();
     const categoryName = draft.categoryName.trim() || name;
+    const order = Number(draft.order);
     if (!id || !name) {
       onSaved("activity_id와 activity_name을 넣어 주세요.");
       return;
@@ -682,17 +683,21 @@ function ActivitiesPanel({ onSaved }: { onSaved: (m: string) => void }) {
       return;
     }
     setBusy(true);
+    const nextOrder = Number.isFinite(order) && draft.order.trim()
+      ? order
+      : Math.max(0, ...live.activities.map((a) => a.order)) + 1;
     const res = await sb.from("catalog_activities").upsert({
       activity_id: id,
       activity_name: name,
       activity_category_name: categoryName,
+      activity_order: nextOrder,
     });
     setBusy(false);
     if (res.error) {
       onSaved(`${res.error.message} (활동 테이블 SQL을 먼저 실행하세요)`);
       return;
     }
-    setDraft({ id: "", name: "", categoryName: "" });
+    setDraft({ id: "", name: "", categoryName: "", order: "" });
     await loadCatalogFromCloud();
     onSaved(`${name} 활동을 저장했습니다.`);
   };
@@ -700,8 +705,8 @@ function ActivitiesPanel({ onSaved }: { onSaved: (m: string) => void }) {
   return (
     <div style={panel}>
       <p style={hint}>
-        A-03 칩은 activity_name, 체크리스트·카테고리 추가는 activity_category_name입니다. 새 행을 넣으면 활동 칩과
-        카테고리 목록에 바로 뜹니다. 아이템이 없는 활동도 카테고리 칸은 만들어집니다.
+        A-03 칩·B-01 태그·체크리스트 카테고리·카테고리 추가 목록의 활동 순서는 activity_order입니다. 숫자가 작을수록
+        앞에 옵니다. 새 행을 넣으면 활동 칩과 카테고리 목록에 바로 뜹니다. 아이템이 없는 활동도 카테고리 칸은 만들어집니다.
       </p>
       <Toolbar q={q} onQ={setQ} placeholder="id, 이름 검색" count={`${list.length} / ${live.activities.length}`} />
       <div
@@ -731,6 +736,12 @@ function ActivitiesPanel({ onSaved }: { onSaved: (m: string) => void }) {
           onChange={(e) => setDraft({ ...draft, categoryName: e.target.value })}
           placeholder="activity_category_name"
         />
+        <input
+          style={{ ...cellInput, width: 80 }}
+          value={draft.order}
+          onChange={(e) => setDraft({ ...draft, order: e.target.value })}
+          placeholder="order"
+        />
         <button style={btnSm} disabled={busy} onClick={() => void add()}>
           추가
         </button>
@@ -742,12 +753,20 @@ function ActivitiesPanel({ onSaved }: { onSaved: (m: string) => void }) {
               <th style={{ ...th, width: 140 }}>activity_id</th>
               <th style={th}>activity_name</th>
               <th style={th}>activity_category_name</th>
+              <th style={{ ...th, width: 80 }}>order</th>
               <th style={{ ...th, width: 120 }} />
             </tr>
           </thead>
           <tbody>
             {list.map((a) => (
-              <ActivityRow key={a.id} id={a.id} name={a.name} categoryName={a.categoryName} onSaved={onSaved} />
+              <ActivityRow
+                key={a.id}
+                id={a.id}
+                name={a.name}
+                categoryName={a.categoryName}
+                order={a.order}
+                onSaved={onSaved}
+              />
             ))}
           </tbody>
         </table>
@@ -760,21 +779,25 @@ function ActivityRow({
   id,
   name,
   categoryName,
+  order,
   onSaved,
 }: {
   id: string;
   name: string;
   categoryName: string;
+  order: number;
   onSaved: (m: string) => void;
 }) {
   const [n, setN] = useState(name);
   const [c, setC] = useState(categoryName);
+  const [o, setO] = useState(String(order));
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     setN(name);
     setC(categoryName);
-  }, [name, categoryName]);
-  const dirty = n !== name || c !== categoryName;
+    setO(String(order));
+  }, [name, categoryName, order]);
+  const dirty = n !== name || c !== categoryName || o !== String(order);
 
   return (
     <tr style={tr}>
@@ -784,6 +807,9 @@ function ActivityRow({
       </td>
       <td style={td}>
         <input style={cellInputWide} value={c} onChange={(e) => setC(e.target.value)} />
+      </td>
+      <td style={td}>
+        <input style={{ ...cellInput, width: 64 }} value={o} onChange={(e) => setO(e.target.value)} />
       </td>
       <td style={td}>
         <button
@@ -801,6 +827,7 @@ function ActivityRow({
               .update({
                 activity_name: n.trim(),
                 activity_category_name: c.trim() || n.trim(),
+                activity_order: Number(o) || 0,
               })
               .eq("activity_id", id);
             setBusy(false);

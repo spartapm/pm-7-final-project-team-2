@@ -6,7 +6,7 @@ import { countryName } from "@/lib/catalog";
 import { daysUntil, sortTrips, statusChip, tripPeriodLabel, tripStatus } from "@/lib/dates";
 import { consumeEntry, track } from "@/lib/analytics";
 import { setLastHome } from "@/lib/lastHome";
-import { liveActivityName } from "@/lib/liveCatalog";
+import { liveActivityName, activityOrder } from "@/lib/liveCatalog";
 import { pushAccount } from "@/lib/cloud";
 import { useStore } from "@/lib/store";
 import { IconMeatball, IconPlusFab, PhoneShell } from "./icons";
@@ -109,7 +109,9 @@ export function TripHome() {
                         </div>
                         <div className="when">{tripPeriodLabel(trip.startDate, trip.endDate)}</div>
                         <div className="tags">
-                          {trip.activities.map((a) => (
+                          {[...trip.activities]
+                            .sort((a, b) => activityOrder(a) - activityOrder(b))
+                            .map((a) => (
                             <span className="tag" key={a}>
                               {liveActivityName(a)}
                             </span>
