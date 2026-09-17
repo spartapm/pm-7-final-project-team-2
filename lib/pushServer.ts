@@ -72,7 +72,8 @@ export async function subscriptionsFor(accountId?: string) {
 async function markShown(trip: Trip, kind: ReminderKind) {
   const sb = getSupabase();
   if (!sb) return;
-  const remindersShown = trip.remindersShown.includes(kind) ? trip.remindersShown : [...trip.remindersShown, kind];
+  const shown = trip.remindersShown ?? [];
+  const remindersShown = shown.includes(kind) ? shown : [...shown, kind];
   const payload: Trip = { ...trip, remindersShown };
   await sb.from("trips").update({ payload, updated_at: new Date().toISOString() }).eq("id", trip.id);
   trip.remindersShown = remindersShown;

@@ -5,8 +5,8 @@ import { addDays, atHour } from "./dates";
 export type ReminderKind = "d7" | "d3" | "d1";
 
 export function cartCount(trip: Trip) {
-  return trip.categories.reduce(
-    (n, c) => n + c.items.filter((i) => i.wished && isPurchasable(i.masterId, i.name)).length,
+  return (trip.categories ?? []).reduce(
+    (n, c) => n + (c.items ?? []).filter((i) => i.wished && isPurchasable(i.masterId, i.name)).length,
     0
   );
 }
@@ -47,7 +47,7 @@ export function reminderSchedule(trip: Trip) {
 export function dueReminders(trip: Trip, now = new Date()) {
   return reminderSchedule(trip).filter((r) => {
     if (r.at.getTime() > now.getTime()) return false;
-    if (trip.remindersShown.includes(r.kind)) return false;
+    if ((trip.remindersShown ?? []).includes(r.kind)) return false;
     if (r.at.getTime() < new Date(trip.createdAt).getTime()) return false;
     return true;
   });
@@ -61,6 +61,7 @@ function kstParts(now = new Date()) {
       month: "2-digit",
       day: "2-digit",
       hour: "2-digit",
+      hour12: false,
       hourCycle: "h23",
     })
       .formatToParts(now)
@@ -83,7 +84,7 @@ export function scheduledKindNow(trip: Trip, now = new Date(), ignoreHour = fals
   const days = daysUntilKst(trip.startDate, now);
   const kind: ReminderKind | null = days === 7 ? "d7" : days === 3 ? "d3" : days === 1 ? "d1" : null;
   if (!kind) return null;
-  if (trip.remindersShown.includes(kind)) return null;
+  if ((trip.remindersShown ?? []).includes(kind)) return null;
   if (new Date(trip.createdAt).getTime() > now.getTime()) return null;
   return kind;
 }

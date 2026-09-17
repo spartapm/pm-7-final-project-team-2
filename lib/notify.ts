@@ -23,10 +23,20 @@ async function vapidPublicKey() {
   return json.publicKey || "";
 }
 
+let subLock: Promise<void> | null = null;
+
 export async function ensurePushSubscription(accountId: string) {
   if (typeof window === "undefined") return;
   if (!accountId || accountId === "pending") return;
   if (isIosWeb()) return;
+  if (subLock) return subLock;
+  subLock = subscribePush(accountId).finally(() => {
+    subLock = null;
+  });
+  return subLock;
+}
+
+async function subscribePush(accountId: string) {
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
   if (!("Notification" in window) || Notification.permission !== "granted") return;
   const publicKey = await vapidPublicKey();
