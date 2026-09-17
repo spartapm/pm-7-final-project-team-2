@@ -34,7 +34,6 @@ export function GenerateSequence({
 }) {
   const [step, setStep] = useState(0);
   const [done, setDone] = useState(false);
-  const [swap, setSwap] = useState(0);
   const started = useMemo(() => performance.now(), []);
 
   const country = countryName(countryId);
@@ -62,12 +61,7 @@ export function GenerateSequence({
     const timers: number[] = [];
     steps.forEach((_, i) => {
       if (i === 0) return;
-      timers.push(
-        window.setTimeout(() => {
-          setStep(i);
-          setSwap((n) => n + 1);
-        }, i * 1000)
-      );
+      timers.push(window.setTimeout(() => setStep(i), i * 1000));
     });
     return () => timers.forEach((id) => window.clearTimeout(id));
   }, [steps]);
@@ -98,19 +92,17 @@ export function GenerateSequence({
         ))}
       </div>
       <div className="gen-seq-stage">
-        <div key={swap} className="gen-seq-swap">
-          <div className="gen-seq-ico">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-              <path d={cur.d} />
-            </svg>
-          </div>
-          <div className="gen-seq-copy" aria-live="polite">
-            <div className="ttl">{cur.t}</div>
-            <div className="val">{cur.v}</div>
-          </div>
+        <div className="gen-seq-ico">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+            <path d={cur.d} />
+          </svg>
+        </div>
+        <div key={step} className="gen-seq-copy">
+          <div className="ttl">{cur.t}</div>
+          <div className="val">{cur.v}</div>
         </div>
       </div>
-      <div className={`gen-seq-fin${done ? " show" : ""}`} aria-hidden={!done}>
+      <div className={`gen-seq-fin${done ? " show" : ""}`}>
         <div className="gen-seq-big">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
             <path d="M4 12.5 9.5 18 20 7" />
