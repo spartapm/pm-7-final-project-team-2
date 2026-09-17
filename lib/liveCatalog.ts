@@ -49,6 +49,27 @@ export const DEFAULT_GROUPS: CatalogGroup[] = [
 
 let live: Live | null = null;
 const listeners = new Set<() => void>();
+const ACTIVITY_CACHE_KEY = "chaeggyeo:activities:v1";
+
+function readActivityCache(): CatalogActivity[] | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const parsed = JSON.parse(localStorage.getItem(ACTIVITY_CACHE_KEY) ?? "");
+    if (!Array.isArray(parsed) || !parsed.length) return null;
+    return parsed as CatalogActivity[];
+  } catch {
+    return null;
+  }
+}
+
+function writeActivityCache(activities: CatalogActivity[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(ACTIVITY_CACHE_KEY, JSON.stringify(activities));
+  } catch {
+    /* ignore */
+  }
+}
 
 function fallback(): Live {
   return {
@@ -62,7 +83,12 @@ function fallback(): Live {
 }
 
 export function getLiveCatalog(): Live {
-  return live ?? fallback();
+  if (!live) {
+    const cached = readActivityCache();
+    live = fallback();
+    if (cached?.length) live = { ...live, activities: cached };
+  }
+  return live;
 }
 
 export function subscribeCatalog(fn: () => void) {
@@ -88,7 +114,9 @@ export function liveActivities() {
 }
 
 export function activityOrder(id: string) {
-  return liveActivities().find((a) => a.id === id)?.order ?? 99;
+  const found = liveActivities().find((a) => a.id === id);
+  if (found?.order != null) return found.order;
+  return DEFAULT_ACTIVITIES.find((a) => a.id === id)?.order ?? CATEGORY_META[id]?.displayOrder ?? 99;
 }
 
 export function liveGroups() {
@@ -97,7 +125,12 @@ export function liveGroups() {
 }
 
 export function liveActivityName(id: string) {
-  return liveActivities().find((a) => a.id === id)?.name ?? id;
+  return (
+    liveActivities().find((a) => a.id === id)?.name ??
+    CATEGORY_META[id]?.name ??
+    ACTIVITIES.find((a) => a.id === id)?.name ??
+    id
+  );
 }
 
 export function liveActivityCategoryName(id: string) {
@@ -225,12 +258,20 @@ export async function loadCatalogFromCloud() {
     })),
     activities: !actRows?.length
       ? DEFAULT_ACTIVITIES
-      : actRows.map((r, i) => ({
-          id: r.activity_id,
-          name: r.activity_name,
-          categoryName: r.activity_category_name || r.activity_name,
-          order: r.activity_order ?? DEFAULT_ACTIVITIES.find((a) => a.id === r.activity_id)?.order ?? i + 1,
-        })),
+      : actRows.map((r, i) => {
+          const korean =
+            r.activity_name && r.activity_name !== r.activity_id
+              ? r.activity_name
+              : CATEGORY_META[r.activity_id]?.name ??
+                ACTIVITIES.find((a) => a.id === r.activity_id)?.name ??
+                r.activity_name;
+          return {
+            id: r.activity_id,
+            name: korean,
+            categoryName: r.activity_category_name || korean,
+            order: r.activity_order ?? DEFAULT_ACTIVITIES.find((a) => a.id === r.activity_id)?.order ?? i + 1,
+          };
+        }),
     groups: groupRes.error || !groupRes.data?.length
       ? DEFAULT_GROUPS
       : groupRes.data
@@ -241,6 +282,7 @@ export async function loadCatalogFromCloud() {
           }))
           .sort((a, b) => a.order - b.order),
   };
+  writeActivityCache(live.activities);
   emit();
   return live;
 }

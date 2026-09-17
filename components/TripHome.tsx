@@ -6,7 +6,7 @@ import { countryName } from "@/lib/catalog";
 import { daysUntil, sortTrips, statusChip, tripPeriodLabel, tripStatus } from "@/lib/dates";
 import { consumeEntry, track } from "@/lib/analytics";
 import { setLastHome } from "@/lib/lastHome";
-import { liveActivityName, activityOrder } from "@/lib/liveCatalog";
+import { liveActivityName, activityOrder, subscribeCatalog } from "@/lib/liveCatalog";
 import { pushAccount } from "@/lib/cloud";
 import { askPushOnHome } from "@/lib/notify";
 import { useStore } from "@/lib/store";
@@ -18,6 +18,7 @@ const SHARE_TIP_KEY = "chaeggyeo:shareTip";
 export function TripHome() {
   const router = useRouter();
   const { trips, deleteTrip, accountId, hydrated, personalItems } = useStore();
+  const [, catalogTick] = useState(0);
   const sorted = useMemo(() => sortTrips(trips), [trips]);
   const [menu, setMenu] = useState<{ tripId: string; anchor: HTMLElement } | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -27,6 +28,8 @@ export function TripHome() {
   useEffect(() => {
     setLastHome("/trips");
   }, []);
+
+  useEffect(() => subscribeCatalog(() => catalogTick((n) => n + 1)), []);
 
   useEffect(() => {
     if (!hydrated) return;

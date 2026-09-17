@@ -24,7 +24,7 @@
 }
 
 * { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; color-scheme: light; }
 body {
   background: var(--letterbox);
   color: var(--text-1);
@@ -1033,16 +1033,6 @@ a { color: inherit; text-decoration: none; }
 @keyframes gen-seq-pop {
   from { transform: scale(0.4); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
-}
-@media (prefers-color-scheme: dark) {
-  .gen-seq,
-  .gen-seq-fin { background: #1b1e24; color: #eceef1; }
-  .gen-seq-dots i { background: #333941; }
-  .gen-seq-ico { background: #152a4d; }
-  .gen-seq-copy .ttl,
-  .gen-seq-fin b { color: #eceef1; }
-  .gen-seq-copy .val,
-  .gen-seq-fin span { color: #8c939d; }
 }
 
 .loading-dim {

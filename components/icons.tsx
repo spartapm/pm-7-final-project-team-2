@@ -172,8 +172,18 @@ export function IconPencil({ color = "var(--text-3)" }: { color?: string }) {
   );
 }
 
-export function IconFilter({ active: _active }: { active?: boolean }) {
-  return <img src="/filter.svg" alt="" width={22} height={16} />;
+export function IconFilter({ active }: { active?: boolean }) {
+  return (
+    <Svg width="22" height="16" viewBox="0 0 22 16">
+      <path
+        d="M6.92857 14.5H15.0714M4.21429 8H11H17.7857M1.5 1.5H20.5"
+        stroke={active ? "#368FFF" : "#3A3A3A"}
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
 }
 
 export function IconEdit() {
@@ -190,7 +200,7 @@ export function IconXSmall() {
 
 export function IconInfo() {
   return (
-    <Svg width="16" height="16" viewBox="0 0 16 16">
+    <Svg width="20" height="20" viewBox="0 0 16 16">
       <circle cx="8" cy="8" r="6.5" stroke="var(--text-3)" strokeWidth="1.4" />
       <path d="M8 7v4.2M8 4.8v.2" stroke="var(--text-3)" strokeWidth="1.4" strokeLinecap="round" />
     </Svg>

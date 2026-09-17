@@ -523,7 +523,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                 });
               }}
             >
-              <IconFilter active={filter !== "all" || filterOpen} />
+              <IconFilter active={filter !== "all"} />
             </button>
             <div className="topbar-end">
               {editing ? (
@@ -986,6 +986,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
         <InputDialog
           title="아이템 메모 추가/변경"
           value={memo.text}
+          placeholder="최대 30글자로 메모 직접 입력하기"
           onChange={(v) => setMemo({ ...memo, text: v })}
           confirmDisabled={!memo.text.trim()}
           onLimit={() => setToast({ msg: "최대 30자까지 입력할 수 있어요", place: "top" })}

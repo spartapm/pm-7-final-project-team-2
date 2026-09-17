@@ -75,7 +75,7 @@ export function GenerateSequence({
 
   useEffect(() => {
     if (!done) return;
-    const t = window.setTimeout(onDone, 2600);
+    const t = window.setTimeout(onDone, 2000);
     return () => window.clearTimeout(t);
   }, [done, onDone]);
 
