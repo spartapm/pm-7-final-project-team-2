@@ -106,5 +106,39 @@ grant all on public.catalog_rules to anon, authenticated, service_role;
 grant all on public.item_stats to anon, authenticated, service_role;
 grant all on public.catalog_activities to anon, authenticated, service_role;
 grant all on public.catalog_group to anon, authenticated, service_role;
+
+create table if not exists public.push_subscriptions (
+  endpoint text primary key,
+  account_id text not null,
+  p256dh text not null,
+  auth text not null,
+  user_agent text,
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists push_subscriptions_account_id_idx on public.push_subscriptions (account_id);
+
+alter table public.push_subscriptions enable row level security;
+drop policy if exists "push_subscriptions open" on public.push_subscriptions;
+create policy "push_subscriptions open" on public.push_subscriptions for all using (true) with check (true);
+grant all on public.push_subscriptions to anon, authenticated, service_role;
+
 grant usage, select on all sequences in schema public to anon, authenticated, service_role;
+`;
+
+export const PUSH_SQL = `create table if not exists public.push_subscriptions (
+  endpoint text primary key,
+  account_id text not null,
+  p256dh text not null,
+  auth text not null,
+  user_agent text,
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists push_subscriptions_account_id_idx on public.push_subscriptions (account_id);
+
+alter table public.push_subscriptions enable row level security;
+drop policy if exists "push_subscriptions open" on public.push_subscriptions;
+create policy "push_subscriptions open" on public.push_subscriptions for all using (true) with check (true);
+grant all on public.push_subscriptions to anon, authenticated, service_role;
 `;

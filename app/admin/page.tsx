@@ -16,10 +16,11 @@ import type { Rule } from "@/lib/rules";
 import { saveStat } from "@/lib/stats";
 import { getSupabase } from "@/lib/supabase";
 import type { ActivityId } from "@/lib/types";
+import { AdminPushPanel } from "@/components/AdminPushPanel";
 
 type ActivityFilter = ActivityId | "all";
 
-type Tab = "stats" | "items" | "rules" | "activities" | "groups";
+type Tab = "stats" | "items" | "rules" | "activities" | "groups" | "push";
 
 const TABLE_LABEL: Record<Rule["table"], string> = {
   essential: "필수",
@@ -176,6 +177,7 @@ export default function AdminPage() {
             ["rules", "규칙"],
             ["activities", "활동"],
             ["groups", "그룹"],
+            ["push", "푸시"],
           ] as const).map(([id, label]) => (
             <button key={id} onClick={() => setTab(id)} style={tab === id ? tabOn : tabOff}>
               {label}
@@ -190,6 +192,7 @@ export default function AdminPage() {
         {tab === "rules" ? <RulesPanel onSaved={setMsg} /> : null}
         {tab === "activities" ? <ActivitiesPanel onSaved={setMsg} /> : null}
         {tab === "groups" ? <GroupsPanel onSaved={setMsg} /> : null}
+        {tab === "push" ? <AdminPushPanel /> : null}
       </main>
     </div>
   );

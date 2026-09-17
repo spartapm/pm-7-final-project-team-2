@@ -75,11 +75,6 @@ export function Onboarding({ step }: { step: 1 | 2 | 3 }) {
         activity_count: trip.activities.length,
         generation_time_ms: Math.round(performance.now() - started),
       });
-      if ("Notification" in window && Notification.permission === "default") {
-        Notification.requestPermission()
-          .then((result) => track("push_permission_result", { result }))
-          .catch(() => undefined);
-      }
       setSeq((s) =>
         s
           ? {

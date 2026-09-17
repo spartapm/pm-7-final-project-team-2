@@ -1,0 +1,81 @@
+const ASK_KEY = "chaeggyeo:pushAsked";
+
+export function isIosWeb() {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent;
+  if (/iPhone|iPad|iPod/i.test(ua)) return true;
+  return navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+}
+
+function urlBase64ToUint8Array(base64: string) {
+  const padded = `${base64}${"=".repeat((4 - (base64.length % 4)) % 4)}`.replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(padded);
+  const output = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i += 1) output[i] = raw.charCodeAt(i);
+  return output;
+}
+
+async function vapidPublicKey() {
+  const fromEnv = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  if (fromEnv) return fromEnv;
+  const res = await fetch("/api/push/vapid", { cache: "no-store" });
+  const json = (await res.json()) as { publicKey?: string };
+  return json.publicKey || "";
+}
+
+export async function ensurePushSubscription(accountId: string) {
+  if (typeof window === "undefined") return;
+  if (!accountId || accountId === "pending") return;
+  if (isIosWeb()) return;
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+  const publicKey = await vapidPublicKey();
+  if (!publicKey) return;
+
+  const reg = await navigator.serviceWorker.register("/sw.js");
+  await navigator.serviceWorker.ready;
+  let sub = await reg.pushManager.getSubscription();
+  if (!sub) {
+    sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicKey),
+    });
+  }
+  const json = sub.toJSON();
+  if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) return;
+  await fetch("/api/push/subscribe", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      accountId,
+      endpoint: json.endpoint,
+      keys: json.keys,
+      userAgent: navigator.userAgent,
+    }),
+  });
+}
+
+export async function askPushOnHome(accountId: string) {
+  if (typeof window === "undefined") return;
+  if (isIosWeb()) return;
+  if (!("Notification" in window)) return;
+  if (Notification.permission === "default") {
+    try {
+      if (localStorage.getItem(ASK_KEY) !== "1") {
+        localStorage.setItem(ASK_KEY, "1");
+        const { track } = await import("./analytics");
+        const result = await Notification.requestPermission();
+        track("push_permission_result", { result });
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  if (Notification.permission === "granted") {
+    try {
+      await ensurePushSubscription(accountId);
+    } catch {
+      /* ignore */
+    }
+  }
+}

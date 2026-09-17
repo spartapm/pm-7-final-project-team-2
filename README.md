@@ -24,7 +24,7 @@ npm run dev
 
 로컬은 `.env.local`에 프로젝트 URL과 publishable key가 있으면 됩니다. 템플릿은 `.env.example`. **시크릿·서비스롤·DB 비밀번호는 앱/Vercel에 넣지 않습니다.** 테이블이 없으면 [SQL Editor](https://supabase.com/dashboard/project/vsvlniwtfnjhqonsbldc/sql/new)에 `supabase/schema.sql`을 붙여넣고 Run 합니다.
 
-앱을 꺼 둔 상태의 웹 푸시(D-7/D-3/D-1 19시)는 탭이 열려 있을 때만 동작합니다.
+앱을 꺼 둔 상태의 웹 푸시(D-7/D-3/D-1 19시 KST)는 서비스 워커 + Vercel Cron(`/api/push/dispatch`)으로 보냅니다. iOS는 포함하지 않습니다. 구독 테이블이 없으면 어드민 **푸시** 탭에서 SQL을 복사해 Run 하세요.
 
 라이브: https://chaenggyeoyo.vercel.app  
 커스텀 도메인: https://chaenggyeoyo.me (가비아 DNS 반영 후)
@@ -40,11 +40,15 @@ GitHub 저장소 루트가 이 앱입니다. Root Directory는 비워 두면 됩
 
 apex는 `www.chaenggyeoyo.me`로 308 리다이렉트됩니다.
 
-Settings → Environment Variables에 아래 **두 개만** 넣습니다. Production / Preview / Development 모두 체크.
+Settings → Environment Variables에 아래를 넣습니다. Production / Preview / Development 모두 체크.
 
 | Name | Value | 어디서 복사 |
 | --- | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://xxxx.supabase.co` | Supabase → Project Settings → Data API → Project URL |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | `sb_publishable_...` | 같은 화면의 publishable / anon key |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | `web-push generate-vapid-keys`의 public key | 로컬에서 한 번 생성 후 재사용 |
+| `VAPID_PRIVATE_KEY` | 같은 명령의 private key | 서버 전용. 클라이언트에 넣지 마세요 |
+| `VAPID_SUBJECT` | `mailto:chaeggyeo@gmail.com` | 연락용. 선택 |
+| `CRON_SECRET` | 임의 문자열 | Vercel Cron이 `/api/push/dispatch`를 호출할 때 Bearer로 붙습니다 |
 
 `NEXT_PUBLIC_` 은 빌드 때 번들에 들어갑니다. 값을 바꾼 뒤에는 Redeploy가 필요합니다. `SUPABASE_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL` 은 Vercel에 넣지 마세요.

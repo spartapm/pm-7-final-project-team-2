@@ -2,14 +2,14 @@
 
 import { CatalogLoader } from "@/components/CatalogLoader";
 import { CloudBanner } from "@/components/CloudBanner";
-import { ReminderListener } from "@/components/ReminderListener";
+import { PushSubscriber } from "@/components/PushSubscriber";
 import { StoreProvider } from "@/lib/store";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <StoreProvider>
       <CatalogLoader />
-      <ReminderListener />
+      <PushSubscriber />
       <CloudBanner />
       {children}
     </StoreProvider>

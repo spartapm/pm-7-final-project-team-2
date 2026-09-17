@@ -8,6 +8,7 @@ import { consumeEntry, track } from "@/lib/analytics";
 import { setLastHome } from "@/lib/lastHome";
 import { liveActivityName, activityOrder } from "@/lib/liveCatalog";
 import { pushAccount } from "@/lib/cloud";
+import { askPushOnHome } from "@/lib/notify";
 import { useStore } from "@/lib/store";
 import { IconMeatball, IconPlusFab, PhoneShell } from "./icons";
 import { ConfirmDialog, Menu, Toast } from "./ui";
@@ -30,12 +31,13 @@ export function TripHome() {
   useEffect(() => {
     if (!hydrated) return;
     track("trip_home_view", { entry_type: consumeEntry() });
+    void askPushOnHome(accountId);
     try {
       setShareTip(localStorage.getItem(SHARE_TIP_KEY) !== "1");
     } catch {
       setShareTip(true);
     }
-  }, [hydrated]);
+  }, [hydrated, accountId]);
 
   const dismissShareTip = () => {
     setShareTip(false);
