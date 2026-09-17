@@ -55,6 +55,21 @@ export function IconHeart({ on }: { on: boolean }) {
   );
 }
 
+export function IconCart({ on }: { on: boolean }) {
+  return (
+    <img
+      src={on ? "/shopping_icon_active.svg" : "/shopping_icon.svg"}
+      alt=""
+      width={24}
+      height={24}
+    />
+  );
+}
+
+export function IconCartFab() {
+  return <img src="/cart_icon.svg" alt="" width={26} height={27} />;
+}
+
 export function IconPlus({
   color = "var(--primary)",
   size = 24,
@@ -97,6 +112,14 @@ export function IconCheckSm() {
   return (
     <Svg width="9" height="8" viewBox="0 0 9 8">
       <path d="M1 4.2 3.3 7 8 1" stroke="var(--primary)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+export function IconCheckHeader() {
+  return (
+    <Svg width="13" height="9" viewBox="0 0 13 9">
+      <path d="M1 4.6 4.6 8 12 1.2" stroke="var(--primary)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 }

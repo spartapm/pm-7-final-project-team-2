@@ -28,6 +28,10 @@ export function hasInfoIcon(masterId?: string, name?: string, linkNote?: string)
   return Boolean(spec.linkNote) || spec.linkCount >= 1 || linksFor(spec.id).length > 0;
 }
 
+export function isPurchasable(masterId?: string, name?: string) {
+  return Boolean(specOf(masterId, name)?.purchasable);
+}
+
 export function deleteRateFor(activityId?: string, masterId?: string) {
   return liveDeleteRate(activityId, masterId);
 }

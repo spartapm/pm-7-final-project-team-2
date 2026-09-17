@@ -1,15 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { COMPANIONS, COUNTRIES } from "@/lib/catalog";
 import { rangesOverlap } from "@/lib/dates";
 import { setEntry, track } from "@/lib/analytics";
 import { liveActivities, subscribeCatalog } from "@/lib/liveCatalog";
 import { useStore } from "@/lib/store";
 import type { ActivityId, CompanionId, CountryId } from "@/lib/types";
+import { GenerateSequence } from "./GenerateSequence";
 import { PhoneShell } from "./icons";
-import { Calendar, Chip, ConfirmDialog, LoadingOverlay, PrimaryButton, ProgressBar, Toast, TopBar } from "./ui";
+import { Calendar, Chip, ConfirmDialog, PrimaryButton, ProgressBar, Toast, TopBar } from "./ui";
 
 const GEN_ERROR = "오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
 const DUP_MSG = "잠깐!\n이미 선택된 날짜로 등록된\n일정이 있습니다. 계속해서 새로\n등록하시겠습니까?";
@@ -18,20 +19,24 @@ export function Onboarding({ step }: { step: 1 | 2 | 3 }) {
   const router = useRouter();
   const { draft, setDraft, resetDraft, createTrip, trips } = useStore();
   const [busy, setBusy] = useState(false);
-  const [showLoad, setShowLoad] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [dupOpen, setDupOpen] = useState(false);
+  const [seq, setSeq] = useState<{
+    countryId: CountryId;
+    startDate: string;
+    endDate: string;
+    companions: CompanionId[];
+    activities: ActivityId[];
+    itemCount: number;
+    ready: boolean;
+  } | null>(null);
   const [, catalogTick] = useState(0);
   useEffect(() => subscribeCatalog(() => catalogTick((n) => n + 1)), []);
 
-  useEffect(() => {
-    if (!busy) {
-      setShowLoad(false);
-      return;
-    }
-    const t = window.setTimeout(() => setShowLoad(true), 500);
-    return () => window.clearTimeout(t);
-  }, [busy]);
+  const finishSeq = useCallback(() => {
+    setEntry("after_create");
+    router.replace("/trips");
+  }, [router]);
 
   useEffect(() => {
     if (step !== 1) return;
@@ -50,6 +55,16 @@ export function Onboarding({ step }: { step: 1 | 2 | 3 }) {
     );
 
   const generate = async () => {
+    if (!draft.countryId || !draft.startDate || !draft.endDate) return;
+    setSeq({
+      countryId: draft.countryId,
+      startDate: draft.startDate,
+      endDate: draft.endDate,
+      companions: [...draft.companions],
+      activities: [...draft.activities],
+      itemCount: 0,
+      ready: false,
+    });
     setBusy(true);
     const ac = new AbortController();
     const timer = window.setTimeout(() => ac.abort(), 8000);
@@ -65,13 +80,21 @@ export function Onboarding({ step }: { step: 1 | 2 | 3 }) {
           .then((result) => track("push_permission_result", { result }))
           .catch(() => undefined);
       }
-      setEntry("after_create");
-      router.replace("/trips");
+      setSeq((s) =>
+        s
+          ? {
+              ...s,
+              itemCount: trip.categories.reduce((n, c) => n + c.items.length, 0),
+              ready: true,
+            }
+          : s
+      );
     } catch {
+      setSeq(null);
       setToast(GEN_ERROR);
+      setBusy(false);
     } finally {
       window.clearTimeout(timer);
-      setBusy(false);
     }
   };
 
@@ -247,7 +270,18 @@ export function Onboarding({ step }: { step: 1 | 2 | 3 }) {
           체크리스트 생성하기
         </PrimaryButton>
       </div>
-      {showLoad ? <LoadingOverlay /> : null}
+      {seq ? (
+        <GenerateSequence
+          countryId={seq.countryId}
+          startDate={seq.startDate}
+          endDate={seq.endDate}
+          companions={seq.companions}
+          activities={seq.activities}
+          itemCount={seq.itemCount}
+          ready={seq.ready}
+          onDone={finishSeq}
+        />
+      ) : null}
       {toast ? <Toast message={toast} onDone={() => setToast(null)} place="bottom" /> : null}
     </PhoneShell>
   );

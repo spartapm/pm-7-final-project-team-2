@@ -404,7 +404,7 @@ function ItemsPanel({
 
   return (
     <div style={panel}>
-      <p style={hint}>이름 · 상시 설명 · link_note(정보 시트 회색 박스). group/order는 같은 카테고리 안 정렬입니다. 새 아이템은 CSV에 행을 넣어 올리세요.</p>
+      <p style={hint}>이름 · 상시 설명 · link_note · purchasable(장바구니 아이콘). group/order는 같은 카테고리 안 정렬입니다. 새 아이템은 CSV에 행을 넣어 올리세요.</p>
       <Toolbar q={q} onQ={setQ} placeholder="이름, ID, 설명 검색" count={`${list.length} / ${Object.keys(items).length}`} />
       <div style={tableWrap}>
         <datalist id="item-groups">
@@ -419,6 +419,7 @@ function ItemsPanel({
               <th style={{ ...th, width: 200 }}>이름</th>
               <th style={th}>설명</th>
               <th style={th}>link_note</th>
+              <th style={{ ...th, width: 88 }}>구매</th>
               <th style={{ ...th, width: 100 }}>group</th>
               <th style={{ ...th, width: 72 }}>order</th>
               <th style={{ ...th, width: 72 }} />
@@ -432,6 +433,7 @@ function ItemsPanel({
                 name={item.name}
                 note={item.linkNote ?? ""}
                 desc={item.desc ?? ""}
+                purchasable={item.purchasable}
                 group={item.itemGroup ?? ""}
                 order={item.itemOrder ?? ""}
                 onSaved={onSaved}
@@ -449,6 +451,7 @@ function ItemRow({
   name,
   note,
   desc,
+  purchasable,
   group,
   order,
   onSaved,
@@ -457,6 +460,7 @@ function ItemRow({
   name: string;
   note: string;
   desc: string;
+  purchasable: boolean;
   group: string;
   order: string | number;
   onSaved: (m: string) => void;
@@ -464,6 +468,7 @@ function ItemRow({
   const [n, setN] = useState(name);
   const [d, setD] = useState(desc);
   const [noteV, setNoteV] = useState(note);
+  const [buy, setBuy] = useState(purchasable);
   const [g, setG] = useState(group);
   const [ord, setOrd] = useState(String(order));
   const [busy, setBusy] = useState(false);
@@ -471,10 +476,11 @@ function ItemRow({
     setN(name);
     setD(desc);
     setNoteV(note);
+    setBuy(purchasable);
     setG(group);
     setOrd(String(order));
-  }, [name, desc, note, group, order]);
-  const dirty = n !== name || d !== desc || noteV !== note || g !== group || ord !== String(order);
+  }, [name, desc, note, purchasable, group, order]);
+  const dirty = n !== name || d !== desc || noteV !== note || buy !== purchasable || g !== group || ord !== String(order);
 
   return (
     <tr style={tr}>
@@ -487,6 +493,12 @@ function ItemRow({
       </td>
       <td style={td}>
         <textarea style={cellArea} value={noteV} onChange={(e) => setNoteV(e.target.value)} rows={2} />
+      </td>
+      <td style={td}>
+        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, whiteSpace: "nowrap" }}>
+          <input type="checkbox" checked={buy} onChange={(e) => setBuy(e.target.checked)} />
+          purchasable
+        </label>
       </td>
       <td style={td}>
         <input
@@ -516,6 +528,7 @@ function ItemRow({
                 name: n,
                 item_desc: d || null,
                 link_note: noteV || null,
+                purchasable: buy,
                 item_group: g || null,
                 item_order: ord === "" || !Number.isFinite(Number(ord)) ? null : Number(ord),
               })

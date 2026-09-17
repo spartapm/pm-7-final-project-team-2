@@ -10,6 +10,7 @@ export function TopBar({
   close,
   title,
   progress,
+  center,
   right,
   kebab,
   kebabActive,
@@ -20,6 +21,7 @@ export function TopBar({
   close?: () => void;
   title?: string;
   progress?: string;
+  center?: ReactNode;
   right?: ReactNode;
   kebab?: () => void;
   kebabActive?: boolean;
@@ -38,6 +40,7 @@ export function TopBar({
         </button>
       ) : null}
       {title ? <span className="ttl">{title}</span> : null}
+      {center ? <div className="topbar-center">{center}</div> : null}
       <span className="grow" />
       {progress ? <span className="t-button" style={{ color: "var(--text-3)" }}>{progress}</span> : null}
       {right}

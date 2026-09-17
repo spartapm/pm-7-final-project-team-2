@@ -33,6 +33,15 @@ export function tripPeriodLabel(start: string, end: string) {
   return `${sy}.${sm}.${sd} ~ ${em}.${ed} · ${label}`;
 }
 
+export function tripMonthDayRange(start: string, end: string) {
+  const sm = Number(start.split("-")[1]);
+  const sd = Number(start.split("-")[2]);
+  const em = Number(end.split("-")[1]);
+  const ed = Number(end.split("-")[2]);
+  if (sm === em) return `${sm}월 ${sd}일~${ed}일`;
+  return `${sm}월 ${sd}일~${em}월 ${ed}일`;
+}
+
 export function checklistSubtitle(country: string, start: string, end: string) {
   const { nights, days, label } = nightDay(start, end);
   if (days <= 1) return `${country} 여행 · 1일`;

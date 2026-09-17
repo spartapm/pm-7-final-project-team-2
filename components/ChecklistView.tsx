@@ -12,20 +12,20 @@ import {
   trackItemDelete,
 } from "@/lib/analytics";
 import { categoryFromPreset, emptyCustomCategory } from "@/lib/generate";
-import { commentRateFor, hasInfoIcon, overpackCopy } from "@/lib/itemMeta";
+import { commentRateFor, hasInfoIcon, isPurchasable, overpackCopy } from "@/lib/itemMeta";
 import { sortChecklistItems } from "@/lib/itemSort";
 import { loadCatalogFromCloud, livePresetCategoryNames, subscribeCatalog } from "@/lib/liveCatalog";
 import { hasSeenPackGuide, markPackGuideSeen, setLastHome } from "@/lib/lastHome";
 import { newItem, patchCategory, patchItem, useStore } from "@/lib/store";
 import type { Category, ChecklistItem, FilterMode, Trip } from "@/lib/types";
 import {
+  IconCart,
+  IconCartFab,
   IconCheck,
-  IconCheckSm,
+  IconCheckHeader,
   IconChevron,
   IconEdit,
   IconFilter,
-  IconHeart,
-  IconHeartSm,
   IconInfo,
   IconMeatball,
   IconOverpack,
@@ -34,7 +34,7 @@ import {
   IconXSmall,
   PhoneShell,
 } from "./icons";
-import { ConfirmDialog, InfoSheet, Menu, PackGuideSheet, Toast, TopBar } from "./ui";
+import { ConfirmDialog, InfoSheet, InputDialog, Menu, PackGuideSheet, Toast, TopBar } from "./ui";
 
 const LEGAL =
   "챙겨요(가칭)가 제공하는 국가별 반입 주의·금지 품목 및 관련 법적·규정 정보는 각 항목에 표시된 작성·갱신 기준일 시점에 확인된 내용을 바탕으로 한 참고용 정보입니다. 관련 법령 및 규정은 국가와 시기에 따라 사전 예고 없이 변경될 수 있으며, 본 서비스가 제공하는 정보가 실제 세관·출입국 규정과 다를 수 있습니다. 챙겨요(가칭)는 해당 정보의 최신성·정확성·완전성을 보장하지 않으며, 이를 신뢰하여 발생한 불이익이나 손해에 대해 책임을 지지 않습니다. 정확한 반입 규정은 반드시 이용 항공사, 목적지 국가의 대사관·영사관, 관세청 등 공식 기관을 통해 여행 전 별도로 확인하시기 바랍니다.";
@@ -134,10 +134,13 @@ export function ChecklistView({ tripId }: { tripId: string }) {
     note?: string;
     itemId?: string;
   } | null>(null);
-  const [counterOn, setCounterOn] = useState(true);
+  const [memo, setMemo] = useState<{ catId: string; itemId: string; text: string } | null>(null);
   const [, catalogTick] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [packGuide, setPackGuide] = useState(false);
+  const uncheckedJump = useRef(0);
+  const pendingScroll = useRef<string | null>(null);
+  const addComposing = useRef(false);
 
   const selectedCount = useMemo(
     () => trip?.categories.reduce((n, c) => n + c.items.filter((i) => i.selected).length, 0) ?? 0,
@@ -149,7 +152,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
     return {
       checked: items.filter((i) => i.checked).length,
       total: items.length,
-      wished: items.filter((i) => i.wished).length,
+      cart: items.filter((i) => i.wished && isPurchasable(i.masterId, i.name)).length,
     };
   }, [trip]);
 
@@ -188,19 +191,15 @@ export function ChecklistView({ tripId }: { tripId: string }) {
     }
   }, [editing, trip]);
 
+  const [scrollNonce, setScrollNonce] = useState(0);
   useEffect(() => {
-    const el = scrollRef.current;
+    const id = pendingScroll.current;
+    if (!id) return;
+    const el = scrollRef.current?.querySelector(`[data-item-id="${CSS.escape(id)}"]`);
     if (!el) return;
-    let last = el.scrollTop;
-    const onScroll = () => {
-      const y = el.scrollTop;
-      if (y < last - 4) setCounterOn(true);
-      else if (y > last + 4) setCounterOn(false);
-      last = y;
-    };
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onScroll);
-  }, [trip?.id]);
+    pendingScroll.current = null;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [trip, scrollNonce]);
 
   useEffect(() => {
     if (!adding) return;
@@ -249,6 +248,27 @@ export function ChecklistView({ tripId }: { tripId: string }) {
 
   const save = (fn: (t: Trip) => Trip) => updateTrip(trip.id, fn);
 
+  const resetUncheckedJump = () => {
+    uncheckedJump.current = 0;
+  };
+
+  const jumpUnchecked = () => {
+    const list: { catId: string; itemId: string; collapsed: boolean }[] = [];
+    for (const cat of orderedCats) {
+      for (const item of sortChecklistItems(cat.items.filter(visible))) {
+        if (!item.checked) list.push({ catId: cat.id, itemId: item.id, collapsed: cat.collapsed });
+      }
+    }
+    if (!list.length) return;
+    const next = list[uncheckedJump.current % list.length];
+    uncheckedJump.current += 1;
+    pendingScroll.current = next.itemId;
+    if (next.collapsed) {
+      save((t) => patchCategory(t, next.catId, (c) => ({ ...c, collapsed: false })));
+    }
+    setScrollNonce((n) => n + 1);
+  };
+
   const visible = (item: ChecklistItem) => {
     if (filter === "unchecked") return !item.checked;
     if (filter === "wished") return item.wished;
@@ -256,6 +276,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
   };
 
   const toggleCat = (cat: Category) => {
+    resetUncheckedJump();
     const next = !cat.collapsed;
     track("category_toggle", {
       category_name: cat.name,
@@ -266,6 +287,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
   };
 
   const toggleChecked = (cat: Category, item: ChecklistItem) => {
+    resetUncheckedJump();
     const next = !item.checked;
     save((t) => patchItem(t, cat.id, item.id, (i) => ({ ...i, checked: !i.checked })));
     track("item_check_toggle", {
@@ -320,6 +342,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
         {
           label: "전체 아이템 보기",
           onClick: () => {
+            resetUncheckedJump();
             track("filter_reset", { filter_type: filter });
             setFilter("all");
           },
@@ -339,13 +362,15 @@ export function ChecklistView({ tripId }: { tripId: string }) {
             filter_type: "unchecked",
             result_count: trip.categories.reduce((n, c) => n + c.items.filter((i) => !i.checked).length, 0),
           });
+          resetUncheckedJump();
           setFilter("unchecked");
           expandAll();
         },
       },
       {
-        label: "찜한 아이템 모아보기",
+        label: "장바구니 아이템 모아보기",
         onClick: () => {
+          resetUncheckedJump();
           track("filter_apply", {
             filter_type: "wished",
             result_count: trip.categories.reduce((n, c) => n + c.items.filter((i) => i.wished).length, 0),
@@ -476,6 +501,14 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                 router.push("/trips");
               }
         }
+        center={
+          editing ? undefined : (
+            <button className="topbar-count" aria-label="미체크 아이템으로 이동" onClick={jumpUnchecked}>
+              <IconCheckHeader />
+              {counts.checked} / {counts.total}
+            </button>
+          )
+        }
         right={
           <div className="topbar-actions">
             <button
@@ -586,6 +619,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                     const reason = pack ? null : item.reason;
                     const renaming = rename?.catId === cat.id && rename.itemId === item.id;
                     const locked = editing && lockedIds.current.has(item.id);
+                    const cartable = isPurchasable(item.masterId, item.name);
                     return (
                       <div
                         className={`row${reason || pack ? " sub" : ""}`}
@@ -596,9 +630,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                           if (target.closest("button, input, textarea, a")) return;
                           if (editing) {
                             toggleSelect(cat.id, item.id);
-                            return;
                           }
-                          toggleChecked(cat, item);
                         }}
                       >
                         <button
@@ -628,7 +660,15 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                             <IconCheck />
                           ) : null}
                         </button>
-                        <div className="body">
+                        <div
+                          className={`body${editing || renaming ? "" : " memo"}`}
+                          onClick={(e) => {
+                            if (editing || renaming) return;
+                            e.stopPropagation();
+                            resetUncheckedJump();
+                            setMemo({ catId: cat.id, itemId: item.id, text: item.reason ?? "" });
+                          }}
+                        >
                           {renaming ? (
                             <input
                               ref={renameRef}
@@ -699,6 +739,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                                 aria-label="정보"
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  resetUncheckedJump();
                                   setInfo({
                                     links: item.links ?? [],
                                     note: item.linkNote,
@@ -709,11 +750,13 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                                 <IconInfo />
                               </button>
                             ) : null}
+                            {cartable ? (
                             <button
                               className="hit-icon"
-                              aria-label="찜"
+                              aria-label="장바구니"
                               onClick={(e) => {
                                 e.stopPropagation();
+                                resetUncheckedJump();
                                 save((t) =>
                                   patchItem(t, cat.id, item.id, (i) => ({ ...i, wished: !i.wished }))
                                 );
@@ -723,8 +766,9 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                                 });
                               }}
                             >
-                              <IconHeart on={item.wished} />
+                              <IconCart on={item.wished} />
                             </button>
+                            ) : null}
                           </div>
                         )}
                       </div>
@@ -766,11 +810,17 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                                 if (el) el.scrollLeft = el.scrollWidth;
                               });
                             }}
+                            onCompositionStart={() => {
+                              addComposing.current = true;
+                            }}
+                            onCompositionEnd={() => {
+                              addComposing.current = false;
+                            }}
                             onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                tryAdd(cat.id, cat);
-                              }
+                              if (e.key !== "Enter") return;
+                              e.preventDefault();
+                              if (e.nativeEvent.isComposing || e.keyCode === 229 || addComposing.current) return;
+                              tryAdd(cat.id, cat);
                             }}
                           />
                         ) : (
@@ -854,21 +904,19 @@ export function ChecklistView({ tripId }: { tripId: string }) {
           </button>
         </div>
       ) : (
-        <div
-          className={`float-count${counterOn ? "" : " off"}`}
-          onClick={(e) => e.stopPropagation()}
-          onPointerDown={(e) => e.stopPropagation()}
+        <button
+          className="cart-fab"
+          aria-label="장바구니 바로가기"
+          onClick={() => {
+            resetUncheckedJump();
+            setToast({ msg: "바로 주문 기능을 준비하고 있어요", place: "bottom" });
+          }}
         >
-          <span className="n">
-            <IconCheckSm />
-            {counts.checked}/{counts.total}
-          </span>
-          <span className="div" />
-          <span className="n">
-            <IconHeartSm />
-            {counts.wished}
-          </span>
-        </div>
+          <IconCartFab />
+          {counts.cart > 0 ? (
+            <span className="cart-fab-badge">{counts.cart > 99 ? "99+" : counts.cart}</span>
+          ) : null}
+        </button>
       )}
 
       {catMenu ? (
@@ -930,6 +978,24 @@ export function ChecklistView({ tripId }: { tripId: string }) {
           onClose={() => {
             markPackGuideSeen();
             setPackGuide(false);
+          }}
+        />
+      ) : null}
+
+      {memo ? (
+        <InputDialog
+          title="아이템 메모 추가/변경"
+          value={memo.text}
+          onChange={(v) => setMemo({ ...memo, text: v })}
+          confirmDisabled={!memo.text.trim()}
+          onLimit={() => setToast({ msg: "최대 30자까지 입력할 수 있어요", place: "top" })}
+          onCancel={() => setMemo(null)}
+          onConfirm={() => {
+            const text = memo.text.trim();
+            if (!text) return;
+            resetUncheckedJump();
+            save((t) => patchItem(t, memo.catId, memo.itemId, (i) => ({ ...i, reason: text })));
+            setMemo(null);
           }}
         />
       ) : null}
