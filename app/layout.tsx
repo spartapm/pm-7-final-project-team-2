@@ -4,9 +4,20 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "챙겨요 · 여행 준비 체크리스트",
+  metadataBase: new URL("https://www.chaenggyeoyo.me"),
+  title: "챙겨요 · 여행 준비물 체크리스트",
   description: "여행 일정에 맞춰 준비물을 정리해 드려요.",
   icons: { icon: "/favicon.ico" },
+  openGraph: {
+    title: "챙겨요 · 여행 준비물 체크리스트",
+    description: "여행 일정에 맞춰 준비물을 정리해 드려요.",
+    images: [{ url: "/thumbnail_image.png", width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "챙겨요 · 여행 준비물 체크리스트",
+    images: ["/thumbnail_image.png"],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { COMPANIONS, COUNTRIES } from "@/lib/catalog";
 import { rangesOverlap } from "@/lib/dates";
 import { setEntry, track } from "@/lib/analytics";
@@ -31,9 +31,14 @@ export function Onboarding({ step }: { step: 1 | 2 | 3 }) {
     ready: boolean;
   } | null>(null);
   const [, catalogTick] = useState(0);
+  const genTrack = useRef<{ activity_count: number; generation_time_ms: number } | null>(null);
   useEffect(() => subscribeCatalog(() => catalogTick((n) => n + 1)), []);
 
   const finishSeq = useCallback(() => {
+    if (genTrack.current) {
+      track("checklist_generate_complete", genTrack.current);
+      genTrack.current = null;
+    }
     setEntry("after_create");
     router.replace("/trips");
   }, [router]);
@@ -71,10 +76,10 @@ export function Onboarding({ step }: { step: 1 | 2 | 3 }) {
     try {
       const started = performance.now();
       const trip = await createTrip(ac.signal);
-      track("checklist_generate_complete", {
+      genTrack.current = {
         activity_count: trip.activities.length,
         generation_time_ms: Math.round(performance.now() - started),
-      });
+      };
       setSeq((s) =>
         s
           ? {

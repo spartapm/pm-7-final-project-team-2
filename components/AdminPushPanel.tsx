@@ -17,6 +17,18 @@ type Targets = {
   accounts: AccountRow[];
 };
 
+async function readJson(res: Response) {
+  const text = await res.text();
+  if (!text.trim()) {
+    return { ok: false, message: `서버가 빈 응답을 보냈습니다 (${res.status})` };
+  }
+  try {
+    return JSON.parse(text) as Record<string, unknown>;
+  } catch {
+    return { ok: false, message: text.slice(0, 180) };
+  }
+}
+
 export function AdminPushPanel() {
   const [targets, setTargets] = useState<Targets | null>(null);
   const [title, setTitle] = useState("챙겨요 테스트 알림");
@@ -29,7 +41,11 @@ export function AdminPushPanel() {
 
   const load = async () => {
     const res = await fetch("/api/push/targets", { cache: "no-store" });
-    setTargets(await res.json());
+    const json = await readJson(res);
+    if (!("subscriptions" in json) && json.message) {
+      throw new Error(String(json.message));
+    }
+    setTargets(json as unknown as Targets);
   };
 
   useEffect(() => {
@@ -89,8 +105,8 @@ export function AdminPushPanel() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ scheduled: true, ignoreHour: true }),
               });
-              const json = await res.json();
-              setMsg(json.message ?? (json.ok ? `${json.sent ?? 0}건 발송` : "발송 실패"));
+              const json = await readJson(res);
+              setMsg(String(json.message ?? (json.ok ? `${json.sent ?? 0}건 발송` : "발송 실패")));
               await load();
             })
           }
@@ -157,8 +173,8 @@ export function AdminPushPanel() {
                   body,
                 }),
               });
-              const json = await res.json();
-              setMsg(json.message ?? (json.ok ? `${json.sent ?? 0}건 발송` : "발송 실패"));
+              const json = await readJson(res);
+              setMsg(String(json.message ?? (json.ok ? `${json.sent ?? 0}건 발송` : "발송 실패")));
             })
           }
         >

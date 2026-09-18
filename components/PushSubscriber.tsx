@@ -1,18 +1,20 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ensurePushSubscription, isIosWeb } from "@/lib/notify";
 import { useStore } from "@/lib/store";
 
 export function PushSubscriber() {
   const { accountId, hydrated } = useStore();
+  const pathname = usePathname();
   const router = useRouter();
 
   useEffect(() => {
     if (!hydrated || !accountId || accountId === "pending") return;
+    if (pathname.startsWith("/onboarding")) return;
     void ensurePushSubscription(accountId);
-  }, [hydrated, accountId]);
+  }, [hydrated, accountId, pathname]);
 
   useEffect(() => {
     if (!("serviceWorker" in navigator) || isIosWeb()) return;

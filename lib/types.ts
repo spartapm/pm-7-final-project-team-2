@@ -18,6 +18,7 @@ export type ChecklistItem = {
   id: string;
   name: string;
   reason?: string;
+  userMemo?: boolean;
   checked: boolean;
   wished: boolean;
   custom: boolean;

@@ -25,10 +25,37 @@ async function vapidPublicKey() {
 
 let subLock: Promise<void> | null = null;
 
+function onTripHome() {
+  if (typeof window === "undefined") return false;
+  if (window.location.pathname !== "/trips") return false;
+  if (document.querySelector(".gen-seq")) return false;
+  return document.visibilityState === "visible";
+}
+
+function waitUntilTripHome(minMs = 400, maxMs = 8000) {
+  const start = Date.now();
+  return new Promise<boolean>((resolve) => {
+    const tick = () => {
+      const elapsed = Date.now() - start;
+      if (onTripHome() && elapsed >= minMs) {
+        resolve(true);
+        return;
+      }
+      if (elapsed >= maxMs) {
+        resolve(onTripHome());
+        return;
+      }
+      window.setTimeout(tick, 80);
+    };
+    tick();
+  });
+}
+
 export async function ensurePushSubscription(accountId: string) {
   if (typeof window === "undefined") return;
   if (!accountId || accountId === "pending") return;
   if (isIosWeb()) return;
+  if (window.location.pathname.startsWith("/onboarding")) return;
   if (subLock) return subLock;
   subLock = subscribePush(accountId).finally(() => {
     subLock = null;
@@ -69,6 +96,8 @@ export async function askPushOnHome(accountId: string) {
   if (typeof window === "undefined") return;
   if (isIosWeb()) return;
   if (!("Notification" in window)) return;
+  const ready = await waitUntilTripHome();
+  if (!ready || !onTripHome()) return;
   if (Notification.permission === "default") {
     try {
       if (localStorage.getItem(ASK_KEY) !== "1") {

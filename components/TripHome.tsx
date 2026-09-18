@@ -33,13 +33,18 @@ export function TripHome() {
 
   useEffect(() => {
     if (!hydrated) return;
-    track("trip_home_view", { entry_type: consumeEntry() });
-    void askPushOnHome(accountId);
+    const entry = consumeEntry();
+    track("trip_home_view", { entry_type: entry });
+    const delay = entry === "after_create" ? 800 : 400;
+    const id = window.setTimeout(() => {
+      void askPushOnHome(accountId);
+    }, delay);
     try {
       setShareTip(localStorage.getItem(SHARE_TIP_KEY) !== "1");
     } catch {
       setShareTip(true);
     }
+    return () => window.clearTimeout(id);
   }, [hydrated, accountId]);
 
   const dismissShareTip = () => {
@@ -62,8 +67,9 @@ export function TripHome() {
       /* ignore */
     }
     const cloud = await pushAccount({ id: accountId, trips, personalItems });
+    const shareText = `[챙겨요 · 여행 준비물 체크리스트]\n\n접속 후에는 기존 일정이 사라져요!\n\n기존 일정을 유지하시려면 '일정 공유하기'를 눌러 기존 일정을 저장해주세요.\n\n${url}`;
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(shareText);
     } catch {
       /* playwright / insecure context */
     }

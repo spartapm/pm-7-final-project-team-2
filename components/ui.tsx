@@ -161,6 +161,7 @@ export function InputDialog({
   value,
   onChange,
   placeholder = "최대 30글자로\n카테고리/아이템 직접 입력하기",
+  maxLength = 30,
   confirmDisabled,
   onCancel,
   onConfirm,
@@ -170,6 +171,7 @@ export function InputDialog({
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
+  maxLength?: number;
   confirmDisabled?: boolean;
   onCancel: () => void;
   onConfirm: () => void;
@@ -177,9 +179,10 @@ export function InputDialog({
 }) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const composing = useRef(false);
+  const [kbInset, setKbInset] = useState(0);
   const apply = (next: string) => {
-    if (next.length > 30) {
-      onChange(next.slice(0, 30));
+    if (next.length > maxLength) {
+      onChange(next.slice(0, maxLength));
       onLimit?.();
       return;
     }
@@ -200,10 +203,39 @@ export function InputDialog({
     const el = inputRef.current;
     if (!el) return;
     el.focus();
-    pinCaret();
+    const id = window.requestAnimationFrame(() => {
+      if (el.value) el.select();
+      else pinCaret();
+    });
+    return () => window.cancelAnimationFrame(id);
   }, []);
+  useEffect(() => {
+    const sync = () => {
+      const vv = window.visualViewport;
+      if (!vv) {
+        setKbInset(0);
+        return;
+      }
+      setKbInset(Math.max(0, window.innerHeight - vv.height - vv.offsetTop));
+    };
+    sync();
+    window.addEventListener("resize", sync);
+    const vv = window.visualViewport;
+    vv?.addEventListener("resize", sync);
+    vv?.addEventListener("scroll", sync);
+    return () => {
+      window.removeEventListener("resize", sync);
+      vv?.removeEventListener("resize", sync);
+      vv?.removeEventListener("scroll", sync);
+    };
+  }, []);
+  const lift = kbInset > 48;
   return (
-    <div className="dim" onClick={onCancel}>
+    <div
+      className={`dim${lift ? " kb-lift" : ""}`}
+      style={lift ? { paddingBottom: kbInset } : undefined}
+      onClick={onCancel}
+    >
       <div className="dialog" onClick={(e) => e.stopPropagation()}>
         <div className="con">
           <div className="tt">{title}</div>
@@ -236,7 +268,7 @@ export function InputDialog({
                 if (ne.inputType === "insertCompositionText") return;
                 const el = e.currentTarget;
                 const selected = (el.selectionEnd ?? 0) - (el.selectionStart ?? 0);
-                if (value.length - selected + ne.data.length > 30) {
+                if (value.length - selected + ne.data.length > maxLength) {
                   e.preventDefault();
                   onLimit?.();
                 }

@@ -80,60 +80,68 @@ async function markShown(trip: Trip, kind: ReminderKind) {
 }
 
 export async function dispatchDuePushes(opts?: { ignoreHour?: boolean }) {
-  if (!pushConfigured()) return { ok: false as const, message: "VAPID 키가 없습니다", sent: 0 };
-  await loadCatalogFromCloud();
-  const sb = getSupabase();
-  if (!sb) return { ok: false as const, message: "Supabase가 없습니다", sent: 0 };
+  try {
+    if (!pushConfigured()) return { ok: false as const, message: "VAPID 키가 없습니다", sent: 0 };
+    await loadCatalogFromCloud();
+    const sb = getSupabase();
+    if (!sb) return { ok: false as const, message: "Supabase가 없습니다", sent: 0 };
 
-  const [subRes, tripRes] = await Promise.all([
-    subscriptionsFor(),
-    sb.from("trips").select("id, account_id, payload"),
-  ]);
-  if (subRes.status === "missing-table") {
-    return { ok: false as const, message: "push_subscriptions 테이블이 없습니다. 어드민에서 SQL을 실행하세요.", sent: 0 };
-  }
-  if (tripRes.error) {
-    return { ok: false as const, message: tripRes.error.message, sent: 0 };
-  }
-
-  const byAccount = new Map<string, PushSubRow[]>();
-  for (const row of subRes.rows) {
-    const list = byAccount.get(row.account_id) ?? [];
-    list.push(row);
-    byAccount.set(row.account_id, list);
-  }
-
-  const now = new Date();
-  let sent = 0;
-  const failures: string[] = [];
-
-  for (const row of tripRes.data ?? []) {
-    const trip = row.payload as Trip;
-    if (!trip?.id || !Array.isArray(trip.categories)) continue;
-    const kind = scheduledKindNow(trip, now, Boolean(opts?.ignoreHour));
-    if (!kind) continue;
-    const subs = byAccount.get(row.account_id as string) ?? [];
-    if (!subs.length) continue;
-    const copy = reminderCopy(kind, cartCount(trip));
-    const payload: PushPayload = {
-      title: copy.title,
-      body: copy.body,
-      url: `/trips/${trip.id}`,
-      tripId: trip.id,
-      kind,
-    };
-    let anyOk = false;
-    for (const sub of subs) {
-      const res = await sendPush(sub, payload);
-      if (res.ok) {
-        sent += 1;
-        anyOk = true;
-      } else if (!res.gone) {
-        failures.push(res.error);
-      }
+    const [subRes, tripRes] = await Promise.all([
+      subscriptionsFor(),
+      sb.from("trips").select("id, account_id, payload"),
+    ]);
+    if (subRes.status === "missing-table") {
+      return { ok: false as const, message: "push_subscriptions 테이블이 없습니다. 어드민에서 SQL을 실행하세요.", sent: 0 };
     }
-    if (anyOk) await markShown(trip, kind);
-  }
+    if (tripRes.error) {
+      return { ok: false as const, message: tripRes.error.message, sent: 0 };
+    }
 
-  return { ok: true as const, sent, failures: failures.slice(0, 5) };
+    const byAccount = new Map<string, PushSubRow[]>();
+    for (const row of subRes.rows) {
+      const list = byAccount.get(row.account_id) ?? [];
+      list.push(row);
+      byAccount.set(row.account_id, list);
+    }
+
+    const now = new Date();
+    let sent = 0;
+    const failures: string[] = [];
+
+    for (const row of tripRes.data ?? []) {
+      const trip = row.payload as Trip;
+      if (!trip?.id || !Array.isArray(trip.categories)) continue;
+      const kind = scheduledKindNow(trip, now, Boolean(opts?.ignoreHour));
+      if (!kind) continue;
+      const subs = byAccount.get(row.account_id as string) ?? [];
+      if (!subs.length) continue;
+      const copy = reminderCopy(kind, cartCount(trip));
+      const payload: PushPayload = {
+        title: copy.title,
+        body: copy.body,
+        url: `/trips/${trip.id}`,
+        tripId: trip.id,
+        kind,
+      };
+      let anyOk = false;
+      for (const sub of subs) {
+        const res = await sendPush(sub, payload);
+        if (res.ok) {
+          sent += 1;
+          anyOk = true;
+        } else if (!res.gone) {
+          failures.push(res.error);
+        }
+      }
+      if (anyOk) await markShown(trip, kind);
+    }
+
+    return { ok: true as const, sent, failures: failures.slice(0, 5) };
+  } catch (e) {
+    return {
+      ok: false as const,
+      message: e instanceof Error ? e.message : "발송 실패",
+      sent: 0,
+    };
+  }
 }

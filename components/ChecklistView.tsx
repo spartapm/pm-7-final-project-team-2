@@ -699,7 +699,10 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                               {pack}
                             </span>
                           ) : reason ? (
-                            <span className="desc">{reason}</span>
+                            <span className={`desc${item.userMemo ? " user-memo" : ""}`}>
+                              {item.userMemo ? <i className="memo-dot" aria-hidden /> : null}
+                              <span>{reason}</span>
+                            </span>
                           ) : null}
                         </div>
                         {editing ? (
@@ -986,16 +989,19 @@ export function ChecklistView({ tripId }: { tripId: string }) {
         <InputDialog
           title="아이템 메모 추가/변경"
           value={memo.text}
-          placeholder="최대 30글자로 메모 직접 입력하기"
+          maxLength={100}
+          placeholder="최대 100글자로 메모 직접 입력하기"
           onChange={(v) => setMemo({ ...memo, text: v })}
           confirmDisabled={!memo.text.trim()}
-          onLimit={() => setToast({ msg: "최대 30자까지 입력할 수 있어요", place: "top" })}
+          onLimit={() => setToast({ msg: "최대 100자까지 입력할 수 있어요", place: "top" })}
           onCancel={() => setMemo(null)}
           onConfirm={() => {
             const text = memo.text.trim();
             if (!text) return;
             resetUncheckedJump();
-            save((t) => patchItem(t, memo.catId, memo.itemId, (i) => ({ ...i, reason: text })));
+            save((t) =>
+              patchItem(t, memo.catId, memo.itemId, (i) => ({ ...i, reason: text, userMemo: true }))
+            );
             setMemo(null);
           }}
         />

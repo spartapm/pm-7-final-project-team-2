@@ -564,6 +564,14 @@ a { color: inherit; text-decoration: none; }
   z-index: 40; display: flex; align-items: center; justify-content: center;
   padding: 24px;
 }
+.dim.kb-lift {
+  align-items: flex-end;
+  padding-top: 12px;
+}
+.dim.kb-lift .dialog {
+  height: auto;
+  max-height: 100%;
+}
 .confirm {
   width: 320px; min-height: 192px; background: var(--bg);
   border-radius: var(--r-sm); overflow: hidden;
@@ -719,6 +727,22 @@ a { color: inherit; text-decoration: none; }
 .row .desc {
   font-weight: 500; font-size: 12px; line-height: 16px; color: var(--text-3); margin-top: 2px;
   white-space: normal; overflow: visible; word-break: keep-all;
+}
+.row .desc.user-memo {
+  display: grid;
+  grid-template-columns: 5px 1fr;
+  column-gap: 8px;
+  align-items: start;
+}
+.row .desc .memo-dot {
+  display: block;
+  width: 5px;
+  height: 5px;
+  margin-top: 5.5px;
+  border-radius: 50%;
+  background: #368fff;
+  font-style: normal;
+  flex: none;
 }
 .row .desc.overpack {
   color: var(--accent);
