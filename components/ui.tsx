@@ -178,9 +178,12 @@ export function InputDialog({
   onLimit?: () => void;
 }) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const dimRef = useRef<HTMLDivElement>(null);
   const composing = useRef(false);
-  const [kbInset, setKbInset] = useState(0);
+  const primed = useRef(true);
+  const [kbOpen, setKbOpen] = useState(false);
   const apply = (next: string) => {
+    primed.current = false;
     if (next.length > maxLength) {
       onChange(next.slice(0, maxLength));
       onLimit?.();
@@ -193,6 +196,12 @@ export function InputDialog({
     if (!el || el.value) return;
     el.setSelectionRange(0, 0);
   };
+  const primeSelection = () => {
+    const el = inputRef.current;
+    if (!el || !primed.current) return;
+    if (el.value) el.select();
+    else pinCaret();
+  };
   useLayoutEffect(() => {
     const el = inputRef.current;
     if (!el) return;
@@ -203,20 +212,35 @@ export function InputDialog({
     const el = inputRef.current;
     if (!el) return;
     el.focus();
-    const id = window.requestAnimationFrame(() => {
-      if (el.value) el.select();
-      else pinCaret();
-    });
-    return () => window.cancelAnimationFrame(id);
+    primeSelection();
+    const ids = [80, 280, 560].map((ms) => window.setTimeout(primeSelection, ms));
+    return () => ids.forEach((id) => window.clearTimeout(id));
   }, []);
-  useEffect(() => {
+  useLayoutEffect(() => {
+    const dim = dimRef.current;
+    const shell = dim?.closest(".shell") as HTMLElement | null;
     const sync = () => {
       const vv = window.visualViewport;
-      if (!vv) {
-        setKbInset(0);
+      if (!dim || !shell || !vv) {
+        setKbOpen(false);
         return;
       }
-      setKbInset(Math.max(0, window.innerHeight - vv.height - vv.offsetTop));
+      const sr = shell.getBoundingClientRect();
+      const top = Math.max(0, vv.offsetTop - sr.top);
+      const visible = Math.max(160, Math.min(vv.height, sr.height - top));
+      const covered = Math.max(0, sr.height - visible - top);
+      if (covered < 48) {
+        dim.style.top = "";
+        dim.style.height = "";
+        dim.style.bottom = "";
+        setKbOpen(false);
+        return;
+      }
+      dim.style.top = `${top}px`;
+      dim.style.height = `${visible}px`;
+      dim.style.bottom = "auto";
+      setKbOpen(true);
+      primeSelection();
     };
     sync();
     window.addEventListener("resize", sync);
@@ -229,11 +253,10 @@ export function InputDialog({
       vv?.removeEventListener("scroll", sync);
     };
   }, []);
-  const lift = kbInset > 48;
   return (
     <div
-      className={`dim${lift ? " kb-lift" : ""}`}
-      style={lift ? { paddingBottom: kbInset } : undefined}
+      ref={dimRef}
+      className={`dim${kbOpen ? " kb-lift" : ""}`}
       onClick={onCancel}
     >
       <div className="dialog" onClick={(e) => e.stopPropagation()}>
@@ -249,6 +272,7 @@ export function InputDialog({
               dir="ltr"
               className={value ? "typed" : "empty"}
               onChange={(e) => {
+                primed.current = false;
                 if (composing.current) {
                   onChange(e.target.value);
                   return;

@@ -566,7 +566,8 @@ a { color: inherit; text-decoration: none; }
 }
 .dim.kb-lift {
   align-items: flex-end;
-  padding-top: 12px;
+  padding-top: 8px;
+  padding-bottom: 8px;
 }
 .dim.kb-lift .dialog {
   height: auto;

@@ -28,7 +28,9 @@ let subLock: Promise<void> | null = null;
 function onTripHome() {
   if (typeof window === "undefined") return false;
   if (window.location.pathname !== "/trips") return false;
+  if (window.location.pathname.startsWith("/onboarding")) return false;
   if (document.querySelector(".gen-seq")) return false;
+  if (!document.querySelector(".share-btn")) return false;
   return document.visibilityState === "visible";
 }
 
