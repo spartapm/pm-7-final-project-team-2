@@ -16,8 +16,8 @@ function urlBase64ToUint8Array(base64: string) {
 }
 
 async function vapidPublicKey() {
-  const fromEnv = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-  if (fromEnv) return fromEnv;
+  const fromEnv = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim();
+  if (fromEnv) return fromEnv.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   const res = await fetch("/api/push/vapid", { cache: "no-store" });
   const json = (await res.json()) as { publicKey?: string };
   return json.publicKey || "";

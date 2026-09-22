@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { countryName } from "@/lib/catalog";
 import { checklistSubtitle } from "@/lib/dates";
 import {
@@ -56,13 +56,32 @@ function isPersonalCat(c: Category) {
 }
 
 function isProtectedCategory(c: Category) {
-  return c.kind === "essential" || c.kind === "base";
+  const name = c.name.trim();
+  return (
+    c.kind === "essential" ||
+    c.kind === "base" ||
+    name === "필수 준비물" ||
+    name === "기본 짐싸기" ||
+    name === "필수" ||
+    name === "기본"
+  );
 }
 
 const SCROLL_OFFSET_RATIO = 0.2;
 const SPOT_HOLD_MS = 800;
 const COACH_DELAY_MS = 600;
 const COACH_AUTO_MS = 5000;
+
+function scrollItemIntoBand(scroller: HTMLElement, el: Element) {
+  const dest = Math.max(
+    0,
+    scroller.scrollTop +
+      el.getBoundingClientRect().top -
+      scroller.getBoundingClientRect().top -
+      scroller.clientHeight * SCROLL_OFFSET_RATIO
+  );
+  scroller.scrollTo(0, dest);
+}
 
 function RecoCarousel() {
   const ref = useRef<HTMLDivElement>(null);
@@ -205,20 +224,14 @@ export function ChecklistView({ tripId }: { tripId: string }) {
   }, [editing, trip]);
 
   const [scrollNonce, setScrollNonce] = useState(0);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const id = pendingScroll.current;
     if (!id) return;
     const scroll = scrollRef.current;
     const el = scroll?.querySelector(`[data-item-id="${CSS.escape(id)}"]`);
     if (!scroll || !el) return;
     pendingScroll.current = null;
-    const top =
-      scroll.scrollTop +
-      el.getBoundingClientRect().top -
-      scroll.getBoundingClientRect().top -
-      scroll.clientHeight * SCROLL_OFFSET_RATIO;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    scroll.scrollTo({ top: Math.max(0, top), behavior: reduce ? "auto" : "smooth" });
+    scrollItemIntoBand(scroll, el);
   }, [trip, scrollNonce]);
 
   useEffect(() => {
@@ -248,17 +261,20 @@ export function ChecklistView({ tripId }: { tripId: string }) {
   }, [trip?.id, editing, trip]);
 
   useEffect(() => {
-    if (!trip || editing || hasSeenCounterCoach()) {
+    if (!trip || editing || packGuide || hasSeenCounterCoach()) {
       setCoachOn(false);
       return;
     }
-    const show = window.setTimeout(() => setCoachOn(true), COACH_DELAY_MS);
+    const show = window.setTimeout(() => {
+      setCoachOn(true);
+      markCounterCoachSeen();
+    }, COACH_DELAY_MS);
     const hide = window.setTimeout(() => setCoachOn(false), COACH_DELAY_MS + COACH_AUTO_MS);
     return () => {
       window.clearTimeout(show);
       window.clearTimeout(hide);
     };
-  }, [trip?.id, editing, trip]);
+  }, [trip?.id, editing, packGuide]);
 
   if (!trip) {
     return (
@@ -277,12 +293,16 @@ export function ChecklistView({ tripId }: { tripId: string }) {
   };
 
   const spotlight = (itemId: string) => {
-    setSpotId(null);
-    requestAnimationFrame(() => {
-      setSpotId(itemId);
-      if (spotHoldTimer.current) window.clearTimeout(spotHoldTimer.current);
-      spotHoldTimer.current = window.setTimeout(clearSpot, SPOT_HOLD_MS);
-    });
+    const root = scrollRef.current;
+    root?.querySelectorAll(".row.spot").forEach((row) => row.classList.remove("spot"));
+    const el = root?.querySelector(`[data-item-id="${CSS.escape(itemId)}"]`) as HTMLElement | null;
+    if (el) {
+      void el.offsetWidth;
+      el.classList.add("spot");
+    }
+    setSpotId(itemId);
+    if (spotHoldTimer.current) window.clearTimeout(spotHoldTimer.current);
+    spotHoldTimer.current = window.setTimeout(clearSpot, SPOT_HOLD_MS);
   };
 
   const pickNextUnchecked = () => {
@@ -927,6 +947,11 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                 category_name: cat.name,
                 deleted_item_count: cat.items.length,
               });
+            }
+            if (cat && isProtectedCategory(cat)) {
+              setConfirmCat(null);
+              setCatMenu(null);
+              return;
             }
             if (cat && isPersonalCat(cat)) removePersonalCategory();
             else {

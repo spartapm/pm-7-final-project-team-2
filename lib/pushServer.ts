@@ -24,15 +24,17 @@ function normalizeVapidKey(key: string) {
   return key.trim().replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-function vapid() {
+function applyVapid() {
   const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   const privateKey = process.env.VAPID_PRIVATE_KEY;
   const subject = process.env.VAPID_SUBJECT || "mailto:chaeggyeo@gmail.com";
-  if (!publicKey || !privateKey) return null;
-  const pub = normalizeVapidKey(publicKey);
-  const priv = normalizeVapidKey(privateKey);
-  webpush.setVapidDetails(subject, pub, priv);
-  return { publicKey: pub, privateKey: priv, subject };
+  if (!publicKey || !privateKey) return { ok: false as const, error: "VAPID 키가 없습니다" };
+  try {
+    webpush.setVapidDetails(subject, normalizeVapidKey(publicKey), normalizeVapidKey(privateKey));
+    return { ok: true as const };
+  } catch (e) {
+    return { ok: false as const, error: e instanceof Error ? e.message : "VAPID 키 오류" };
+  }
 }
 
 export function pushConfigured() {
@@ -40,7 +42,8 @@ export function pushConfigured() {
 }
 
 export async function sendPush(sub: PushSubRow, payload: PushPayload) {
-  if (!vapid()) return { ok: false as const, gone: false, error: "VAPID 키가 없습니다" };
+  const keys = applyVapid();
+  if (!keys.ok) return { ok: false as const, gone: false, error: keys.error };
   try {
     await webpush.sendNotification(
       {
@@ -87,7 +90,8 @@ async function markShown(trip: Trip, kind: ReminderKind) {
 
 export async function dispatchDuePushes(opts?: { ignoreHour?: boolean }) {
   try {
-    if (!pushConfigured()) return { ok: false as const, message: "VAPID 키가 없습니다", sent: 0 };
+    const keys = applyVapid();
+    if (!keys.ok) return { ok: false as const, message: keys.error, sent: 0 };
     await loadCatalogFromCloud();
     const sb = getSupabase();
     if (!sb) return { ok: false as const, message: "Supabase가 없습니다", sent: 0 };

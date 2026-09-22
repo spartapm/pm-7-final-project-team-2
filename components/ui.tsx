@@ -211,7 +211,7 @@ export function InputDialog({
   useEffect(() => {
     const el = inputRef.current;
     if (!el) return;
-    el.focus();
+    el.focus({ preventScroll: true });
     primeSelection();
     const ids = [80, 280, 560].map((ms) => window.setTimeout(primeSelection, ms));
     return () => ids.forEach((id) => window.clearTimeout(id));
@@ -220,44 +220,51 @@ export function InputDialog({
     const dim = dimRef.current;
     const dialog = dialogRef.current;
     const shell = dim?.closest(".shell") as HTMLElement | null;
+    const DIALOG_H = 312;
+    const GAP = 12;
+    const reset = () => {
+      if (!dim) return;
+      dim.classList.remove("kb");
+      dim.style.top = "";
+      dim.style.height = "";
+      dim.style.bottom = "";
+      if (dialog) dialog.style.marginTop = "";
+    };
     const sync = () => {
-      const vv = window.visualViewport;
-      if (!dim || !shell || !vv) {
-        if (dialog) dialog.style.transform = "";
-        return;
-      }
+      if (!dim || !dialog || !shell) return;
       const sr = shell.getBoundingClientRect();
-      const top = Math.max(0, vv.offsetTop - sr.top);
-      const visible = Math.max(160, Math.min(vv.height, sr.height - top));
-      const covered = Math.max(0, sr.height - visible - top);
-      if (covered < 48) {
-        dim.style.top = "";
-        dim.style.height = "";
-        dim.style.bottom = "";
-        if (dialog) dialog.style.transform = "";
+      const vv = window.visualViewport;
+      const visTop = Math.max(0, sr.top);
+      const visBottom = Math.min(sr.bottom, vv ? vv.height : window.innerHeight);
+      const visHeight = Math.max(0, visBottom - visTop);
+      const topInShell = visTop - sr.top;
+      const keyboard = visHeight < sr.height - 24;
+      if (!keyboard) {
+        reset();
         return;
       }
-      dim.style.top = `${top}px`;
-      dim.style.height = `${visible}px`;
+      dim.classList.add("kb");
+      dim.style.top = `${Math.max(0, topInShell)}px`;
+      dim.style.height = `${visHeight}px`;
       dim.style.bottom = "auto";
-      if (dialog) {
-        dialog.style.transform = "";
-        const dr = dialog.getBoundingClientRect();
-        const dimRect = dim.getBoundingClientRect();
-        const overflow = dr.bottom - dimRect.bottom + 8;
-        if (overflow > 0) dialog.style.transform = `translateY(-${overflow}px)`;
-      }
+      const centered = (visHeight - DIALOG_H) / 2;
+      const maxTop = visHeight - DIALOG_H - GAP;
+      dialog.style.marginTop = `${Math.min(centered, maxTop)}px`;
       primeSelection();
     };
     sync();
-    window.addEventListener("resize", sync);
+    const onViewport = () => {
+      requestAnimationFrame(sync);
+    };
+    window.addEventListener("resize", onViewport);
     const vv = window.visualViewport;
-    vv?.addEventListener("resize", sync);
-    vv?.addEventListener("scroll", sync);
+    vv?.addEventListener("resize", onViewport);
+    vv?.addEventListener("scroll", onViewport);
     return () => {
-      window.removeEventListener("resize", sync);
-      vv?.removeEventListener("resize", sync);
-      vv?.removeEventListener("scroll", sync);
+      window.removeEventListener("resize", onViewport);
+      vv?.removeEventListener("resize", onViewport);
+      vv?.removeEventListener("scroll", onViewport);
+      reset();
     };
   }, []);
   return (
