@@ -219,55 +219,60 @@ export function InputDialog({
   useLayoutEffect(() => {
     const dim = dimRef.current;
     const dialog = dialogRef.current;
-    const shell = dim?.closest(".shell") as HTMLElement | null;
+    const shell = document.querySelector(".shell") as HTMLElement | null;
+    const scroller = shell?.querySelector(".shell-scroll") as HTMLElement | null;
     const DIALOG_H = 312;
     const GAP = 12;
-    const reset = () => {
-      if (!dim) return;
-      dim.classList.remove("kb");
-      dim.style.top = "";
-      dim.style.height = "";
-      dim.style.bottom = "";
-      if (dialog) dialog.style.marginTop = "";
-    };
     const sync = () => {
       if (!dim || !dialog || !shell) return;
       const sr = shell.getBoundingClientRect();
       const vv = window.visualViewport;
-      const visTop = Math.max(0, sr.top);
-      const visBottom = Math.min(sr.bottom, vv ? vv.height : window.innerHeight);
-      const visHeight = Math.max(0, visBottom - visTop);
-      const topInShell = visTop - sr.top;
-      const keyboard = visHeight < sr.height - 24;
+      const vvTop = vv?.offsetTop ?? 0;
+      const vvLeft = vv?.offsetLeft ?? 0;
+      const vvH = vv?.height ?? window.innerHeight;
+      const vvW = vv?.width ?? window.innerWidth;
+      const top = Math.max(sr.top, vvTop);
+      const left = Math.max(sr.left, vvLeft);
+      const visH = Math.max(0, Math.min(sr.bottom, vvTop + vvH) - top);
+      const visW = Math.max(0, Math.min(sr.right, vvLeft + vvW) - left);
+      dim.style.position = "fixed";
+      dim.style.inset = "auto";
+      dim.style.top = `${top}px`;
+      dim.style.left = `${left}px`;
+      dim.style.width = `${visW}px`;
+      dim.style.height = `${visH}px`;
+      dim.style.right = "auto";
+      dim.style.bottom = "auto";
+      const keyboard = visH < sr.height - 24;
+      dim.classList.toggle("kb", keyboard);
       if (!keyboard) {
-        reset();
+        dialog.style.marginTop = "";
         return;
       }
-      dim.classList.add("kb");
-      dim.style.top = `${Math.max(0, topInShell)}px`;
-      dim.style.height = `${visHeight}px`;
-      dim.style.bottom = "auto";
-      const centered = (visHeight - DIALOG_H) / 2;
-      const maxTop = visHeight - DIALOG_H - GAP;
+      const centered = (visH - DIALOG_H) / 2;
+      const maxTop = visH - DIALOG_H - GAP;
       dialog.style.marginTop = `${Math.min(centered, maxTop)}px`;
-      primeSelection();
     };
+    scroller?.classList.add("lock");
     sync();
-    const onViewport = () => {
-      requestAnimationFrame(sync);
-    };
+    const onViewport = () => requestAnimationFrame(sync);
     window.addEventListener("resize", onViewport);
+    window.addEventListener("scroll", onViewport, true);
     const vv = window.visualViewport;
     vv?.addEventListener("resize", onViewport);
     vv?.addEventListener("scroll", onViewport);
+    const tick = window.setInterval(sync, 50);
     return () => {
+      scroller?.classList.remove("lock");
       window.removeEventListener("resize", onViewport);
+      window.removeEventListener("scroll", onViewport, true);
       vv?.removeEventListener("resize", onViewport);
       vv?.removeEventListener("scroll", onViewport);
-      reset();
+      window.clearInterval(tick);
     };
   }, []);
-  return (
+  if (typeof document === "undefined") return null;
+  return createPortal(
     <div ref={dimRef} className="dim" onClick={onCancel}>
       <div ref={dialogRef} className="dialog" onClick={(e) => e.stopPropagation()}>
         <div className="con">
@@ -320,7 +325,8 @@ export function InputDialog({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

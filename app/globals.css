@@ -567,7 +567,7 @@ a { color: inherit; text-decoration: none; }
 .dim.kb {
   padding: 0;
   align-items: flex-start;
-  overflow: hidden;
+  overflow: visible;
 }
 .dim .dialog {
   flex: none;
