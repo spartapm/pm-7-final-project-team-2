@@ -5,6 +5,25 @@ import { createPortal } from "react-dom";
 import { IconBack, IconCalChevron, IconClose, IconKebab, IconSheetChevron } from "./icons";
 import { track } from "@/lib/analytics";
 
+declare global {
+  interface Window {
+    __chaeggyeoBaseH?: number;
+  }
+}
+
+function rememberBaseHeight() {
+  const h = Math.max(window.innerHeight, window.visualViewport?.height ?? 0);
+  const prev = window.__chaeggyeoBaseH ?? 0;
+  if (h >= prev - 40) window.__chaeggyeoBaseH = Math.max(prev, h);
+  return window.__chaeggyeoBaseH ?? h;
+}
+
+if (typeof window !== "undefined") {
+  rememberBaseHeight();
+  window.addEventListener("resize", rememberBaseHeight);
+  window.visualViewport?.addEventListener("resize", rememberBaseHeight);
+}
+
 export function TopBar({
   back,
   close,
@@ -178,6 +197,7 @@ export function InputDialog({
   onLimit?: () => void;
 }) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
   const dimRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const composing = useRef(false);
@@ -208,42 +228,68 @@ export function InputDialog({
     el.style.height = "24px";
     if (value) el.style.height = `${Math.min(el.scrollHeight, 184)}px`;
   }, [value]);
-  useEffect(() => {
-    const el = inputRef.current;
-    if (!el) return;
-    el.focus({ preventScroll: true });
-    primeSelection();
-    const ids = [80, 280, 560].map((ms) => window.setTimeout(primeSelection, ms));
-    return () => ids.forEach((id) => window.clearTimeout(id));
-  }, []);
   useLayoutEffect(() => {
+    const frame = frameRef.current;
     const dim = dimRef.current;
     const dialog = dialogRef.current;
     const shell = document.querySelector(".shell") as HTMLElement | null;
     const scroller = shell?.querySelector(".shell-scroll") as HTMLElement | null;
+    const html = document.documentElement;
+    const body = document.body;
     const DIALOG_H = 312;
     const GAP = 12;
+    const vv = window.visualViewport;
+    rememberBaseHeight();
+    const scrollY = window.scrollY;
+    const prevHtmlOverflow = html.style.overflow;
+    const prevBody = {
+      position: body.style.position,
+      top: body.style.top,
+      left: body.style.left,
+      right: body.style.right,
+      width: body.style.width,
+      overflow: body.style.overflow,
+    };
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.left = "0";
+    body.style.right = "0";
+    body.style.width = "100%";
+    scroller?.classList.add("lock");
+    const vk = (navigator as Navigator & { virtualKeyboard?: {
+      overlaysContent: boolean;
+      boundingRect: DOMRect;
+      addEventListener: (type: string, fn: () => void) => void;
+      removeEventListener: (type: string, fn: () => void) => void;
+    } }).virtualKeyboard;
+    if (vk) vk.overlaysContent = true;
     const sync = () => {
-      if (!dim || !dialog || !shell) return;
+      if (!frame || !dim || !dialog || !shell) return;
+      window.scrollTo(0, 0);
+      const vvNow = window.visualViewport;
+      const vvTop = vvNow?.offsetTop ?? 0;
+      const vvLeft = vvNow?.offsetLeft ?? 0;
+      const vvH = vvNow?.height ?? window.innerHeight;
+      const vvW = vvNow?.width ?? window.innerWidth;
+      const kbInset = Number.parseFloat(getComputedStyle(html).getPropertyValue("--keyboard-inset")) || 0;
+      const vkH = vk?.boundingRect.height ?? 0;
+      const liveH = Math.min(vvH, window.innerHeight);
+      const visViewportH = Math.max(0, liveH - (kbInset > vkH ? kbInset : 0));
+      frame.style.width = `${vvW}px`;
+      frame.style.height = `${visViewportH}px`;
+      frame.style.transform = `translate(${vvLeft}px, ${vvTop}px)`;
       const sr = shell.getBoundingClientRect();
-      const vv = window.visualViewport;
-      const vvTop = vv?.offsetTop ?? 0;
-      const vvLeft = vv?.offsetLeft ?? 0;
-      const vvH = vv?.height ?? window.innerHeight;
-      const vvW = vv?.width ?? window.innerWidth;
-      const top = Math.max(sr.top, vvTop);
-      const left = Math.max(sr.left, vvLeft);
-      const visH = Math.max(0, Math.min(sr.bottom, vvTop + vvH) - top);
-      const visW = Math.max(0, Math.min(sr.right, vvLeft + vvW) - left);
-      dim.style.position = "fixed";
-      dim.style.inset = "auto";
-      dim.style.top = `${top}px`;
-      dim.style.left = `${left}px`;
+      const topV = Math.max(0, sr.top - vvTop);
+      const leftV = Math.max(0, sr.left - vvLeft);
+      const visH = Math.max(0, Math.min(visViewportH, sr.bottom - vvTop) - topV);
+      const visW = Math.max(0, Math.min(vvW, sr.right - vvLeft) - leftV);
+      dim.style.top = `${topV}px`;
+      dim.style.left = `${leftV}px`;
       dim.style.width = `${visW}px`;
       dim.style.height = `${visH}px`;
-      dim.style.right = "auto";
-      dim.style.bottom = "auto";
-      const keyboard = visH < sr.height - 24;
+      const keyboard = visViewportH < rememberBaseHeight() - 80 || vkH > 80;
       dim.classList.toggle("kb", keyboard);
       if (!keyboard) {
         dialog.style.marginTop = "";
@@ -253,26 +299,45 @@ export function InputDialog({
       const maxTop = visH - DIALOG_H - GAP;
       dialog.style.marginTop = `${Math.min(centered, maxTop)}px`;
     };
-    scroller?.classList.add("lock");
-    sync();
     const onViewport = () => requestAnimationFrame(sync);
+    sync();
+    const el = inputRef.current;
+    if (el) {
+      el.readOnly = true;
+      el.focus({ preventScroll: true });
+      el.readOnly = false;
+      primeSelection();
+    }
     window.addEventListener("resize", onViewport);
     window.addEventListener("scroll", onViewport, true);
-    const vv = window.visualViewport;
     vv?.addEventListener("resize", onViewport);
     vv?.addEventListener("scroll", onViewport);
+    vk?.addEventListener("geometrychange", onViewport);
     const tick = window.setInterval(sync, 50);
+    const ids = [80, 280, 560].map((ms) => window.setTimeout(primeSelection, ms));
     return () => {
       scroller?.classList.remove("lock");
+      html.style.overflow = prevHtmlOverflow;
+      body.style.position = prevBody.position;
+      body.style.top = prevBody.top;
+      body.style.left = prevBody.left;
+      body.style.right = prevBody.right;
+      body.style.width = prevBody.width;
+      body.style.overflow = prevBody.overflow;
+      window.scrollTo(0, scrollY);
+      if (vk) vk.overlaysContent = false;
       window.removeEventListener("resize", onViewport);
       window.removeEventListener("scroll", onViewport, true);
       vv?.removeEventListener("resize", onViewport);
       vv?.removeEventListener("scroll", onViewport);
+      vk?.removeEventListener("geometrychange", onViewport);
       window.clearInterval(tick);
+      ids.forEach((id) => window.clearTimeout(id));
     };
   }, []);
   if (typeof document === "undefined") return null;
   return createPortal(
+    <div ref={frameRef} className="kb-frame">
     <div ref={dimRef} className="dim" onClick={onCancel}>
       <div ref={dialogRef} className="dialog" onClick={(e) => e.stopPropagation()}>
         <div className="con">
@@ -285,6 +350,9 @@ export function InputDialog({
               value={value}
               rows={1}
               dir="ltr"
+              autoComplete="off"
+              autoCorrect="off"
+              enterKeyHint="done"
               className={value ? "typed" : "empty"}
               onChange={(e) => {
                 primed.current = false;
@@ -325,6 +393,7 @@ export function InputDialog({
           </button>
         </div>
       </div>
+    </div>
     </div>,
     document.body
   );

@@ -25,6 +25,7 @@
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; color-scheme: light; }
+html { --keyboard-inset: env(keyboard-inset-height, 0px); }
 body {
   background: var(--letterbox);
   color: var(--text-1);
@@ -559,6 +560,18 @@ a { color: inherit; text-decoration: none; }
 .share-btn:hover { box-shadow: 0 0 8px var(--primary); }
 .share-btn:active { background: var(--primary-sub); box-shadow: none; }
 
+.kb-frame {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 40;
+  pointer-events: none;
+}
+.kb-frame .dim {
+  pointer-events: auto;
+  position: absolute;
+  inset: auto;
+}
 .dim {
   position: absolute; inset: 0; background: rgba(58, 58, 58, 0.5);
   z-index: 40; display: flex; align-items: center; justify-content: center;
