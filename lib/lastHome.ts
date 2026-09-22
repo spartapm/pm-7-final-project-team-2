@@ -45,3 +45,21 @@ export function markPackGuideSeen() {
     /* ignore */
   }
 }
+
+const COUNTER_COACH_KEY = "chaeggyeo:counterCoachSeen";
+
+export function hasSeenCounterCoach() {
+  try {
+    return localStorage.getItem(COUNTER_COACH_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function markCounterCoachSeen() {
+  try {
+    localStorage.setItem(COUNTER_COACH_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+}

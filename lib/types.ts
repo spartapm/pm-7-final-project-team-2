@@ -11,7 +11,6 @@ export type ActivityId = string;
 export type WeatherId = "sunny" | "cloudy" | "windy" | "rain" | "snow";
 export type TempBandId = "cold" | "mild" | "hot";
 export type CategoryKind = "essential" | "base" | "activity" | "personal" | "custom";
-export type FilterMode = "all" | "unchecked" | "wished";
 export type TripStatus = "ongoing" | "upcoming" | "done";
 
 export type ChecklistItem = {

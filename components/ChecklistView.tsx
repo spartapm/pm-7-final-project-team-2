@@ -15,17 +15,21 @@ import { categoryFromPreset, emptyCustomCategory } from "@/lib/generate";
 import { commentRateFor, hasInfoIcon, isPurchasable, overpackCopy } from "@/lib/itemMeta";
 import { sortChecklistItems } from "@/lib/itemSort";
 import { loadCatalogFromCloud, livePresetCategoryNames, subscribeCatalog } from "@/lib/liveCatalog";
-import { hasSeenPackGuide, markPackGuideSeen, setLastHome } from "@/lib/lastHome";
+import {
+  hasSeenCounterCoach,
+  hasSeenPackGuide,
+  markCounterCoachSeen,
+  markPackGuideSeen,
+  setLastHome,
+} from "@/lib/lastHome";
 import { newItem, patchCategory, patchItem, useStore } from "@/lib/store";
-import type { Category, ChecklistItem, FilterMode, Trip } from "@/lib/types";
+import type { Category, ChecklistItem, Trip } from "@/lib/types";
 import {
   IconCart,
   IconCartFab,
   IconCheck,
   IconCheckHeader,
   IconChevron,
-  IconEdit,
-  IconFilter,
   IconInfo,
   IconMeatball,
   IconOverpack,
@@ -50,6 +54,15 @@ const MAILTO =
 function isPersonalCat(c: Category) {
   return c.kind === "personal" || c.name === "나만의 준비물";
 }
+
+function isProtectedCategory(c: Category) {
+  return c.kind === "essential" || c.kind === "base";
+}
+
+const SCROLL_OFFSET_RATIO = 0.2;
+const SPOT_HOLD_MS = 800;
+const COACH_DELAY_MS = 600;
+const COACH_AUTO_MS = 5000;
 
 function RecoCarousel() {
   const ref = useRef<HTMLDivElement>(null);
@@ -107,10 +120,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
   } = useStore();
   const trip = trips.find((t) => t.id === tripId);
   const [editing, setEditing] = useState(false);
-  const [filter, setFilter] = useState<FilterMode>("all");
-  const [filterOpen, setFilterOpen] = useState(false);
   const [catMenu, setCatMenu] = useState<{ id: string; anchor: HTMLElement } | null>(null);
-  const filterRef = useRef<HTMLButtonElement>(null);
   const [confirmCat, setConfirmCat] = useState<string | null>(null);
   const [confirmBulk, setConfirmBulk] = useState(false);
   const [rename, setRename] = useState<{ catId: string; itemId: string; name: string } | null>(null);
@@ -138,7 +148,10 @@ export function ChecklistView({ tripId }: { tripId: string }) {
   const [, catalogTick] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [packGuide, setPackGuide] = useState(false);
-  const uncheckedJump = useRef(0);
+  const [spotId, setSpotId] = useState<string | null>(null);
+  const [coachOn, setCoachOn] = useState(false);
+  const lastUncheckedId = useRef<string | null>(null);
+  const spotHoldTimer = useRef<number | null>(null);
   const pendingScroll = useRef<string | null>(null);
   const addComposing = useRef(false);
 
@@ -195,10 +208,17 @@ export function ChecklistView({ tripId }: { tripId: string }) {
   useEffect(() => {
     const id = pendingScroll.current;
     if (!id) return;
-    const el = scrollRef.current?.querySelector(`[data-item-id="${CSS.escape(id)}"]`);
-    if (!el) return;
+    const scroll = scrollRef.current;
+    const el = scroll?.querySelector(`[data-item-id="${CSS.escape(id)}"]`);
+    if (!scroll || !el) return;
     pendingScroll.current = null;
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    const top =
+      scroll.scrollTop +
+      el.getBoundingClientRect().top -
+      scroll.getBoundingClientRect().top -
+      scroll.clientHeight * SCROLL_OFFSET_RATIO;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    scroll.scrollTo({ top: Math.max(0, top), behavior: reduce ? "auto" : "smooth" });
   }, [trip, scrollNonce]);
 
   useEffect(() => {
@@ -227,15 +247,18 @@ export function ChecklistView({ tripId }: { tripId: string }) {
     setPackGuide(!hasSeenPackGuide());
   }, [trip?.id, editing, trip]);
 
-  const orderedCats = useMemo(() => {
-    const cats = trip?.categories ?? [];
-    if (filter === "all") return cats;
-    const pin = (c: Category) =>
-      filter === "unchecked"
-        ? c.items.some((i) => i.checked)
-        : c.items.some((i) => i.wished);
-    return [...cats].sort((a, b) => Number(pin(b)) - Number(pin(a)));
-  }, [trip?.categories, filter]);
+  useEffect(() => {
+    if (!trip || editing || hasSeenCounterCoach()) {
+      setCoachOn(false);
+      return;
+    }
+    const show = window.setTimeout(() => setCoachOn(true), COACH_DELAY_MS);
+    const hide = window.setTimeout(() => setCoachOn(false), COACH_DELAY_MS + COACH_AUTO_MS);
+    return () => {
+      window.clearTimeout(show);
+      window.clearTimeout(hide);
+    };
+  }, [trip?.id, editing, trip]);
 
   if (!trip) {
     return (
@@ -248,35 +271,52 @@ export function ChecklistView({ tripId }: { tripId: string }) {
 
   const save = (fn: (t: Trip) => Trip) => updateTrip(trip.id, fn);
 
-  const resetUncheckedJump = () => {
-    uncheckedJump.current = 0;
+  const clearSpot = () => {
+    setSpotId(null);
+    if (spotHoldTimer.current) window.clearTimeout(spotHoldTimer.current);
+  };
+
+  const spotlight = (itemId: string) => {
+    setSpotId(null);
+    requestAnimationFrame(() => {
+      setSpotId(itemId);
+      if (spotHoldTimer.current) window.clearTimeout(spotHoldTimer.current);
+      spotHoldTimer.current = window.setTimeout(clearSpot, SPOT_HOLD_MS);
+    });
+  };
+
+  const pickNextUnchecked = () => {
+    const rows = trip.categories.flatMap((cat) =>
+      sortChecklistItems(cat.items).map((item) => ({ cat, item }))
+    );
+    const todo = rows.filter(({ item }) => !item.checked);
+    if (!todo.length) return null;
+    const from = lastUncheckedId.current
+      ? rows.findIndex(({ item }) => item.id === lastUncheckedId.current)
+      : -1;
+    const next = todo.find(({ item }) => rows.findIndex((r) => r.item.id === item.id) > from);
+    return next ? { ...next, wrapped: false } : { ...todo[0], wrapped: true };
   };
 
   const jumpUnchecked = () => {
-    const list: { catId: string; itemId: string; collapsed: boolean }[] = [];
-    for (const cat of orderedCats) {
-      for (const item of sortChecklistItems(cat.items.filter(visible))) {
-        if (!item.checked) list.push({ catId: cat.id, itemId: item.id, collapsed: cat.collapsed });
-      }
+    markCounterCoachSeen();
+    setCoachOn(false);
+    const hit = pickNextUnchecked();
+    if (!hit) {
+      setToast({ msg: "다 챙기셨어요", place: "bottom" });
+      return;
     }
-    if (!list.length) return;
-    const next = list[uncheckedJump.current % list.length];
-    uncheckedJump.current += 1;
-    pendingScroll.current = next.itemId;
-    if (next.collapsed) {
-      save((t) => patchCategory(t, next.catId, (c) => ({ ...c, collapsed: false })));
+    if (hit.wrapped) setToast({ msg: "처음으로 돌아왔어요", place: "bottom" });
+    lastUncheckedId.current = hit.item.id;
+    if (hit.cat.collapsed) {
+      save((t) => patchCategory(t, hit.cat.id, (c) => ({ ...c, collapsed: false })));
     }
+    spotlight(hit.item.id);
+    pendingScroll.current = hit.item.id;
     setScrollNonce((n) => n + 1);
   };
 
-  const visible = (item: ChecklistItem) => {
-    if (filter === "unchecked") return !item.checked;
-    if (filter === "wished") return item.wished;
-    return true;
-  };
-
   const toggleCat = (cat: Category) => {
-    resetUncheckedJump();
     const next = !cat.collapsed;
     track("category_toggle", {
       category_name: cat.name,
@@ -287,7 +327,6 @@ export function ChecklistView({ tripId }: { tripId: string }) {
   };
 
   const toggleChecked = (cat: Category, item: ChecklistItem) => {
-    resetUncheckedJump();
     const next = !item.checked;
     save((t) => patchItem(t, cat.id, item.id, (i) => ({ ...i, checked: !i.checked })));
     track("item_check_toggle", {
@@ -329,57 +368,11 @@ export function ChecklistView({ tripId }: { tripId: string }) {
       activity_count: trip.activities.length,
     });
     setEditing(true);
-    setFilterOpen(false);
+    clearSpot();
     save((t) => ({
       ...t,
       categories: t.categories.map((c) => ({ ...c, collapsed: false })),
     }));
-  };
-
-  const filterMenu = () => {
-    if (filter !== "all") {
-      return [
-        {
-          label: "전체 아이템 보기",
-          onClick: () => {
-            resetUncheckedJump();
-            track("filter_reset", { filter_type: filter });
-            setFilter("all");
-          },
-        },
-      ];
-    }
-    const expandAll = () =>
-      save((t) => ({
-        ...t,
-        categories: t.categories.map((c) => ({ ...c, collapsed: false })),
-      }));
-    return [
-      {
-        label: "미체크 아이템 모아보기",
-        onClick: () => {
-          track("filter_apply", {
-            filter_type: "unchecked",
-            result_count: trip.categories.reduce((n, c) => n + c.items.filter((i) => !i.checked).length, 0),
-          });
-          resetUncheckedJump();
-          setFilter("unchecked");
-          expandAll();
-        },
-      },
-      {
-        label: "장바구니 아이템 모아보기",
-        onClick: () => {
-          resetUncheckedJump();
-          track("filter_apply", {
-            filter_type: "wished",
-            result_count: trip.categories.reduce((n, c) => n + c.items.filter((i) => i.wished).length, 0),
-          });
-          setFilter("wished");
-          expandAll();
-        },
-      },
-    ];
   };
 
   const finishEdit = () => {
@@ -510,42 +503,23 @@ export function ChecklistView({ tripId }: { tripId: string }) {
           )
         }
         right={
-          <div className="topbar-actions">
-            <button
-              ref={filterRef}
-              className="icon-btn"
-              aria-label="필터"
-              onClick={() => {
-                setCatMenu(null);
-                setFilterOpen((v) => {
-                  if (!v) track("menu_open");
-                  return !v;
-                });
-              }}
-            >
-              <IconFilter active={filter !== "all"} />
-            </button>
-            <div className="topbar-end">
-              {editing ? (
-                <button className="topbar-done" onClick={finishEdit}>
-                  완료
-                </button>
-              ) : (
-                <button className="icon-btn" aria-label="편집" onClick={enterEdit}>
-                  <IconEdit />
-                </button>
-              )}
-            </div>
+          <div className="topbar-end">
+            {editing ? (
+              <button className="topbar-done" onClick={finishEdit}>
+                완료
+              </button>
+            ) : (
+              <button className="topbar-done" aria-label="편집" onClick={enterEdit}>
+                편집
+              </button>
+            )}
           </div>
         }
       />
-      {filterOpen && filterRef.current ? (
-        <Menu
-          anchor={filterRef.current}
-          items={filterMenu()}
-          onClose={() => setFilterOpen(false)}
-          width={200}
-        />
+      {!editing && coachOn ? (
+        <div className="counter-coach on" role="tooltip">
+          눌러서 안 챙긴 준비물을 확인해요
+        </div>
       ) : null}
 
       <div className="shell-scroll" ref={scrollRef}>
@@ -563,8 +537,8 @@ export function ChecklistView({ tripId }: { tripId: string }) {
         <RecoCarousel />
         <div className="reco-more">추천 아이템 모두 보기</div>
 
-        {orderedCats.map((cat) => {
-          const items = sortChecklistItems(cat.items.filter(visible));
+        {trip.categories.map((cat) => {
+          const items = sortChecklistItems(cat.items);
           return (
             <section key={cat.id} data-cat-name={cat.name}>
               <div style={{ position: "relative" }}>
@@ -590,14 +564,13 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                   </span>
                   {cat.hint ? <span className="hint">{cat.hint}</span> : null}
                   {editing ? (
-                    isPersonalCat(cat) ? null : (
+                    isPersonalCat(cat) || isProtectedCategory(cat) ? null : (
                     <button
                       className="hit-icon"
                       aria-label="카테고리 메뉴"
                       onClick={(e) => {
                         e.stopPropagation();
                         const el = e.currentTarget;
-                        setFilterOpen(false);
                         setCatMenu(catMenu?.id === cat.id ? null : { id: cat.id, anchor: el });
                       }}
                     >
@@ -622,7 +595,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                     const cartable = isPurchasable(item.masterId, item.name);
                     return (
                       <div
-                        className={`row${reason || pack ? " sub" : ""}`}
+                        className={`row${reason || pack ? " sub" : ""}${spotId === item.id ? " spot" : ""}`}
                         key={item.id}
                         data-item-id={item.id}
                         onClick={(e) => {
@@ -665,7 +638,6 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                           onClick={(e) => {
                             if (editing || renaming) return;
                             e.stopPropagation();
-                            resetUncheckedJump();
                             setMemo({ catId: cat.id, itemId: item.id, text: item.reason ?? "" });
                           }}
                         >
@@ -742,7 +714,6 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                                 aria-label="정보"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  resetUncheckedJump();
                                   setInfo({
                                     links: item.links ?? [],
                                     note: item.linkNote,
@@ -759,7 +730,6 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                               aria-label="장바구니"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                resetUncheckedJump();
                                 save((t) =>
                                   patchItem(t, cat.id, item.id, (i) => ({ ...i, wished: !i.wished }))
                                 );
@@ -911,7 +881,6 @@ export function ChecklistView({ tripId }: { tripId: string }) {
           className="cart-fab"
           aria-label="장바구니 바로가기"
           onClick={() => {
-            resetUncheckedJump();
             setToast({ msg: "바로 주문 기능을 준비하고 있어요", place: "bottom" });
           }}
         >
@@ -960,7 +929,19 @@ export function ChecklistView({ tripId }: { tripId: string }) {
               });
             }
             if (cat && isPersonalCat(cat)) removePersonalCategory();
-            else save((t) => ({ ...t, categories: t.categories.filter((c) => c.id !== confirmCat) }));
+            else {
+              save((t) => {
+                let activities = t.activities;
+                if (cat?.kind === "activity" && cat.activityId) {
+                  activities = activities.filter((a) => a !== cat.activityId);
+                }
+                return {
+                  ...t,
+                  activities,
+                  categories: t.categories.filter((c) => c.id !== confirmCat),
+                };
+              });
+            }
             setConfirmCat(null);
             setCatMenu(null);
           }}
@@ -998,7 +979,6 @@ export function ChecklistView({ tripId }: { tripId: string }) {
           onConfirm={() => {
             const text = memo.text.trim();
             if (!text) return;
-            resetUncheckedJump();
             save((t) =>
               patchItem(t, memo.catId, memo.itemId, (i) => ({ ...i, reason: text, userMemo: true }))
             );
@@ -1027,6 +1007,27 @@ export function unusedPresetNames(trip: Trip) {
   return livePresetCategoryNames().filter((n) => n !== "나만의 준비물" && !used.has(n));
 }
 
+function tripMasterIds(trip: Trip) {
+  const ids = new Set<string>();
+  for (const cat of trip.categories) {
+    for (const item of cat.items) {
+      if (item.masterId) ids.add(item.masterId);
+    }
+  }
+  return ids;
+}
+
+function appendCategory(trip: Trip, cat: Category): Trip {
+  const used = tripMasterIds(trip);
+  const items = cat.items.filter((i) => !i.masterId || !used.has(i.masterId));
+  const nextCat = { ...cat, items };
+  let next: Trip = { ...trip, categories: [...trip.categories, nextCat] };
+  if (nextCat.kind === "activity" && nextCat.activityId && !next.activities.includes(nextCat.activityId)) {
+    next = { ...next, activities: [...next.activities, nextCat.activityId] };
+  }
+  return next;
+}
+
 export function addCategoryToTrip(
   trip: Trip,
   name: string,
@@ -1037,8 +1038,7 @@ export function addCategoryToTrip(
   if (trip.categories.some((c) => (alias[c.name] ?? c.name) === canon)) return trip;
   const cat = categoryFromPreset(name, personalItems);
   if (name !== cat.name && cat.items.length === 0 && cat.kind === "custom") {
-    const fallback = emptyCustomCategory(name);
-    return { ...trip, categories: [...trip.categories, fallback] };
+    return appendCategory(trip, emptyCustomCategory(name));
   }
   if (name === "나만의 준비물") {
     if (trip.categories.some(isPersonalCat)) return trip;
@@ -1047,5 +1047,5 @@ export function addCategoryToTrip(
     empty.hint = "모든 여행 일정에 담겨요";
     return { ...trip, categories: [empty, ...trip.categories] };
   }
-  return { ...trip, categories: [...trip.categories, cat] };
+  return appendCategory(trip, cat);
 }

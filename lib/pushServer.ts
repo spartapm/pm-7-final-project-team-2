@@ -20,13 +20,19 @@ export type PushPayload = {
   kind?: ReminderKind;
 };
 
+function normalizeVapidKey(key: string) {
+  return key.trim().replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
 function vapid() {
   const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   const privateKey = process.env.VAPID_PRIVATE_KEY;
   const subject = process.env.VAPID_SUBJECT || "mailto:chaeggyeo@gmail.com";
   if (!publicKey || !privateKey) return null;
-  webpush.setVapidDetails(subject, publicKey, privateKey);
-  return { publicKey, privateKey, subject };
+  const pub = normalizeVapidKey(publicKey);
+  const priv = normalizeVapidKey(privateKey);
+  webpush.setVapidDetails(subject, pub, priv);
+  return { publicKey: pub, privateKey: priv, subject };
 }
 
 export function pushConfigured() {

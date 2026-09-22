@@ -179,9 +179,9 @@ export function InputDialog({
 }) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const dimRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const composing = useRef(false);
   const primed = useRef(true);
-  const [kbOpen, setKbOpen] = useState(false);
   const apply = (next: string) => {
     primed.current = false;
     if (next.length > maxLength) {
@@ -218,11 +218,12 @@ export function InputDialog({
   }, []);
   useLayoutEffect(() => {
     const dim = dimRef.current;
+    const dialog = dialogRef.current;
     const shell = dim?.closest(".shell") as HTMLElement | null;
     const sync = () => {
       const vv = window.visualViewport;
       if (!dim || !shell || !vv) {
-        setKbOpen(false);
+        if (dialog) dialog.style.transform = "";
         return;
       }
       const sr = shell.getBoundingClientRect();
@@ -233,13 +234,19 @@ export function InputDialog({
         dim.style.top = "";
         dim.style.height = "";
         dim.style.bottom = "";
-        setKbOpen(false);
+        if (dialog) dialog.style.transform = "";
         return;
       }
       dim.style.top = `${top}px`;
       dim.style.height = `${visible}px`;
       dim.style.bottom = "auto";
-      setKbOpen(true);
+      if (dialog) {
+        dialog.style.transform = "";
+        const dr = dialog.getBoundingClientRect();
+        const dimRect = dim.getBoundingClientRect();
+        const overflow = dr.bottom - dimRect.bottom + 8;
+        if (overflow > 0) dialog.style.transform = `translateY(-${overflow}px)`;
+      }
       primeSelection();
     };
     sync();
@@ -254,12 +261,8 @@ export function InputDialog({
     };
   }, []);
   return (
-    <div
-      ref={dimRef}
-      className={`dim${kbOpen ? " kb-lift" : ""}`}
-      onClick={onCancel}
-    >
-      <div className="dialog" onClick={(e) => e.stopPropagation()}>
+    <div ref={dimRef} className="dim" onClick={onCancel}>
+      <div ref={dialogRef} className="dialog" onClick={(e) => e.stopPropagation()}>
         <div className="con">
           <div className="tt">{title}</div>
           <div className="ds" onClick={() => inputRef.current?.focus()}>
@@ -371,7 +374,7 @@ export function PackGuideSheet({ onClose }: { onClose: () => void }) {
     <div className="dim" onClick={onClose}>
       <div className="sheet pack-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="pack-sheet-art">
-          <img src="/bottom_sheet_img.svg" alt="" width={247} height={124} />
+          <img src="/bottom_sheet_img.svg" alt="" width={247} height={115} />
         </div>
         <h2>준비물은 필요한 것보다 더 넉넉하게 담아드렸어요</h2>
         <p>필요없는 건 지워서 나만의 체크리스트를 완성해요</p>
