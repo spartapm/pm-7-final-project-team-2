@@ -232,57 +232,53 @@ export function InputDialog({
     const frame = frameRef.current;
     const dim = dimRef.current;
     const dialog = dialogRef.current;
+    if (!frame || !dim || !dialog) return;
+    const field = inputRef.current;
+    // preventScroll: iOS/Android가 입력칸을 찾아 화면을 밀면 다이얼로그가 키보드 뒤로 사라진다.
+    field?.focus({ preventScroll: true });
+    primeSelection();
+
     const shell = document.querySelector(".shell") as HTMLElement | null;
-    if (!frame || !dim || !dialog || !shell) return;
-    const scroller = shell.querySelector(".shell-scroll") as HTMLElement | null;
-    const html = document.documentElement;
-    const body = document.body;
+    const scroller = shell?.querySelector(".shell-scroll") as HTMLElement | null;
+    scroller?.classList.add("lock");
     const vv = window.visualViewport;
-    rememberBaseHeight();
-    const scrollY = window.scrollY;
-    const prevHtmlOverflow = html.style.overflow;
-    const prevBody = {
-      position: body.style.position,
-      top: body.style.top,
-      left: body.style.left,
-      right: body.style.right,
-      width: body.style.width,
-      overflow: body.style.overflow,
-    };
-    html.style.overflow = "hidden";
-    body.style.overflow = "hidden";
+    const baseH = rememberBaseHeight();
+    // 100dvh는 키보드가 차지한 높이를 빼고, visualViewport는 지금 보이는 영역이다.
+    // 둘 중 짧은 쪽에 프레임을 맞추면 취소/확인이 키보드 위에 남는다.
+    // body를 fixed로 잠그거나 virtualKeyboard.overlaysContent를 켜면
+    // iOS는 뷰포트가 안 줄고, 안드로이드는 프레임이 화면 밖으로 밀린다.
+    const probe = document.createElement("div");
+    probe.setAttribute("aria-hidden", "true");
+    probe.style.cssText =
+      "position:fixed;left:0;top:0;height:100dvh;width:0;pointer-events:none;visibility:hidden;";
+    document.body.appendChild(probe);
     const vk = (navigator as Navigator & { virtualKeyboard?: {
-      overlaysContent: boolean;
       boundingRect: DOMRect;
       addEventListener: (type: string, fn: () => void) => void;
       removeEventListener: (type: string, fn: () => void) => void;
     } }).virtualKeyboard;
-    if (vk) vk.overlaysContent = true;
-    const field = inputRef.current;
-    if (field) {
-      field.focus();
-      primeSelection();
-    }
-    body.style.position = "fixed";
-    body.style.top = `-${scrollY}px`;
-    body.style.left = "0";
-    body.style.right = "0";
-    body.style.width = "100%";
-    scroller?.classList.add("lock");
-    const baseH = rememberBaseHeight();
     const sync = () => {
-      if (!frame || !dim || !dialog) return;
       const vvNow = window.visualViewport;
-      const top = vvNow?.offsetTop ?? 0;
       const left = vvNow?.offsetLeft ?? 0;
       const width = vvNow?.width ?? window.innerWidth;
-      const height = vvNow?.height ?? window.innerHeight;
+      const vvH = vvNow?.height ?? window.innerHeight;
+      const dvh = probe.getBoundingClientRect().height || vvH;
+      const fitted = Math.min(vvH, dvh, window.innerHeight);
+      const vkH = vk?.boundingRect?.height ?? 0;
+      // 뷰포트가 이미 줄었으면 키보드 높이를 한 번 더 빼지 않는다.
+      const visibleH =
+        baseH - fitted > 100 || vkH <= 80 ? fitted : Math.min(Math.max(baseH - vkH, 0), fitted);
+      frame.style.left = `${left}px`;
       frame.style.width = `${width}px`;
-      frame.style.height = `${height}px`;
-      frame.style.transform = `translate(${left}px, ${top}px)`;
-      const keyboard = baseH - height > 80;
+      frame.style.transform = "none";
+      frame.style.top = "0px";
+      frame.style.height = `${visibleH}px`;
+      const origin = frame.getBoundingClientRect().top;
+      if (Math.abs(origin) > 1) frame.style.top = `${-origin}px`;
+      const keyboard = baseH - visibleH > 100;
       dim.classList.toggle("kb", keyboard);
-      dialog.style.marginTop = "";
+      const frameBottom = frame.getBoundingClientRect().bottom;
+      if (dialog.getBoundingClientRect().bottom > frameBottom + 1) dim.classList.add("kb");
     };
     const onViewport = () => requestAnimationFrame(sync);
     sync();
@@ -297,18 +293,15 @@ export function InputDialog({
     vv?.addEventListener("resize", onViewport);
     vv?.addEventListener("scroll", onViewport);
     vk?.addEventListener("geometrychange", onViewport);
-    const ids = [80, 280, 560].map((ms) => window.setTimeout(primeSelection, ms));
+    const ids = [80, 280, 560, 900].map((ms) =>
+      window.setTimeout(() => {
+        primeSelection();
+        sync();
+      }, ms),
+    );
     return () => {
       scroller?.classList.remove("lock");
-      html.style.overflow = prevHtmlOverflow;
-      body.style.position = prevBody.position;
-      body.style.top = prevBody.top;
-      body.style.left = prevBody.left;
-      body.style.right = prevBody.right;
-      body.style.width = prevBody.width;
-      body.style.overflow = prevBody.overflow;
-      window.scrollTo(0, scrollY);
-      if (vk) vk.overlaysContent = false;
+      probe.remove();
       frame.removeEventListener("touchmove", blockScroll);
       frame.removeEventListener("wheel", blockScroll);
       window.removeEventListener("resize", onViewport);
