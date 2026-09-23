@@ -285,7 +285,13 @@ export function InputDialog({
   }, []);
   if (typeof document === "undefined") return null;
   return createPortal(
-    <div ref={frameRef} className="kb-frame">
+    <div
+      ref={frameRef}
+      className="kb-frame"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onCancel();
+      }}
+    >
     <div ref={dimRef} className="dim" onClick={onCancel}>
       <div ref={dialogRef} className="dialog" onClick={(e) => e.stopPropagation()}>
         <div className="con">

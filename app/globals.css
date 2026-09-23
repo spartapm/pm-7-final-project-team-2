@@ -569,6 +569,18 @@ a { color: inherit; text-decoration: none; }
   overflow: visible;
   pointer-events: none;
 }
+/* iOS Safari는 키보드가 뜰 때 visualViewport.offsetTop만큼 프레임이 어긋나
+   헤더 줄이 dim 밖으로 드러난다. dim 색은 프레임 바깥까지 덮는다. */
+.kb-frame::before {
+  content: "";
+  position: absolute;
+  top: -100vh;
+  bottom: -100vh;
+  left: -100vw;
+  right: -100vw;
+  background: rgba(58, 58, 58, 0.5);
+  pointer-events: auto;
+}
 .kb-frame .dim {
   pointer-events: auto;
   position: absolute;
@@ -578,6 +590,7 @@ a { color: inherit; text-decoration: none; }
   left: 0;
   height: 100%;
   border-radius: 0;
+  background: transparent;
 }
 .dim {
   position: absolute; inset: 0; background: rgba(58, 58, 58, 0.5);
@@ -761,7 +774,7 @@ a { color: inherit; text-decoration: none; }
   padding: 0 12px;
   display: flex;
   align-items: center;
-  background: rgba(58, 58, 58, 0.9);
+  background: rgba(58, 58, 58, 1);
   color: #fff;
   font-weight: 500;
   font-size: 12px;
@@ -783,7 +796,7 @@ a { color: inherit; text-decoration: none; }
   width: 10px;
   height: 10px;
   margin-left: -5px;
-  background: rgba(58, 58, 58, 0.9);
+  background: rgba(58, 58, 58, 1);
   transform: rotate(45deg);
 }
 .counter-coach.on {
