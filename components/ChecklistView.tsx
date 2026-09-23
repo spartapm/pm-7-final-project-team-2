@@ -317,6 +317,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
       return;
     }
     const show = window.setTimeout(() => {
+      if (hasSeenCounterCoach()) return;
       setCoachOn(true);
       markCounterCoachSeen();
     }, COACH_DELAY_MS);
