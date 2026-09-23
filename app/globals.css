@@ -916,13 +916,14 @@ a { color: inherit; text-decoration: none; }
 .reco-more + section .cat-head { border-top: 1px solid var(--bg-sub); }
 .reco-row::-webkit-scrollbar { display: none; }
 .reco {
-  width: 298px; min-width: 298px; height: 107px;
+  width: 298px; min-width: 298px; min-height: 107px; height: auto;
   border-radius: var(--r-sm); background: var(--bg);
   box-shadow: var(--shadow-card); border: none; padding: 20px;
-  display: flex; gap: 16px; flex: none;
+  display: flex; gap: 16px; flex: none; align-items: center;
   text-align: left; color: inherit; font: inherit; cursor: pointer;
 }
-.reco .txt { flex: 1; font-weight: 400; font-size: 16px; line-height: 20px; }
+.reco > div { flex: 1; min-width: 0; }
+.reco .txt { font-weight: 400; font-size: 16px; line-height: 20px; }
 .reco .src { font-weight: 500; font-size: 12px; line-height: 16px; color: var(--text-3); margin-top: 10px; }
 .reco .thumb {
   width: 50px; height: 50px; border-radius: var(--r-xs); background: var(--bg-sub); flex: none;

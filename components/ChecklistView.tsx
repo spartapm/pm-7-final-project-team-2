@@ -101,6 +101,7 @@ const RECO_CARDS = [
 function RecoCarousel({ onSelect }: { onSelect: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const drag = useRef<{ x: number; sl: number; moved: boolean } | null>(null);
+  const suppressClick = useRef(false);
 
   const onDown = (e: ReactPointerEvent) => {
     const el = ref.current;
@@ -116,6 +117,7 @@ function RecoCarousel({ onSelect }: { onSelect: () => void }) {
     el.scrollLeft = d.sl - (e.clientX - d.x);
   };
   const onUp = () => {
+    suppressClick.current = Boolean(drag.current?.moved);
     drag.current = null;
   };
 
@@ -134,7 +136,10 @@ function RecoCarousel({ onSelect }: { onSelect: () => void }) {
           className="reco"
           key={card.src}
           onClick={() => {
-            if (drag.current?.moved) return;
+            if (suppressClick.current) {
+              suppressClick.current = false;
+              return;
+            }
             onSelect();
           }}
         >
@@ -175,6 +180,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
     place?: "top" | "bottom";
   } | null>(null);
   const addRef = useRef<HTMLInputElement>(null);
+  const addAnchorTop = useRef<number | null>(null);
   const renameRef = useRef<HTMLInputElement>(null);
   const undoRef = useRef<{ trips: Trip[]; personalItems: { id: string; name: string }[] } | null>(null);
   const collapseRef = useRef<Record<string, boolean>>({});
@@ -262,6 +268,22 @@ export function ChecklistView({ tripId }: { tripId: string }) {
     pendingScroll.current = null;
     scrollItemIntoBand(scroll, el);
   }, [trip, scrollNonce]);
+
+  useLayoutEffect(() => {
+    const anchor = addAnchorTop.current;
+    if (anchor == null || adding == null) return;
+    const scroller = scrollRef.current;
+    const el = addRef.current;
+    addAnchorTop.current = null;
+    if (!scroller || !el) return;
+    const delta = el.getBoundingClientRect().top - anchor;
+    if (delta) scroller.scrollTop += delta;
+    const vv = window.visualViewport;
+    const limit = (vv ? vv.offsetTop + vv.height : window.innerHeight) - 28;
+    const bottom = el.getBoundingClientRect().bottom;
+    if (bottom > limit) scroller.scrollTop += bottom - limit;
+    el.focus({ preventScroll: true });
+  }, [adding, addText, trip]);
 
   useEffect(() => {
     if (!adding) return;
@@ -515,20 +537,14 @@ export function ChecklistView({ tripId }: { tripId: string }) {
     setRename(null);
   };
 
-  const keepAddFieldVisible = () => {
+  const nudgeAddField = () => {
     const scroller = scrollRef.current;
     const el = addRef.current;
     if (!scroller || !el) return;
     const vv = window.visualViewport;
-    const viewBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
-    const viewTop = scroller.getBoundingClientRect().top;
-    const rect = el.getBoundingClientRect();
-    const pad = 28;
-    if (rect.bottom > viewBottom - pad) {
-      scroller.scrollTop += rect.bottom - (viewBottom - pad);
-    } else if (rect.top < viewTop + pad) {
-      scroller.scrollTop -= viewTop + pad - rect.top;
-    }
+    const limit = (vv ? vv.offsetTop + vv.height : window.innerHeight) - 28;
+    const bottom = el.getBoundingClientRect().bottom;
+    if (bottom > limit) scroller.scrollTop += bottom - limit;
   };
 
   const tryAdd = (catId: string, category: Category) => {
@@ -538,6 +554,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
       setToast({ msg: "최대 30자까지 입력할 수 있어요", place: "top" });
       return;
     }
+    addAnchorTop.current = addRef.current?.getBoundingClientRect().top ?? null;
     if (isPersonalCat(category)) {
       addPersonalItem(name);
     } else {
@@ -548,12 +565,6 @@ export function ChecklistView({ tripId }: { tripId: string }) {
     track("item_add_complete", { item_name_text: name, category_name: category.name });
     setAddText("");
     setAdding(catId);
-    // CHG-134: 다음 아이템 추가 필드로 포커스 이동 시 키패드에 가리지 않게 스크롤 보정
-    requestAnimationFrame(() => {
-      addRef.current?.focus({ preventScroll: true });
-      keepAddFieldVisible();
-      requestAnimationFrame(keepAddFieldVisible);
-    });
   };
 
   return (
@@ -839,7 +850,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                             placeholder="직접 아이템을 입력해주세요"
                             enterKeyHint="next"
                             onFocus={() => {
-                              requestAnimationFrame(keepAddFieldVisible);
+                              requestAnimationFrame(nudgeAddField);
                             }}
                             onBeforeInput={(e) => {
                               const ne = e.nativeEvent as InputEvent;
@@ -887,7 +898,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                               setAddText("");
                               requestAnimationFrame(() => {
                                 addRef.current?.focus({ preventScroll: true });
-                                keepAddFieldVisible();
+                                nudgeAddField();
                               });
                             }}
                           >
