@@ -72,7 +72,6 @@ function isProtectedCategory(c: Category) {
 const SCROLL_OFFSET_RATIO = 0.2;
 const SPOT_HOLD_MS = 800;
 const COACH_DELAY_MS = 600;
-const COACH_AUTO_MS = 5000;
 
 function scrollItemIntoBand(scroller: HTMLElement, el: Element) {
   const dest = Math.max(
@@ -107,7 +106,7 @@ function RecoCarousel({ onSelect }: { onSelect: () => void }) {
     const el = ref.current;
     if (!el) return;
     drag.current = { x: e.clientX, sl: el.scrollLeft, moved: false };
-    el.setPointerCapture(e.pointerId);
+    if (e.pointerType === "touch") el.setPointerCapture(e.pointerId);
   };
   const onMove = (e: ReactPointerEvent) => {
     const el = ref.current;
@@ -321,11 +320,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
       setCoachOn(true);
       markCounterCoachSeen();
     }, COACH_DELAY_MS);
-    const hide = window.setTimeout(() => setCoachOn(false), COACH_DELAY_MS + COACH_AUTO_MS);
-    return () => {
-      window.clearTimeout(show);
-      window.clearTimeout(hide);
-    };
+    return () => window.clearTimeout(show);
   }, [trip?.id, editing, packGuide]);
 
   if (!trip) {

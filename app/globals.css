@@ -565,22 +565,27 @@ a { color: inherit; text-decoration: none; }
   top: 0;
   left: 0;
   z-index: 40;
+  border-radius: 0;
   pointer-events: none;
 }
 .kb-frame .dim {
   pointer-events: auto;
   position: absolute;
-  inset: auto;
+  inset: 0;
+  border-radius: 0;
 }
 .dim {
   position: absolute; inset: 0; background: rgba(58, 58, 58, 0.5);
+  border-radius: 0;
   z-index: 40; display: flex; align-items: center; justify-content: center;
   padding: 24px;
 }
 .dim.kb {
-  padding: 0;
-  align-items: flex-start;
+  padding: 12px 24px;
+  align-items: flex-end;
+  justify-content: center;
   overflow: visible;
+  border-radius: 0;
 }
 .dim .dialog {
   flex: none;

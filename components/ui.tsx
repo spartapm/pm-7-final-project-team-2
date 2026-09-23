@@ -237,8 +237,6 @@ export function InputDialog({
     const scroller = shell.querySelector(".shell-scroll") as HTMLElement | null;
     const html = document.documentElement;
     const body = document.body;
-    const DIALOG_H = 312;
-    const GAP = 12;
     const vv = window.visualViewport;
     rememberBaseHeight();
     const scrollY = window.scrollY;
@@ -253,12 +251,6 @@ export function InputDialog({
     };
     html.style.overflow = "hidden";
     body.style.overflow = "hidden";
-    body.style.position = "fixed";
-    body.style.top = `-${scrollY}px`;
-    body.style.left = "0";
-    body.style.right = "0";
-    body.style.width = "100%";
-    scroller?.classList.add("lock");
     const vk = (navigator as Navigator & { virtualKeyboard?: {
       overlaysContent: boolean;
       boundingRect: DOMRect;
@@ -266,60 +258,45 @@ export function InputDialog({
       removeEventListener: (type: string, fn: () => void) => void;
     } }).virtualKeyboard;
     if (vk) vk.overlaysContent = true;
-    const shellBox = shell.getBoundingClientRect();
-    const pin = { left: shellBox.left, width: shellBox.width, height: shellBox.height };
+    const field = inputRef.current;
+    if (field) {
+      field.focus();
+      primeSelection();
+    }
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.left = "0";
+    body.style.right = "0";
+    body.style.width = "100%";
+    scroller?.classList.add("lock");
+    const baseH = rememberBaseHeight();
     const sync = () => {
       if (!frame || !dim || !dialog) return;
-      if (window.scrollY !== 0) window.scrollTo(0, 0);
       const vvNow = window.visualViewport;
-      const vvH = vvNow?.height ?? window.innerHeight;
-      const kbInset = Number.parseFloat(getComputedStyle(html).getPropertyValue("--keyboard-inset")) || 0;
-      const vkH = vk?.boundingRect.height ?? 0;
-      const kb = Math.max(0, window.innerHeight - vvH, kbInset, vkH);
-      const visH = Math.max(160, pin.height - kb);
-      frame.style.transform = "none";
-      frame.style.left = `${pin.left}px`;
-      frame.style.top = "0px";
-      frame.style.width = `${pin.width}px`;
-      frame.style.height = `${visH}px`;
-      dim.style.top = "0px";
-      dim.style.left = "0px";
-      dim.style.width = "100%";
-      dim.style.height = "100%";
-      const keyboard = kb > 80;
+      const top = vvNow?.offsetTop ?? 0;
+      const left = vvNow?.offsetLeft ?? 0;
+      const width = vvNow?.width ?? window.innerWidth;
+      const height = vvNow?.height ?? window.innerHeight;
+      frame.style.width = `${width}px`;
+      frame.style.height = `${height}px`;
+      frame.style.transform = `translate(${left}px, ${top}px)`;
+      const keyboard = baseH - height > 80;
       dim.classList.toggle("kb", keyboard);
-      if (!keyboard) {
-        dialog.style.marginTop = "";
-        return;
-      }
-      dialog.style.marginTop = `${visH - DIALOG_H - GAP}px`;
+      dialog.style.marginTop = "";
     };
     const onViewport = () => requestAnimationFrame(sync);
     sync();
-    const el = inputRef.current;
-    if (el) {
-      el.readOnly = true;
-      el.focus({ preventScroll: true });
-      el.readOnly = false;
-      primeSelection();
-    }
-    // CHG-116: iOS에서 오버레이 뒤 스크롤/바운스로 dim·다이얼로그가 밀리지 않게 차단
     const blockScroll = (e: TouchEvent | WheelEvent) => {
       const target = e.target as HTMLElement | null;
       if (target?.closest("textarea, input")) return;
       e.preventDefault();
     };
-    frame?.addEventListener("touchmove", blockScroll, { passive: false });
-    frame?.addEventListener("wheel", blockScroll, { passive: false });
-    const holdStill = () => {
-      if (window.scrollY !== 0) window.scrollTo(0, 0);
-    };
+    frame.addEventListener("touchmove", blockScroll, { passive: false });
+    frame.addEventListener("wheel", blockScroll, { passive: false });
     window.addEventListener("resize", onViewport);
-    window.addEventListener("scroll", holdStill, true);
     vv?.addEventListener("resize", onViewport);
-    vv?.addEventListener("scroll", holdStill);
+    vv?.addEventListener("scroll", onViewport);
     vk?.addEventListener("geometrychange", onViewport);
-    const tick = window.setInterval(sync, 50);
     const ids = [80, 280, 560].map((ms) => window.setTimeout(primeSelection, ms));
     return () => {
       scroller?.classList.remove("lock");
@@ -332,14 +309,12 @@ export function InputDialog({
       body.style.overflow = prevBody.overflow;
       window.scrollTo(0, scrollY);
       if (vk) vk.overlaysContent = false;
-      frame?.removeEventListener("touchmove", blockScroll);
-      frame?.removeEventListener("wheel", blockScroll);
+      frame.removeEventListener("touchmove", blockScroll);
+      frame.removeEventListener("wheel", blockScroll);
       window.removeEventListener("resize", onViewport);
-      window.removeEventListener("scroll", holdStill, true);
       vv?.removeEventListener("resize", onViewport);
-      vv?.removeEventListener("scroll", holdStill);
+      vv?.removeEventListener("scroll", onViewport);
       vk?.removeEventListener("geometrychange", onViewport);
-      window.clearInterval(tick);
       ids.forEach((id) => window.clearTimeout(id));
     };
   }, []);
