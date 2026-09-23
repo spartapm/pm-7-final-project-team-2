@@ -57,6 +57,8 @@ export function TripHome() {
   };
 
   const share = async () => {
+    // CHG-133: 일정 공유하기 클릭 시에도 공유 툴팁을 해제
+    dismissShareTip();
     const url = `${window.location.origin}/s/${accountId}`;
     try {
       localStorage.setItem(

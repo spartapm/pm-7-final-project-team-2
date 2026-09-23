@@ -308,6 +308,14 @@ export function InputDialog({
       el.readOnly = false;
       primeSelection();
     }
+    // CHG-116: iOS에서 오버레이 뒤 스크롤/바운스로 dim·다이얼로그가 밀리지 않게 차단
+    const blockScroll = (e: TouchEvent | WheelEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target?.closest("textarea, input")) return;
+      e.preventDefault();
+    };
+    frame?.addEventListener("touchmove", blockScroll, { passive: false });
+    frame?.addEventListener("wheel", blockScroll, { passive: false });
     window.addEventListener("resize", onViewport);
     window.addEventListener("scroll", onViewport, true);
     vv?.addEventListener("resize", onViewport);
@@ -326,6 +334,8 @@ export function InputDialog({
       body.style.overflow = prevBody.overflow;
       window.scrollTo(0, scrollY);
       if (vk) vk.overlaysContent = false;
+      frame?.removeEventListener("touchmove", blockScroll);
+      frame?.removeEventListener("wheel", blockScroll);
       window.removeEventListener("resize", onViewport);
       window.removeEventListener("scroll", onViewport, true);
       vv?.removeEventListener("resize", onViewport);

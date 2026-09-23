@@ -55,6 +55,8 @@ function isPersonalCat(c: Category) {
   return c.kind === "personal" || c.name === "나만의 준비물";
 }
 
+// 13차 Figma(F-01)는 “나만의 준비물”만 삭제 불가로 적혀 있으나,
+// 12차 CHG-126 문서 기준으로 필수/기본도 삭제 불가 유지 (문서 우선 · 피그마와 충돌).
 function isProtectedCategory(c: Category) {
   const name = c.name.trim();
   return (
@@ -83,20 +85,34 @@ function scrollItemIntoBand(scroller: HTMLElement, el: Element) {
   scroller.scrollTo(0, dest);
 }
 
-function RecoCarousel() {
+const RECO_CARDS = [
+  {
+    title: "[왕복 무료배송] 오즈모 포켓3 대여 인천공항 당일수령 가능",
+    src: "챙겨요 렌탈",
+    img: "/carousel_1.png",
+  },
+  {
+    title: "[출발 전날 수거] 무거운 수하물 보관부터 공항 배송까지",
+    src: "챙겨요 러기지",
+    img: "/carousel_2.png",
+  },
+] as const;
+
+function RecoCarousel({ onSelect }: { onSelect: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
-  const drag = useRef<{ x: number; sl: number } | null>(null);
+  const drag = useRef<{ x: number; sl: number; moved: boolean } | null>(null);
 
   const onDown = (e: ReactPointerEvent) => {
     const el = ref.current;
     if (!el) return;
-    drag.current = { x: e.clientX, sl: el.scrollLeft };
+    drag.current = { x: e.clientX, sl: el.scrollLeft, moved: false };
     el.setPointerCapture(e.pointerId);
   };
   const onMove = (e: ReactPointerEvent) => {
     const el = ref.current;
     const d = drag.current;
     if (!el || !d) return;
+    if (Math.abs(e.clientX - d.x) > 6) d.moved = true;
     el.scrollLeft = d.sl - (e.clientX - d.x);
   };
   const onUp = () => {
@@ -112,14 +128,22 @@ function RecoCarousel() {
       onPointerUp={onUp}
       onPointerCancel={onUp}
     >
-      {[0, 1].map((i) => (
-        <div className="reco" key={i}>
+      {RECO_CARDS.map((card) => (
+        <button
+          type="button"
+          className="reco"
+          key={card.src}
+          onClick={() => {
+            if (drag.current?.moved) return;
+            onSelect();
+          }}
+        >
           <div>
-            <div className="txt">여행자님이 좋아하실 상품을 준비하고 있어요.</div>
-            <div className="src">트리플 추천</div>
+            <div className="txt">{card.title}</div>
+            <div className="src">{card.src}</div>
           </div>
-          <div className="thumb" />
-        </div>
+          <img className="thumb" src={card.img} alt="" width={50} height={50} draggable={false} />
+        </button>
       ))}
     </div>
   );
@@ -163,7 +187,12 @@ export function ChecklistView({ tripId }: { tripId: string }) {
     note?: string;
     itemId?: string;
   } | null>(null);
-  const [memo, setMemo] = useState<{ catId: string; itemId: string; text: string } | null>(null);
+  const [memo, setMemo] = useState<{
+    catId: string;
+    itemId: string;
+    text: string;
+    original: string;
+  } | null>(null);
   const [, catalogTick] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [packGuide, setPackGuide] = useState(false);
@@ -318,9 +347,13 @@ export function ChecklistView({ tripId }: { tripId: string }) {
     return next ? { ...next, wrapped: false } : { ...todo[0], wrapped: true };
   };
 
-  const jumpUnchecked = () => {
+  const dismissCoach = () => {
     markCounterCoachSeen();
     setCoachOn(false);
+  };
+
+  const jumpUnchecked = () => {
+    dismissCoach();
     const hit = pickNextUnchecked();
     if (!hit) {
       setToast({ msg: "다 챙기셨어요", place: "bottom" });
@@ -482,6 +515,22 @@ export function ChecklistView({ tripId }: { tripId: string }) {
     setRename(null);
   };
 
+  const keepAddFieldVisible = () => {
+    const scroller = scrollRef.current;
+    const el = addRef.current;
+    if (!scroller || !el) return;
+    const vv = window.visualViewport;
+    const viewBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+    const viewTop = scroller.getBoundingClientRect().top;
+    const rect = el.getBoundingClientRect();
+    const pad = 28;
+    if (rect.bottom > viewBottom - pad) {
+      scroller.scrollTop += rect.bottom - (viewBottom - pad);
+    } else if (rect.top < viewTop + pad) {
+      scroller.scrollTop -= viewTop + pad - rect.top;
+    }
+  };
+
   const tryAdd = (catId: string, category: Category) => {
     const name = addText.trim();
     if (!name) return;
@@ -499,7 +548,12 @@ export function ChecklistView({ tripId }: { tripId: string }) {
     track("item_add_complete", { item_name_text: name, category_name: category.name });
     setAddText("");
     setAdding(catId);
-    requestAnimationFrame(() => addRef.current?.focus());
+    // CHG-134: 다음 아이템 추가 필드로 포커스 이동 시 키패드에 가리지 않게 스크롤 보정
+    requestAnimationFrame(() => {
+      addRef.current?.focus({ preventScroll: true });
+      keepAddFieldVisible();
+      requestAnimationFrame(keepAddFieldVisible);
+    });
   };
 
   return (
@@ -537,9 +591,9 @@ export function ChecklistView({ tripId }: { tripId: string }) {
         }
       />
       {!editing && coachOn ? (
-        <div className="counter-coach on" role="tooltip">
+        <button type="button" className="counter-coach on" role="tooltip" onClick={dismissCoach}>
           눌러서 안 챙긴 준비물을 확인해요
-        </div>
+        </button>
       ) : null}
 
       <div className="shell-scroll" ref={scrollRef}>
@@ -554,7 +608,7 @@ export function ChecklistView({ tripId }: { tripId: string }) {
           </h1>
           <div className="reco-head">여행자님을 위한 추천</div>
         </div>
-        <RecoCarousel />
+        <RecoCarousel onSelect={() => setToast({ msg: "상품을 준비하고 있어요", place: "bottom" })} />
         <div className="reco-more">추천 아이템 모두 보기</div>
 
         {trip.categories.map((cat) => {
@@ -658,7 +712,12 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                           onClick={(e) => {
                             if (editing || renaming) return;
                             e.stopPropagation();
-                            setMemo({ catId: cat.id, itemId: item.id, text: item.reason ?? "" });
+                            setMemo({
+                              catId: cat.id,
+                              itemId: item.id,
+                              text: item.reason ?? "",
+                              original: item.reason ?? "",
+                            });
                           }}
                         >
                           {renaming ? (
@@ -779,6 +838,9 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                             value={addText}
                             placeholder="직접 아이템을 입력해주세요"
                             enterKeyHint="next"
+                            onFocus={() => {
+                              requestAnimationFrame(keepAddFieldVisible);
+                            }}
                             onBeforeInput={(e) => {
                               const ne = e.nativeEvent as InputEvent;
                               if (!ne.inputType?.startsWith("insert") || !ne.data) return;
@@ -823,7 +885,10 @@ export function ChecklistView({ tripId }: { tripId: string }) {
                             onClick={() => {
                               setAdding(cat.id);
                               setAddText("");
-                              requestAnimationFrame(() => addRef.current?.focus());
+                              requestAnimationFrame(() => {
+                                addRef.current?.focus({ preventScroll: true });
+                                keepAddFieldVisible();
+                              });
                             }}
                           >
                             아이템 추가
@@ -998,14 +1063,18 @@ export function ChecklistView({ tripId }: { tripId: string }) {
           maxLength={100}
           placeholder="최대 100글자로 메모 직접 입력하기"
           onChange={(v) => setMemo({ ...memo, text: v })}
-          confirmDisabled={!memo.text.trim()}
+          confirmDisabled={memo.text === memo.original}
           onLimit={() => setToast({ msg: "최대 100자까지 입력할 수 있어요", place: "top" })}
           onCancel={() => setMemo(null)}
           onConfirm={() => {
-            const text = memo.text.trim();
-            if (!text) return;
+            // CHG-130: 빈 값이면 메모 영역 제거, 줄바꿈은 그대로 저장
+            const cleared = !memo.text.trim();
             save((t) =>
-              patchItem(t, memo.catId, memo.itemId, (i) => ({ ...i, reason: text, userMemo: true }))
+              patchItem(t, memo.catId, memo.itemId, (i) =>
+                cleared
+                  ? { ...i, reason: undefined, userMemo: undefined }
+                  : { ...i, reason: memo.text, userMemo: true }
+              )
             );
             setMemo(null);
           }}

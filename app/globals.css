@@ -760,7 +760,9 @@ a { color: inherit; text-decoration: none; }
   white-space: nowrap;
   z-index: 30;
   opacity: 0;
-  pointer-events: none;
+  pointer-events: auto;
+  border: none;
+  cursor: pointer;
   transition: opacity 0.25s ease, transform 0.25s ease;
 }
 .counter-coach::before {
@@ -791,13 +793,14 @@ a { color: inherit; text-decoration: none; }
 .row .desc {
   font-weight: 500; font-size: 12px; line-height: 16px; color: var(--text-3); margin-top: 2px;
   min-width: 0;
-  white-space: normal; overflow-wrap: anywhere; word-break: break-word;
+  white-space: pre-line; overflow-wrap: anywhere; word-break: break-word;
 }
 .row .desc span {
   min-width: 0;
   max-width: 100%;
   overflow-wrap: anywhere;
   word-break: break-word;
+  white-space: pre-line;
 }
 .row .desc.user-memo {
   display: grid;
@@ -917,10 +920,14 @@ a { color: inherit; text-decoration: none; }
   border-radius: var(--r-sm); background: var(--bg);
   box-shadow: var(--shadow-card); border: none; padding: 20px;
   display: flex; gap: 16px; flex: none;
+  text-align: left; color: inherit; font: inherit; cursor: pointer;
 }
 .reco .txt { flex: 1; font-weight: 400; font-size: 16px; line-height: 20px; }
 .reco .src { font-weight: 500; font-size: 12px; line-height: 16px; color: var(--text-3); margin-top: 10px; }
-.reco .thumb { width: 50px; height: 50px; border-radius: var(--r-xs); background: var(--bg-sub); flex: none; }
+.reco .thumb {
+  width: 50px; height: 50px; border-radius: var(--r-xs); background: var(--bg-sub); flex: none;
+  object-fit: cover; display: block;
+}
 
 .actionbar {
   flex: none;
