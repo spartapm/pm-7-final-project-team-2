@@ -243,42 +243,17 @@ export function InputDialog({
     scroller?.classList.add("lock");
     const vv = window.visualViewport;
     const baseH = rememberBaseHeight();
-    // 100dvh는 키보드가 차지한 높이를 빼고, visualViewport는 지금 보이는 영역이다.
-    // 둘 중 짧은 쪽에 프레임을 맞추면 취소/확인이 키보드 위에 남는다.
     // body를 fixed로 잠그거나 virtualKeyboard.overlaysContent를 켜면
-    // iOS는 뷰포트가 안 줄고, 안드로이드는 프레임이 화면 밖으로 밀린다.
-    const probe = document.createElement("div");
-    probe.setAttribute("aria-hidden", "true");
-    probe.style.cssText =
-      "position:fixed;left:0;top:0;height:100dvh;width:0;pointer-events:none;visibility:hidden;";
-    document.body.appendChild(probe);
-    const vk = (navigator as Navigator & { virtualKeyboard?: {
-      boundingRect: DOMRect;
-      addEventListener: (type: string, fn: () => void) => void;
-      removeEventListener: (type: string, fn: () => void) => void;
-    } }).virtualKeyboard;
+    // iOS는 키패드가 안 뜨고, 안드로이드는 visualViewport가 줄지 않는다.
     const sync = () => {
       const vvNow = window.visualViewport;
-      const left = vvNow?.offsetLeft ?? 0;
       const width = vvNow?.width ?? window.innerWidth;
-      const vvH = vvNow?.height ?? window.innerHeight;
-      const dvh = probe.getBoundingClientRect().height || vvH;
-      const fitted = Math.min(vvH, dvh, window.innerHeight);
-      const vkH = vk?.boundingRect?.height ?? 0;
-      // 뷰포트가 이미 줄었으면 키보드 높이를 한 번 더 빼지 않는다.
-      const visibleH =
-        baseH - fitted > 100 || vkH <= 80 ? fitted : Math.min(Math.max(baseH - vkH, 0), fitted);
-      frame.style.left = `${left}px`;
+      const height = vvNow?.height ?? window.innerHeight;
       frame.style.width = `${width}px`;
-      frame.style.transform = "none";
-      frame.style.top = "0px";
-      frame.style.height = `${visibleH}px`;
-      const origin = frame.getBoundingClientRect().top;
-      if (Math.abs(origin) > 1) frame.style.top = `${-origin}px`;
-      const keyboard = baseH - visibleH > 100;
-      dim.classList.toggle("kb", keyboard);
-      const frameBottom = frame.getBoundingClientRect().bottom;
-      if (dialog.getBoundingClientRect().bottom > frameBottom + 1) dim.classList.add("kb");
+      frame.style.height = `${height}px`;
+      frame.style.transform = `translate(${vvNow?.offsetLeft ?? 0}px, ${vvNow?.offsetTop ?? 0}px)`;
+      // ".kb"는 여행 카드 케밥 버튼 클래스라 쓰면 dim이 28px 버튼으로 줄어든다.
+      dim.classList.toggle("kb-open", baseH - height > 100);
     };
     const onViewport = () => requestAnimationFrame(sync);
     sync();
@@ -292,7 +267,6 @@ export function InputDialog({
     window.addEventListener("resize", onViewport);
     vv?.addEventListener("resize", onViewport);
     vv?.addEventListener("scroll", onViewport);
-    vk?.addEventListener("geometrychange", onViewport);
     const ids = [80, 280, 560, 900].map((ms) =>
       window.setTimeout(() => {
         primeSelection();
@@ -301,13 +275,11 @@ export function InputDialog({
     );
     return () => {
       scroller?.classList.remove("lock");
-      probe.remove();
       frame.removeEventListener("touchmove", blockScroll);
       frame.removeEventListener("wheel", blockScroll);
       window.removeEventListener("resize", onViewport);
       vv?.removeEventListener("resize", onViewport);
       vv?.removeEventListener("scroll", onViewport);
-      vk?.removeEventListener("geometrychange", onViewport);
       ids.forEach((id) => window.clearTimeout(id));
     };
   }, []);
