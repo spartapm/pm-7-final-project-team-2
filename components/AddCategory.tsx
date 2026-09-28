@@ -81,6 +81,10 @@ export function AddCategory({ tripId }: { tripId: string }) {
           value={name}
           onChange={(v) => {
             setName(v);
+            const next = v.trim();
+            if (next && trip.categories.some((c) => c.name === next)) {
+              setToast("이미 있는 카테고리예요");
+            }
           }}
           confirmDisabled={invalid}
           onLimit={() => setToast("최대 30자까지 입력할 수 있어요")}
